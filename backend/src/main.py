@@ -15,8 +15,8 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field, field_validator
 
-from config.settings import get_settings, setup_logging
-from haptic_system.controller import HapticController
+from src.config.settings import get_settings, setup_logging
+from src.haptic_system.controller import HapticController
 
 # 設定を取得
 settings = get_settings()
@@ -291,7 +291,7 @@ class VectorForceRequest(BaseModel):
     magnitude: float = Field(..., ge=0.0, le=1.0, description="Magnitude (0.0-1.0)")
     frequency: float = Field(
         ...,
-        ge=max(40.0, settings.min_frequency),
+        ge=settings.min_frequency,
         le=settings.max_frequency,
         description="Frequency in Hz",
     )

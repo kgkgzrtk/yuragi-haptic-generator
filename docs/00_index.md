@@ -9,6 +9,7 @@
 
 - **project_summary.md**: プロジェクトの要約と主要な発見
 - **project_analysis.md**: 技術的な詳細分析
+- **project_overview_latest.md**: 最新の実装状況とアーキテクチャ
 
 ### 02_requirements - 要件定義
 システムの要件定義書を管理しています。
@@ -39,6 +40,12 @@
 
 - **mvp_implementation_plan.md**: MVP実装の詳細計画
 
+### 07_implementation - 実装詳細
+システムの技術的な実装詳細をまとめています。
+
+- **api_documentation.md**: REST APIとWebSocket APIの詳細仕様
+- **waveform_rendering_websocket.md**: 波形レンダリングとWebSocket同期の実装詳細
+
 ## 📖 推奨される読み順
 
 1. **初めての方**: project_summary.md → system_requirements.md → software_design_mvp.md
@@ -48,11 +55,13 @@
 ## 🔄 ドキュメント間の関係
 
 ```
-project_summary.md
+project_summary.md → project_overview_latest.md
     ↓
 system_requirements.md ← haptic_research.md
     ↓
 software_design_mvp.md
     ↓
 tdd_test_design.md → mvp_implementation_plan.md
+    ↓
+api_documentation.md + waveform_rendering_websocket.md
 ```
