@@ -1,0 +1,40 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Python files
+*.py text diff=python
+*.pyw text diff=python
+
+# Documentation
+*.md text
+*.rst text
+*.txt text
+
+# Config files
+*.json text
+*.yaml text
+*.yml text
+*.toml text
+*.ini text
+
+# Web files
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+*.css text
+*.html text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.wav binary
+*.mp3 binary
+*.pdf binary
+
+# Export ignore
+.gitattributes export-ignore
+.gitignore export-ignore

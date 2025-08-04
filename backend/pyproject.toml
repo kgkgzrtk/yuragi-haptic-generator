@@ -1,0 +1,42 @@
+[project]
+name = "haptic-system"
+version = "0.1.0"
+description = "Dual haptic generator system with sawtooth wave support"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.24.0",
+    "sounddevice>=0.4.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "integration: marks tests as integration tests",
+    "performance: marks tests as performance tests",
+]
+
+[tool.coverage.run]
+source = ["src/haptic_system"]
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+]
+api = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.22.0",
+    "pydantic>=2.0.0",
+]

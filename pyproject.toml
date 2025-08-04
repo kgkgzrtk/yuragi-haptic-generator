@@ -1,0 +1,135 @@
+[project]
+name = "yuragi-haptic-generator"
+version = "0.1.0"
+description = "Yuragi-based dual haptic generator system with sawtooth wave force feedback"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Team", email = "team@example.com"},
+]
+keywords = ["haptic", "vibration", "sawtooth", "force-feedback", "yuragi"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Human Machine Interfaces",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "numpy>=1.24.0",
+    "sounddevice>=0.4.6",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.22.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "isort>=5.12.0",
+]
+
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+]
+
+docs = [
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "myst-parser>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/yuragi-haptic-generator"
+Documentation = "https://yuragi-haptic-generator.readthedocs.io"
+Repository = "https://github.com/your-org/yuragi-haptic-generator"
+Issues = "https://github.com/your-org/yuragi-haptic-generator/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend/src"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["backend/src"]
+markers = [
+    "integration: marks tests as integration tests",
+    "performance: marks tests as performance tests",
+    "slow: marks tests as slow",
+]
+addopts = [
+    "--strict-markers",
+    "-v",
+]
+
+[tool.coverage.run]
+source = ["backend/src"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py39', 'py310', 'py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+[tool.ruff]
+select = ["E", "F", "I", "N", "W", "B", "C4", "UP"]
+ignore = ["E501"]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+"test_*.py" = ["S101"]
