@@ -44,6 +44,11 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+# Frontend testing
+coverage/
+playwright-report/
+playwright-test-results/
+test-results/
 
 # IDE
 .idea/

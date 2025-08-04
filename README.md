@@ -12,8 +12,8 @@ Yuragi Haptic Generatorは、サwtooth波を用いた非対称振動により、
 - 🎯 **ベクトル力覚**: X/Y軸協調による360度任意方向の力生成
 - 🎛️ **4チャンネル独立制御**: 2つの2軸アクチュエータを完全制御
 - ⚡ **低レイテンシ**: 10ms以下の応答性を実現
-- 🔧 **REST API**: FastAPIによる簡単な統合
-- 📊 **リアルタイム可視化**: React + Chart.jsによる波形表示
+- 🔧 **REST API + WebSocket**: FastAPIによるハイブリッド通信
+- 📊 **リアルタイム可視化**: React + Chart.js + WebSocketによる即座の波形更新
 
 ## システム構成
 
@@ -25,8 +25,8 @@ yuragi-haptic-generator/
 │   │   └── haptic_system/  # コア触覚システム
 │   └── tests/           # テストスイート
 ├── frontend/            # React フロントエンド
-│   ├── public/         
-│   └── src/            
+│   ├── public/          # 静的ファイル
+│   └── src/            # ソースコード
 └── docs/               # プロジェクトドキュメント
 ```
 
@@ -65,7 +65,7 @@ cd backend
 uv run uvicorn src.main:app --reload
 ```
 
-APIドキュメント: http://localhost:8000/docs
+**APIドキュメント**: http://localhost:8000/docs
 
 ### フロントエンドの起動
 
@@ -78,7 +78,46 @@ pnpm install
 pnpm dev
 ```
 
-UI: http://localhost:3000
+**UI**: http://localhost:3000
+
+## テスト
+
+### ユニットテスト
+
+```bash
+# バックエンドテスト
+cd backend
+uv run pytest
+
+# フロントエンドテスト
+cd frontend
+pnpm test
+```
+
+### E2Eテスト
+
+E2Eテストを実行するには、バックエンドとフロントエンドの両方が必要です：
+
+```bash
+# 方法1: テストスクリプトを使用（推奨）
+./scripts/run-e2e-tests.sh
+
+# 方法2: Docker Composeを使用
+docker compose -f docker-compose.dev.yml up -d
+cd frontend && npm run test:e2e
+docker compose -f docker-compose.dev.yml down
+
+# 方法3: 手動セットアップ
+# ターミナル1でバックエンドを起動
+cd backend
+PYTHONPATH=src uv run uvicorn src.main:app --host 0.0.0.0 --port 8000
+
+# ターミナル2でE2Eテストを実行
+cd frontend
+npm run test:e2e
+```
+
+詳細は[E2Eテストガイド](frontend/tests/e2e/README.md)を参照してください。
 
 ## 使用例
 
@@ -116,6 +155,32 @@ curl -X PUT "http://localhost:8000/api/parameters" \
 
 # ストリーミング開始
 curl -X POST "http://localhost:8000/api/streaming/start"
+```
+
+### WebSocket接続
+
+```javascript
+// リアルタイム波形データの受信
+const ws = new WebSocket('ws://localhost:8000/ws');
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  
+  switch (message.type) {
+    case 'waveform_data':
+      // 波形データを可視化
+      updateWaveformChart(message.data);
+      break;
+    case 'parameters_update':
+      // パラメータ更新を反映
+      updateControlPanel(message.data);
+      break;
+    case 'status_update':
+      // ストリーミング状態を更新
+      updateStatusDisplay(message.data);
+      break;
+  }
+};
 ```
 
 ## 開発

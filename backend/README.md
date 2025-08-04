@@ -10,8 +10,10 @@ TDD（Test-Driven Development）アプローチにより、高品質で信頼性
 - 🌊 **サwtooth波生成**: 40-120Hz範囲での精密な波形生成
 - 🎛️ **4チャンネル独立制御**: 2つの2軸アクチュエータを完全制御
 - 🎯 **ベクトル力覚生成**: X/Y軸協調による任意方向の力覚提示
-- 🔄 **リアルタイム更新**: スレッドセーフなパラメータ変更
+- 🔄 **リアルタイム更新**: WebSocketによる即座のパラメータ反映
 - 📊 **レイテンシ測定**: 10ms以下の低遅延を実現
+- 🌐 **WebSocket通信**: 100ms間隔での波形データストリーミング
+- 📡 **マルチクライアント**: 複数接続の同時ブロードキャスト対応
 
 ## アーキテクチャ
 
@@ -37,6 +39,7 @@ pip install -r requirements.txt
 ```
 
 ### 必要なパッケージ
+
 - numpy >= 1.24.0
 - sounddevice >= 0.4.6
 - pytest >= 7.4.0 (開発用)
@@ -96,6 +99,7 @@ python -m pytest tests/unit/test_waveform.py -v
 ```
 
 ### 現在のテスト統計
+
 - テストケース数: 35個
 - テストカバレッジ: 95.53%
 - すべてのテスト: ✅ PASSED
@@ -116,6 +120,39 @@ controller.get_current_parameters()    # 現在のパラメータ取得
 controller.get_status()               # システム状態取得
 controller.get_latency_ms()           # レイテンシ取得
 ```
+
+### WebSocket API
+
+#### WebSocket接続
+```python
+# WebSocketクライアント例（websocket-clientライブラリ使用）
+import asyncio
+import websockets
+import json
+
+async def websocket_client():
+    uri = "ws://localhost:8000/ws"
+    async with websockets.connect(uri) as websocket:
+        while True:
+            message = await websocket.recv()
+            data = json.loads(message)
+            
+            if data["type"] == "waveform_data":
+                print(f"受信波形データ: {len(data['data']['channels'])}チャンネル")
+            elif data["type"] == "parameters_update":
+                print(f"パラメータ更新: {data['data']}")
+            elif data["type"] == "status_update":
+                print(f"ステータス更新: {data['data']}")
+
+# 実行
+asyncio.run(websocket_client())
+```
+
+#### メッセージタイプ
+- `parameters_update`: パラメータ変更時にブロードキャスト
+- `waveform_data`: リアルタイム波形データ（100ms間隔）
+- `status_update`: ストリーミング状態変更時
+- `error`: エラー発生時
 
 ### パラメータ形式
 

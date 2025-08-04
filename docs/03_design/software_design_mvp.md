@@ -14,13 +14,13 @@
 ### 1.3 設計方針（MVP）
 - **シンプルな実装**: 最小限の機能に絞った開発
 - **サンプルコードベース**: 提供されたノコギリ波生成ロジックを活用
-- **REST API**: WebSocketを使わずHTTPのみで実装
+- **REST API + WebSocket**: HTTPとWebSocketによるハイブリッド通信
 - **迅速な開発**: プロトタイプとしての検証に注力
 
 ### 1.4 技術スタック
 - **バックエンド**: Python (uv管理), FastAPI, NumPy
 - **フロントエンド**: React, react-chartjs-2
-- **通信**: REST API (HTTP/JSON)
+- **通信**: REST API (HTTP/JSON) + WebSocket (リアルタイム通信)
 - **パッケージ管理**: uv (Python), npm (JavaScript)
 
 ## 2. システムアーキテクチャ
@@ -30,15 +30,18 @@
 ┌─────────────────────────────────────────────────┐
 │           React UI (localhost:3000)              │
 │  ├── ControlPanel: パラメータ制御                  │
-│  ├── WaveformChart: 4ch波形表示                  │
+│  ├── WaveformChart: リアルタイム4ch波形表示        │
 │  └── XYTrajectory: XY軌跡表示（将来）             │
 ├─────────────────────────────────────────────────┤
-│           REST API (HTTP/JSON)                   │
+│    REST API (HTTP/JSON) + WebSocket (/ws)       │
+│  ├── HTTP: パラメータ設定・制御                   │
+│  └── WebSocket: リアルタイム波形データ配信         │
 ├─────────────────────────────────────────────────┤
 │         FastAPI Server (localhost:8000)          │
 │  ├── 波形生成エンジン（サンプルコードベース）        │
 │  ├── 共振シミュレーション                         │
-│  └── パラメータ管理                              │
+│  ├── パラメータ管理                              │
+│  └── WebSocket接続管理・ブロードキャスト           │
 ├──────────┬──────────┬──────────┬──────────────┤
 │  Ch1(X1) │  Ch2(Y1) │  Ch3(X2) │   Ch4(Y2)   │
 ├──────────┴──────────┼──────────┴──────────────┤
@@ -48,6 +51,8 @@
 ```
 
 ### 2.2 データフロー（MVP）
+
+#### パラメータ制御フロー
 ```
 Web UI (パラメータ設定)
     ↓
@@ -55,11 +60,33 @@ Web UI (パラメータ設定)
     ↓
 [FastAPI Server] パラメータ検証・保存
     ↓
+[WebSocket Broadcast] PARAMETERS_UPDATE
+    ↓
+[Web UI] リアルタイムパラメータ更新
+```
+
+#### リアルタイム波形配信フロー
+```
+[Background Task] 100ms間隔で実行
+    ↓
 [Waveform Generator] サンプルコードベースの波形生成
     ↓
-[REST API] GET /api/waveform
+[WebSocket Broadcast] WAVEFORM_DATA
     ↓
-[Web UI] react-chartjs-2で波形表示
+[Web UI] react-chartjs-2でリアルタイム波形表示
+```
+
+#### ストリーミング制御フロー
+```
+Web UI (開始/停止)
+    ↓
+[REST API] POST /api/streaming/start|stop
+    ↓
+[FastAPI Server] ストリーミング状態変更
+    ↓
+[WebSocket Broadcast] STATUS_UPDATE
+    ↓
+[Web UI] ストリーミング状態表示更新
 ```
 
 ### 2.3 プロジェクト構造（MVP）
@@ -259,23 +286,94 @@ def simulate_resonance(
 ### 3.4 FastAPI Server (backend/main.py)
 
 #### 設計概要
-REST APIエンドポイントを提供するFastAPIサーバー。
+REST APIとWebSocketエンドポイントを提供するFastAPIサーバー。リアルタイム通信機能を含む。
 
 ```python
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 import uvicorn
-import time
-import numpy as np
+import asyncio
+import json
+import logging
+from datetime import datetime, timezone
+from typing import List, Dict, Any
 
 from .api.routes import router
 from .core.waveform import generate_multichannel_waveform
 from .models.parameters import SystemParameters, WaveformRequest
+from haptic_system.controller import HapticController
+
+# WebSocket message types
+class WSMessageType:
+    PARAMETERS_UPDATE = "parameters_update"
+    WAVEFORM_DATA = "waveform_data"
+    STATUS_UPDATE = "status_update"
+    ERROR = "error"
+
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.lock = asyncio.Lock()
+    
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        async with self.lock:
+            self.active_connections.append(websocket)
+    
+    async def disconnect(self, websocket: WebSocket):
+        async with self.lock:
+            if websocket in self.active_connections:
+                self.active_connections.remove(websocket)
+    
+    async def broadcast(self, message: dict):
+        if not self.active_connections:
+            return
+        
+        async with self.lock:
+            disconnected = []
+            for connection in self.active_connections[:]:
+                try:
+                    await connection.send_text(json.dumps(message))
+                except Exception:
+                    disconnected.append(connection)
+            
+            for conn in disconnected:
+                if conn in self.active_connections:
+                    self.active_connections.remove(conn)
+
+manager = ConnectionManager()
+
+# Background task for waveform streaming
+async def background_waveform_streamer():
+    while True:
+        try:
+            if (controller and controller.is_streaming and 
+                manager.active_connections):
+                
+                # Generate and broadcast waveform data
+                # ... waveform generation logic ...
+                await broadcast_waveform_data(waveform_data)
+                
+            await asyncio.sleep(0.1)  # 100ms interval
+        except Exception as e:
+            logger.error(f"Error in background streamer: {e}")
+            await asyncio.sleep(0.1)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start background waveform streaming task
+    waveform_task = asyncio.create_task(background_waveform_streamer())
+    yield
+    # Cleanup
+    waveform_task.cancel()
 
 app = FastAPI(
-    title="Sawtooth Haptic Device API",
-    version="1.0.0",
-    description="ノコギリ波触覚デバイス制御API (MVP)"
+    title="Yuragi Haptic Generator API",
+    version="0.1.0",
+    description="Sawtooth wave-based haptic feedback system API",
+    lifespan=lifespan
 )
 
 # CORS設定（開発用）
@@ -343,6 +441,64 @@ async def get_waveform(request: WaveformRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time communication"""
+    await manager.connect(websocket)
+    
+    try:
+        # Send initial status to newly connected client
+        if controller:
+            initial_status = {
+                "type": WSMessageType.STATUS_UPDATE,
+                "data": {
+                    "isStreaming": controller.is_streaming,
+                    "sampleRate": controller.sample_rate,
+                    "blockSize": controller.block_size,
+                    "latencyMs": controller.get_latency_ms()
+                },
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            await manager.send_personal_message(initial_status, websocket)
+        
+        # Keep connection alive and handle incoming messages
+        while True:
+            try:
+                message = await websocket.receive_text()
+                # Handle client messages if needed
+                pass
+            except WebSocketDisconnect:
+                break
+    except Exception as e:
+        logger.error(f"WebSocket connection error: {e}")
+    finally:
+        await manager.disconnect(websocket)
+
+# Helper functions for WebSocket broadcasting
+async def broadcast_parameters_update(channels_data):
+    message = {
+        "type": WSMessageType.PARAMETERS_UPDATE,
+        "data": {"channels": channels_data},
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await manager.broadcast(message)
+
+async def broadcast_status_update(status_data):
+    message = {
+        "type": WSMessageType.STATUS_UPDATE,
+        "data": status_data,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await manager.broadcast(message)
+
+async def broadcast_waveform_data(waveform_data):
+    message = {
+        "type": WSMessageType.WAVEFORM_DATA,
+        "data": waveform_data,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await manager.broadcast(message)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
@@ -718,23 +874,109 @@ npm install
 npm start
 ```
 
-## 7. API仕様（OpenAPI）
+## 7. API仕様
 
-二軸振動触覚システム要件定義書の付録BのOpenAPI仕様を参照してください。主要エンドポイント：
+### 7.1 REST API エンドポイント
 
 - `GET /api/health` - ヘルスチェック
 - `GET /api/parameters` - 現在のパラメータ取得
 - `PUT /api/parameters` - パラメータ更新
 - `POST /api/waveform` - 波形データ取得
 - `PUT /api/channels/{channel_id}` - 個別チャンネル更新
+- `POST /api/streaming/start` - ストリーミング開始
+- `POST /api/streaming/stop` - ストリーミング停止
+- `GET /api/streaming/status` - ストリーミング状態取得
+- `POST /api/vector-force` - ベクトル力覚設定
+
+### 7.2 WebSocket エンドポイント
+
+#### WebSocket接続
+- **エンドポイント**: `ws://localhost:8000/ws`
+- **プロトコル**: JSON メッセージ形式
+
+#### メッセージタイプ
+
+##### PARAMETERS_UPDATE
+パラメータが更新された際にブロードキャスト
+```json
+{
+  "type": "parameters_update",
+  "data": {
+    "channels": [
+      {
+        "channelId": 0,
+        "frequency": 60.0,
+        "amplitude": 0.5,
+        "phase": 0.0,
+        "polarity": true
+      }
+    ]
+  },
+  "timestamp": "2024-08-04T12:00:00.000Z"
+}
+```
+
+##### WAVEFORM_DATA
+リアルタイム波形データ（100ms間隔）
+```json
+{
+  "type": "waveform_data",
+  "data": {
+    "timestamp": "2024-08-04T12:00:00.000Z",
+    "sampleRate": 44100,
+    "channels": [
+      {
+        "channelId": 0,
+        "data": [0.1, 0.2, 0.3, ...]
+      }
+    ]
+  },
+  "timestamp": "2024-08-04T12:00:00.000Z"
+}
+```
+
+##### STATUS_UPDATE
+ストリーミング状態変更時にブロードキャスト
+```json
+{
+  "type": "status_update",
+  "data": {
+    "isStreaming": true,
+    "sampleRate": 44100,
+    "blockSize": 512,
+    "latencyMs": 8.5
+  },
+  "timestamp": "2024-08-04T12:00:00.000Z"
+}
+```
+
+##### ERROR
+エラー発生時に送信
+```json
+{
+  "type": "error",
+  "data": {
+    "message": "Error description"
+  },
+  "timestamp": "2024-08-04T12:00:00.000Z"
+}
+```
 
 ## 8. まとめ
 
-本MVP設計では、必要最小限の機能に絞り込んだ実装を行います：
+本MVP設計では、リアルタイム通信機能を含む効果的な実装を行います：
 
 1. **シンプルな波形生成**: サンプルコードベースの実装
-2. **REST API**: WebSocketを使わない単純なHTTP通信
-3. **基本的なUI**: react-chartjs-2による波形表示
-4. **手動テスト**: 自動テストなしでの迅速な開発
+2. **ハイブリッド通信**: REST API + WebSocketによる最適な通信方式
+3. **リアルタイムUI**: WebSocketによる即座の波形表示更新
+4. **バックグラウンドストリーミング**: 100ms間隔での連続的な波形データ配信
+5. **マルチクライアント対応**: WebSocket接続管理による複数クライアント同時接続
 
-この設計により、プロトタイプの迅速な検証が可能となります。
+### 主な改善点
+
+- **レスポンシブUI**: パラメータ変更が即座に反映される
+- **効率的な通信**: 必要な時だけHTTP、継続的な更新はWebSocket
+- **スケーラブル設計**: 複数のクライアントへの同時ブロードキャスト対応
+- **エラーハンドリング**: WebSocket接続の自動管理と復旧
+
+この設計により、プロトタイプの迅速な検証とリアルタイム触覚制御の実現が可能となります。
