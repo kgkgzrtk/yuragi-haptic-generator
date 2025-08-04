@@ -30,9 +30,18 @@ cd yuragi-haptic-generator
 ./setup-dev.sh
 
 # Or manually:
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -e ".[dev,test]"
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -e ".[dev,test]"
+
+# Frontend setup with pnpm
+cd frontend
+pnpm install
+cd ..
 ```
 
 ## Code Style
@@ -46,16 +55,16 @@ pip install -e ".[dev,test]"
 
 ```bash
 # Format code
-black backend/src backend/tests
+uv run black backend/src backend/tests
 
 # Check code style
-flake8 backend/src
+uv run flake8 backend/src
 
 # Type checking
-mypy backend/src
+uv run mypy backend/src
 
-# All checks
-make lint  # If Makefile is available
+# All checks (if Makefile is available)
+make lint
 ```
 
 ## Testing
@@ -70,19 +79,19 @@ We follow Test-Driven Development (TDD) practices:
 
 ```bash
 # Run all tests
-pytest backend/tests -v
+uv run pytest backend/tests -v
 
 # Run with coverage
-pytest backend/tests --cov=haptic_system --cov-report=html
+uv run pytest backend/tests --cov=haptic_system --cov-report=html
 
 # Run specific test file
-pytest backend/tests/unit/test_waveform.py -v
+uv run pytest backend/tests/unit/test_waveform.py -v
 
 # Run only unit tests
-pytest backend/tests/unit -v
+uv run pytest backend/tests/unit -v
 
 # Run only integration tests
-pytest backend/tests/integration -v
+uv run pytest backend/tests/integration -v
 ```
 
 ### Writing Tests

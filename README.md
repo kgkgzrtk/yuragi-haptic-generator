@@ -36,6 +36,7 @@ yuragi-haptic-generator/
 
 - Python 3.9以上
 - Node.js 16以上
+- pnpm 9.0以上（フロントエンド用）
 - Miraisense Hapticsデバイス（または互換4チャンネルオーディオデバイス）
 
 ### インストール
@@ -45,18 +46,23 @@ yuragi-haptic-generator/
 git clone https://github.com/your-org/yuragi-haptic-generator.git
 cd yuragi-haptic-generator
 
-# Python依存関係のインストール
-pip install -e .
+# uvのインストール（未インストールの場合）
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Python仮想環境と依存関係のインストール
+uv venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+uv pip install -e .
 
 # 開発用依存関係を含める場合
-pip install -e ".[dev,test]"
+uv pip install -e ".[dev,test]"
 ```
 
 ### バックエンドの起動
 
 ```bash
 cd backend
-uvicorn src.main:app --reload
+uv run uvicorn src.main:app --reload
 ```
 
 APIドキュメント: http://localhost:8000/docs
@@ -64,9 +70,12 @@ APIドキュメント: http://localhost:8000/docs
 ### フロントエンドの起動
 
 ```bash
+# pnpmのインストール（未インストールの場合）
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+
 cd frontend
-npm install
-npm start
+pnpm install
+pnpm dev
 ```
 
 UI: http://localhost:3000
@@ -115,24 +124,24 @@ curl -X POST "http://localhost:8000/api/streaming/start"
 
 ```bash
 # ユニットテスト
-pytest backend/tests/unit -v
+uv run pytest backend/tests/unit -v
 
 # カバレッジレポート
-pytest backend/tests --cov=haptic_system --cov-report=html
+uv run pytest backend/tests --cov=haptic_system --cov-report=html
 
 # 統合テスト
-pytest backend/tests/integration -v
+uv run pytest backend/tests/integration -v
 ```
 
 ### コード品質
 
 ```bash
 # フォーマット
-black backend/src backend/tests
+uv run black backend/src backend/tests
 
 # リント
-flake8 backend/src
-mypy backend/src
+uv run flake8 backend/src
+uv run mypy backend/src
 ```
 
 ## アーキテクチャ
