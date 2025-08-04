@@ -68,6 +68,12 @@ research_pdfs/
 temp/
 tmp/
 
+# Proprietary technical documentation
+docs/04_research/vca_model_explained.md
+docs/04_research/haptic_research.md
+docs/04_research/pdf_notes.md
+docs/04_research/
+
 # Logs
 *.log
 logs/
