@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react'
-import { Input } from '@/components/Common/Input'
+import { Slider } from '@/components/Common/Slider'
 import { useHapticStore } from '@/contexts/hapticStore'
 import {
   useParameterManagement,
@@ -17,8 +17,9 @@ interface ChannelControlProps {
 export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label }) => {
   const channel = useHapticStore(state => state.channels.find(ch => ch.channelId === channelId))
   const { isUpdating, updateError } = useParameterManagement()
-  const { batchUpdate, hasPendingUpdates } = useBatchParameterUpdates(500) // 500ms debounce
+  const { batchUpdate, hasPendingUpdates, clearPending } = useBatchParameterUpdates(300) // 300ms debounce
   const { handleParameterError } = useHapticErrorHandler()
+
 
   const [errors, setErrors] = useState<Partial<Record<keyof IChannelParameters, string>>>({})
 
@@ -44,6 +45,13 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
       handleParameterError(updateError, channelId)
     }
   }, [updateError, handleParameterError, channelId])
+
+  // Cleanup pending updates on unmount
+  useEffect(() => {
+    return () => {
+      clearPending()
+    }
+  }, [clearPending])
 
   // Validate input
   const validateField = useCallback(
@@ -120,27 +128,22 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
       <h3 className='channel-control-title'>{label}</h3>
 
       <div className='channel-control-fields'>
-        <Input
-          type='number'
-          label='Frequency (Hz)'
+        <Slider
+          label='Frequency'
           value={frequency}
-          onChange={e =>
-            handleFieldChange('frequency', e.target.value ? parseFloat(e.target.value) : '')
-          }
+          onChange={value => handleFieldChange('frequency', value)}
           min={CONSTRAINTS.FREQUENCY.MIN}
           max={CONSTRAINTS.FREQUENCY.MAX}
           step={1}
+          unit='Hz'
           error={errors.frequency}
           disabled={isUpdating || hasPendingUpdates}
         />
 
-        <Input
-          type='number'
+        <Slider
           label='Amplitude'
           value={amplitude}
-          onChange={e =>
-            handleFieldChange('amplitude', e.target.value ? parseFloat(e.target.value) : '')
-          }
+          onChange={value => handleFieldChange('amplitude', value)}
           min={CONSTRAINTS.AMPLITUDE.MIN}
           max={CONSTRAINTS.AMPLITUDE.MAX}
           step={0.01}
@@ -148,16 +151,14 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
           disabled={isUpdating || hasPendingUpdates}
         />
 
-        <Input
-          type='number'
-          label='Phase (degrees)'
+        <Slider
+          label='Phase'
           value={phase}
-          onChange={e =>
-            handleFieldChange('phase', e.target.value ? parseFloat(e.target.value) : '')
-          }
+          onChange={value => handleFieldChange('phase', value)}
           min={CONSTRAINTS.PHASE.MIN}
           max={CONSTRAINTS.PHASE.MAX}
           step={1}
+          unit='°'
           error={errors.phase}
           disabled={isUpdating || hasPendingUpdates}
         />

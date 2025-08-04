@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react'
 import { Button } from '@/components/Common/Button'
-import { Input } from '@/components/Common/Input'
+import { Slider } from '@/components/Common/Slider'
 import { useVectorForceManagement } from '@/hooks/queries/useVectorForceQuery'
 import { useHapticErrorHandler } from '@/hooks/useErrorHandler'
 import { CONSTRAINTS } from '@/types/hapticTypes'
@@ -23,9 +23,9 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
 
   const { handleVectorForceError } = useHapticErrorHandler()
 
-  const [angle, setAngle] = useState<number | string>(vectorForce?.angle || 0)
-  const [magnitude, setMagnitude] = useState<number | string>(vectorForce?.magnitude || 0)
-  const [frequency, setFrequency] = useState<number | string>(vectorForce?.frequency || 60)
+  const [angle, setAngle] = useState<number>(vectorForce?.angle || 0)
+  const [magnitude, setMagnitude] = useState<number>(vectorForce?.magnitude || 0)
+  const [frequency, setFrequency] = useState<number>(vectorForce?.frequency || 60)
   const [errors, setErrors] = useState<Partial<Record<keyof IVectorForce, string>>>({})
 
   // Sync local state with store when vector force changes
@@ -46,37 +46,20 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
 
   // Validate on mount and when values change
   useEffect(() => {
-    // Only validate numeric values
-    if (
-      typeof angle === 'number' &&
-      typeof magnitude === 'number' &&
-      typeof frequency === 'number'
-    ) {
-      const { errors: validationErrors } = validateVectorForce({
-        angle,
-        magnitude,
-        frequency,
-      })
-      setErrors(validationErrors)
-    }
+    const { errors: validationErrors } = validateVectorForce({
+      angle,
+      magnitude,
+      frequency,
+    })
+    setErrors(validationErrors)
   }, [angle, magnitude, frequency, validateVectorForce])
 
   // Validate input
   const validate = useCallback((): boolean => {
-    // Convert to numbers for validation
-    const numAngle = typeof angle === 'number' ? angle : parseFloat(angle as string)
-    const numMagnitude = typeof magnitude === 'number' ? magnitude : parseFloat(magnitude as string)
-    const numFrequency = typeof frequency === 'number' ? frequency : parseFloat(frequency as string)
-
-    // Check for NaN
-    if (isNaN(numAngle) || isNaN(numMagnitude) || isNaN(numFrequency)) {
-      return false
-    }
-
     const { isValid, errors: validationErrors } = validateVectorForce({
-      angle: numAngle,
-      magnitude: numMagnitude,
-      frequency: numFrequency,
+      angle,
+      magnitude,
+      frequency,
     })
 
     setErrors(validationErrors)
@@ -89,13 +72,8 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
       return
     }
 
-    // Convert to numbers
-    const numAngle = typeof angle === 'number' ? angle : parseFloat(angle as string)
-    const numMagnitude = typeof magnitude === 'number' ? magnitude : parseFloat(magnitude as string)
-    const numFrequency = typeof frequency === 'number' ? frequency : parseFloat(frequency as string)
-
     try {
-      await setVectorForce({ angle: numAngle, magnitude: numMagnitude, frequency: numFrequency })
+      await setVectorForce({ angle, magnitude, frequency })
     } catch (error) {
       // Error handling is done in the hook
       console.info('Failed to apply vector force:', error)
@@ -116,11 +94,8 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
   }, [clearVectorForce])
 
   // Visualize vector
-  const numAngle = typeof angle === 'number' ? angle : parseFloat(angle as string) || 0
-  const numMagnitude =
-    typeof magnitude === 'number' ? magnitude : parseFloat(magnitude as string) || 0
-  const vectorX = Math.cos((numAngle * Math.PI) / 180) * numMagnitude * 50
-  const vectorY = -Math.sin((numAngle * Math.PI) / 180) * numMagnitude * 50 // Negative for correct display
+  const vectorX = Math.cos((angle * Math.PI) / 180) * magnitude * 50
+  const vectorY = -Math.sin((angle * Math.PI) / 180) * magnitude * 50 // Negative for correct display
 
   return (
     <div className='vector-control' data-testid={`vector-control-${deviceId}`}>
@@ -169,23 +144,22 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
       </div>
 
       <div className='vector-control-fields'>
-        <Input
-          type='number'
-          label='Angle (degrees)'
+        <Slider
+          label='Angle'
           value={angle}
-          onChange={e => setAngle(e.target.value ? parseFloat(e.target.value) : '')}
+          onChange={setAngle}
           min={0}
           max={360}
           step={1}
+          unit='°'
           error={errors.angle}
           disabled={isUpdating || isApplyingPreset}
         />
 
-        <Input
-          type='number'
+        <Slider
           label='Magnitude'
           value={magnitude}
-          onChange={e => setMagnitude(e.target.value ? parseFloat(e.target.value) : '')}
+          onChange={setMagnitude}
           min={0}
           max={1}
           step={0.01}
@@ -193,14 +167,14 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
           disabled={isUpdating || isApplyingPreset}
         />
 
-        <Input
-          type='number'
-          label='Frequency (Hz)'
+        <Slider
+          label='Frequency'
           value={frequency}
-          onChange={e => setFrequency(e.target.value ? parseFloat(e.target.value) : '')}
+          onChange={setFrequency}
           min={CONSTRAINTS.VECTOR_FREQUENCY.MIN}
           max={CONSTRAINTS.VECTOR_FREQUENCY.MAX}
           step={1}
+          unit='Hz'
           error={errors.frequency}
           disabled={isUpdating || isApplyingPreset}
         />

@@ -97,11 +97,12 @@ class ConnectionManager:
                 except Exception as e:
                     logger.error(f"Error broadcasting to connection: {e}")
                     disconnected.append(connection)
-
+            
             # Remove disconnected connections
-            for conn in disconnected:
-                if conn in self.active_connections:
-                    self.active_connections.remove(conn)
+            for connection in disconnected:
+                if connection in self.active_connections:
+                    self.active_connections.remove(connection)
+                    logger.info(f"Removed disconnected WebSocket. Remaining connections: {len(self.active_connections)}")
 
 
 # Global connection manager
@@ -132,7 +133,9 @@ async def background_waveform_streamer():
 
                 # Get waveform data from controller
                 channels_data = []
-                for ch_id in range(4):
+                num_channels = min(4, controller.available_channels)  # Use available channels
+                
+                for ch_id in range(num_channels):
                     try:
                         channel = controller.device.channels[ch_id]
                         waveform_data = channel.get_next_chunk(num_samples).tolist()
@@ -147,6 +150,12 @@ async def background_waveform_streamer():
                         channels_data.append(
                             {"channelId": ch_id, "data": [0.0] * num_samples}
                         )
+                
+                # Add zero data for remaining channels if in single device mode
+                for ch_id in range(num_channels, 4):
+                    channels_data.append(
+                        {"channelId": ch_id, "data": [0.0] * num_samples}
+                    )
 
                 waveform_data = {
                     "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -313,6 +322,45 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/api/device-info")
+async def get_device_info():
+    """オーディオデバイス情報を取得"""
+    if controller is None:
+        return {
+            "available": False,
+            "channels": 0,
+            "name": "Controller not initialized",
+            "device_mode": "none"
+        }
+    
+    return controller.device_info | {"device_mode": "dual" if controller.available_channels == 4 else "single" if controller.available_channels == 2 else "none"}
+
+@app.get("/api/debug/devices")
+async def debug_list_devices():
+    """デバッグ用：利用可能なすべてのオーディオデバイスをリスト"""
+    try:
+        import sounddevice as sd
+        devices = sd.query_devices()
+        device_list = []
+        
+        for idx, dev in enumerate(devices):
+            device_list.append({
+                "id": idx,
+                "name": dev['name'],
+                "max_input_channels": dev['max_input_channels'],
+                "max_output_channels": dev['max_output_channels'],
+                "default_samplerate": dev['default_samplerate'],
+                "is_default_output": idx == sd.default.device[1]
+            })
+        
+        return {
+            "default_output_id": sd.default.device[1],
+            "devices": device_list
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # パラメータ管理
 @app.get("/api/parameters")
 async def get_parameters():
@@ -322,7 +370,7 @@ async def get_parameters():
         return {
             "channels": [
                 {
-                    "channel_id": i,
+                    "channelId": i,  # Changed to camelCase to match frontend
                     "frequency": 0.0,
                     "amplitude": 0.0,
                     "phase": 0.0,
@@ -336,7 +384,7 @@ async def get_parameters():
     return {
         "channels": [
             {
-                "channel_id": i,
+                "channelId": i,  # Changed to camelCase to match frontend
                 "frequency": ch.get("frequency", 0.0),
                 "amplitude": ch.get("amplitude", 0.0),
                 "phase": ch.get("phase", 0.0),
@@ -410,7 +458,7 @@ async def update_channel(channel_id: int, params: ChannelUpdate):
     updated_params = controller.get_current_parameters()
     channels_data = [
         {
-            "channelId": ch.get("channel_id", i),
+            "channelId": i,
             "frequency": ch.get("frequency", 0.0),
             "amplitude": ch.get("amplitude", 0.0),
             "phase": ch.get("phase", 0.0),
@@ -434,7 +482,7 @@ async def get_waveform_data(request: WaveformRequest):
             "timestamp": "2024-08-04T00:00:00Z",
             "sample_rate": request.sample_rate,
             "channels": [
-                {"channel_id": i, "data": [0.0] * num_samples} for i in range(4)
+                {"channelId": i, "data": [0.0] * num_samples} for i in range(4)
             ],
         }
 
@@ -443,11 +491,22 @@ async def get_waveform_data(request: WaveformRequest):
 
     # 現在のパラメータで波形を生成
     channels_data = []
-    for ch_id in range(4):
+    num_channels = min(4, controller.available_channels)  # Use available channels
+    
+    for ch_id in range(num_channels):
         # 各チャンネルの波形を生成
-        channel = controller.device.channels[ch_id]
-        waveform_data = channel.get_next_chunk(num_samples).tolist()
-        channels_data.append({"channel_id": ch_id, "data": waveform_data})
+        try:
+            channel = controller.device.channels[ch_id]
+            waveform_data = channel.get_next_chunk(num_samples).tolist()
+            channels_data.append({"channelId": ch_id, "data": waveform_data})
+        except Exception as e:
+            logger.error(f"Error getting waveform for channel {ch_id}: {e}")
+            # Provide zero data on error
+            channels_data.append({"channelId": ch_id, "data": [0.0] * num_samples})
+    
+    # Add zero data for remaining channels if in single device mode
+    for ch_id in range(num_channels, 4):
+        channels_data.append({"channel_id": ch_id, "data": [0.0] * num_samples})
 
     return {
         "timestamp": "2024-08-04T00:00:00Z",  # 実際にはdatetimeを使用
@@ -464,7 +523,10 @@ async def start_streaming():
         raise HTTPException(status_code=503, detail="Service not initialized")
 
     if not controller.is_streaming:
-        controller.start_streaming()
+        try:
+            controller.start_streaming()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
     # Broadcast status update to WebSocket clients
     status_data = {
@@ -515,6 +577,12 @@ async def get_streaming_status():
         "sample_rate": controller.sample_rate,
         "block_size": controller.block_size,
         "latency_ms": controller.get_latency_ms(),
+        "device_info": {
+            "available": controller.device_info.get('available', False),
+            "channels": controller.available_channels,
+            "name": controller.device_info.get('name', 'Unknown'),
+            "device_mode": "dual" if controller.available_channels == 4 else "single"
+        }
     }
 
 
@@ -539,7 +607,7 @@ async def set_vector_force(request: VectorForceRequest):
     updated_params = controller.get_current_parameters()
     channels_data = [
         {
-            "channelId": ch.get("channel_id", i),
+            "channelId": i,
             "frequency": ch.get("frequency", 0.0),
             "amplitude": ch.get("amplitude", 0.0),
             "phase": ch.get("phase", 0.0),
@@ -579,7 +647,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "type": WSMessageType.PARAMETERS_UPDATE,
                 "data": [
                     {
-                        "channelId": ch.get("channel_id", i),
+                        "channelId": i,
                         "frequency": ch.get("frequency", 0.0),
                         "amplitude": ch.get("amplitude", 0.0),
                         "phase": ch.get("phase", 0.0),
@@ -659,3 +727,9 @@ async def broadcast_waveform_data(waveform_data: dict[str, Any]):
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     await manager.broadcast(message)
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)

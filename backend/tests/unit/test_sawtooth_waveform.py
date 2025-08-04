@@ -10,6 +10,24 @@ from haptic_system.waveform import SawtoothWaveform
 class TestSawtoothWaveformGeneration:
     """サwtooth波生成の基本機能テスト"""
     
+    def test_creates_ascending_sawtooth_at_30hz(self):
+        """30Hzの上昇サwtooth波を生成できる（参考実装の基音周波数）"""
+        # Arrange
+        frequency = 30.0  # Reference implementation fundamental frequency
+        sample_rate = 44100
+        duration = 1/30  # 1周期
+        
+        # Act
+        waveform = SawtoothWaveform(sample_rate)
+        samples = waveform.generate(frequency, duration)
+        
+        # Assert
+        expected_samples = int(sample_rate * duration)
+        assert len(samples) == expected_samples
+        assert samples[0] == pytest.approx(-1.0, abs=0.01)
+        assert samples[expected_samples//2] == pytest.approx(0.0, abs=0.01)
+        assert samples[-1] == pytest.approx(1.0, abs=0.01)
+    
     def test_creates_ascending_sawtooth_at_100hz(self):
         """100Hzの上昇サwtooth波を生成できる"""
         # Arrange
@@ -72,14 +90,14 @@ class TestSawtoothWaveformGeneration:
 class TestSawtoothWaveformValidation:
     """パラメータ検証のテスト"""
     
-    def test_rejects_frequency_below_40hz(self):
-        """40Hz未満の周波数を拒否する"""
+    def test_rejects_frequency_below_30hz(self):
+        """30Hz未満の周波数を拒否する（参考実装の30Hz基音をサポート）"""
         # Arrange
         waveform = SawtoothWaveform(sample_rate=44100)
         
         # Act & Assert
-        with pytest.raises(ValueError, match="Frequency must be between 40.0-120.0Hz"):
-            waveform.generate(30, 0.01)
+        with pytest.raises(ValueError, match="Frequency must be between 30.0-120.0Hz"):
+            waveform.generate(25, 0.01)  # 25Hz should be rejected
     
     def test_rejects_frequency_above_120hz(self):
         """120Hz超の周波数を拒否する"""
@@ -87,7 +105,7 @@ class TestSawtoothWaveformValidation:
         waveform = SawtoothWaveform(sample_rate=44100)
         
         # Act & Assert
-        with pytest.raises(ValueError, match="Frequency must be between 40.0-120.0Hz"):
+        with pytest.raises(ValueError, match="Frequency must be between 30.0-120.0Hz"):
             waveform.generate(150, 0.01)
     
     def test_rejects_invalid_amplitude(self):

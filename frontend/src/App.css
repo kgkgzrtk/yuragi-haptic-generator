@@ -317,6 +317,8 @@
   border-radius: var(--border-radius);
   padding: var(--spacing-md);
   background-color: #f8f9fa;
+  max-height: 200px;
+  overflow: hidden;
 }
 
 .waveform-chart {
@@ -419,4 +421,54 @@
     right: 20px;
     max-width: none;
   }
+}
+
+/* Single Device Mode Styles */
+.waveform-grid.single-device {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.device-controls.single-device {
+  display: flex;
+  justify-content: center;
+}
+
+.device-controls.single-device .device-section {
+  max-width: 600px;
+  width: 100%;
+}
+
+/* Visualization Subsection Styles */
+.visualization-subsection {
+  margin-bottom: var(--spacing-xl);
+}
+
+.visualization-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.visualization-subsection h3 {
+  font-size: 1.25rem;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Trajectory Grid Styles */
+.trajectory-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .trajectory-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.trajectory-grid.single-device {
+  max-width: 800px; /* Same as waveform-grid.single-device */
+  margin: 0 auto;
 }

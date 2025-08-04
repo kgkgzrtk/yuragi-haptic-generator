@@ -34,6 +34,9 @@ export const useWebSocket = ({
           case WSMessageType.STATUS_UPDATE:
             setStatus(message.data as any)
             break
+          case WSMessageType.WAVEFORM_DATA:
+            // Waveform data is handled by React Query hooks
+            break
           case WSMessageType.ERROR:
             logger.logWebSocket('error', { error: message.data })
             break
@@ -49,14 +52,27 @@ export const useWebSocket = ({
 
   // Connect to WebSocket
   const connect = useCallback(() => {
-    if (
-      wsRef.current?.readyState === WebSocket.OPEN ||
-      wsRef.current?.readyState === WebSocket.CONNECTING
-    ) {
-      return
+    // Clear any existing reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = null
+    }
+
+    // Check if already connected or connecting
+    if (wsRef.current) {
+      const state = wsRef.current.readyState
+      if (state === WebSocket.OPEN || state === WebSocket.CONNECTING) {
+        logger.logWebSocket('already_connected_or_connecting', { readyState: state, url })
+        return
+      }
+      // Clean up existing connection if CLOSING or CLOSED
+      if (state === WebSocket.CLOSING || state === WebSocket.CLOSED) {
+        wsRef.current = null
+      }
     }
 
     try {
+      logger.logWebSocket('creating_connection', { url })
       wsRef.current = new WebSocket(url)
 
       wsRef.current.onopen = () => {
@@ -69,62 +85,111 @@ export const useWebSocket = ({
 
       wsRef.current.onerror = error => {
         logger.logWebSocket('connection_error', { error, url })
-        setConnection(false, 'Connection error')
+        // Don't set connection to false here as onclose will handle it
       }
 
       wsRef.current.onclose = event => {
         logger.logWebSocket('disconnected', { code: event.code, reason: event.reason, url })
         setConnection(false)
 
-        // Clear the reference so connect() can create a new connection
+        // Clear the reference
         wsRef.current = null
 
-        // Don't reconnect if it was a manual close (code 1000)
-        if (event.code === 1000) {
+        // Don't reconnect if it was a manual close (code 1000) or going away (code 1001)
+        if (event.code === 1000 || event.code === 1001) {
           return
         }
 
         // Attempt to reconnect
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++
-          logger.logWebSocket('reconnecting', { attempt: reconnectAttemptsRef.current, maxAttempts: maxReconnectAttempts, url })
+          logger.logWebSocket('reconnecting', { 
+            attempt: reconnectAttemptsRef.current, 
+            maxAttempts: maxReconnectAttempts, 
+            waitTime: reconnectInterval,
+            url 
+          })
 
           reconnectTimeoutRef.current = setTimeout(() => {
             connect()
           }, reconnectInterval)
         } else {
+          logger.logWebSocket('max_reconnect_attempts_reached', { maxAttempts: maxReconnectAttempts })
           setConnection(false, 'Max reconnection attempts reached')
         }
       }
     } catch (error) {
       logger.error('Failed to create WebSocket', { error: error instanceof Error ? error.message : error, url }, error instanceof Error ? error : undefined)
       setConnection(false, 'Failed to connect')
+      
+      // Attempt to reconnect on creation failure
+      if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+        reconnectAttemptsRef.current++
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connect()
+        }, reconnectInterval)
+      }
     }
   }, [url, handleMessage, setConnection, reconnectInterval, maxReconnectAttempts])
 
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
+    logger.logWebSocket('disconnecting', { url })
+    
+    // Clear any pending reconnect
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
       reconnectTimeoutRef.current = null
     }
+    
+    // Reset reconnect attempts
+    reconnectAttemptsRef.current = 0
 
     if (wsRef.current) {
-      wsRef.current.close()
+      const state = wsRef.current.readyState
+      if (state === WebSocket.OPEN || state === WebSocket.CONNECTING) {
+        // Close with normal closure code
+        wsRef.current.close(1000, 'Client disconnect')
+      }
       wsRef.current = null
     }
 
     setConnection(false)
-  }, [setConnection])
+  }, [setConnection, url])
 
   // Send message
   const sendMessage = useCallback((message: IWSMessage) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message))
-    } else {
-      logger.warn('WebSocket is not connected', { readyState: wsRef.current?.readyState, url })
+    if (!wsRef.current) {
+      logger.warn('WebSocket is not initialized', { url })
+      return false
     }
-  }, [url])
+    
+    if (wsRef.current.readyState !== WebSocket.OPEN) {
+      logger.warn('WebSocket is not connected', { 
+        readyState: wsRef.current.readyState, 
+        readyStateText: ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][wsRef.current.readyState],
+        url 
+      })
+      
+      // Attempt to reconnect if closed
+      if (wsRef.current.readyState === WebSocket.CLOSED) {
+        connect()
+      }
+      return false
+    }
+    
+    try {
+      wsRef.current.send(JSON.stringify(message))
+      return true
+    } catch (error) {
+      logger.error('Failed to send WebSocket message', { 
+        error: error instanceof Error ? error.message : error,
+        message,
+        url 
+      }, error instanceof Error ? error : undefined)
+      return false
+    }
+  }, [url, connect])
 
   // Setup and cleanup
   useEffect(() => {

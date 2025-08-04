@@ -45,6 +45,10 @@ class HapticController:
         # レイテンシ測定
         self._callback_times = []
         self._max_latency_samples = 100
+        
+        # デバイス情報
+        self.device_info = self._detect_audio_device()
+        self.available_channels = self.device_info.get('channels', 0)
 
     def start_streaming(self) -> None:
         """ストリーミングを開始"""
@@ -53,22 +57,109 @@ class HapticController:
 
         self._stop_flag = False
 
-        if sd is not None:
-            self._stream = sd.OutputStream(
-                channels=4,
-                samplerate=self.sample_rate,
-                blocksize=self.block_size,
-                callback=self._audio_callback,
-                dtype="float32",
-            )
-            self._stream.start()
+        if not self.device_info.get('available', False):
+            # デバイスが利用できない場合はエラーを発生させる
+            raise Exception(f"No audio device available: {self.device_info.get('name', 'Unknown error')}")
+
+        if sd is not None and self.available_channels > 0:
+            try:
+                # First try with detected device ID
+                try:
+                    self._stream = sd.OutputStream(
+                        device=self.device_info.get('device_id'),
+                        channels=self.available_channels,
+                        samplerate=self.sample_rate,
+                        blocksize=self.block_size,
+                        callback=self._audio_callback,
+                        dtype="float32",
+                    )
+                    self._stream.start()
+                except Exception as e:
+                    # If that fails, try without device ID (use default device)
+                    print(f"Failed with device_id, trying default device: {e}")
+                    self._stream = sd.OutputStream(
+                        channels=self.available_channels,
+                        samplerate=self.sample_rate,
+                        blocksize=self.block_size,
+                        callback=self._audio_callback,
+                        dtype="float32",
+                    )
+                    self._stream.start()
+            except Exception as e:
+                raise Exception(f"Failed to open audio device: {e}")
 
         self.is_streaming = True
+
+    def _detect_audio_device(self) -> dict[str, Any]:
+        """利用可能なオーディオデバイスを検出"""
+        if sd is None:
+            return {"available": False, "channels": 0, "name": "No sounddevice module"}
+        
+        try:
+            devices = sd.query_devices()
+            print(f"Available devices: {len(devices)}")
+            
+            # デフォルトデバイスを優先的に確認
+            default_device_id = sd.default.device[1]  # デフォルト出力デバイス
+            if default_device_id is not None and default_device_id >= 0:
+                default_dev = devices[default_device_id]
+                print(f"Default device: {default_dev['name']} (channels: {default_dev['max_output_channels']})")
+                
+                # デフォルトデバイスが4ch以上をサポートしていれば使用
+                if default_dev['max_output_channels'] >= 4:
+                    return {
+                        "available": True,
+                        "channels": 4,
+                        "device_id": default_device_id,
+                        "name": default_dev['name'],
+                        "sample_rate": default_dev['default_samplerate']
+                    }
+                # デフォルトデバイスが2chをサポートしていれば使用
+                elif default_dev['max_output_channels'] >= 2:
+                    return {
+                        "available": True,
+                        "channels": 2,
+                        "device_id": default_device_id,
+                        "name": default_dev['name'],
+                        "sample_rate": default_dev['default_samplerate']
+                    }
+            
+            # デフォルトデバイスが使えない場合、他のデバイスを探す
+            # 4chデバイスを探す（出力デバイスのみ）
+            for idx, dev in enumerate(devices):
+                if dev['max_output_channels'] >= 4 and dev['max_input_channels'] == 0:
+                    print(f"Found 4ch device: {dev['name']}")
+                    return {
+                        "available": True,
+                        "channels": 4,
+                        "device_id": idx,
+                        "name": dev['name'],
+                        "sample_rate": dev['default_samplerate']
+                    }
+            
+            # 2chデバイスを探す（出力デバイスのみ）
+            for idx, dev in enumerate(devices):
+                if dev['max_output_channels'] >= 2 and dev['max_input_channels'] == 0:
+                    print(f"Found 2ch device: {dev['name']}")
+                    return {
+                        "available": True,
+                        "channels": 2,
+                        "device_id": idx,
+                        "name": dev['name'],
+                        "sample_rate": dev['default_samplerate']
+                    }
+            
+            # デバイスが見つからない
+            return {"available": False, "channels": 0, "name": "No suitable output device"}
+            
+        except Exception as e:
+            return {"available": False, "channels": 0, "name": f"Error: {str(e)}"}
 
     def stop_streaming(self) -> None:
         """ストリーミングを停止"""
         self.is_streaming = False
         self._stop_flag = True
+        
         if self._stream and sd is not None:
             self._stream.close()
             self._stream = None
@@ -97,8 +188,15 @@ class HapticController:
             with self._lock:
                 waveform = self.device.get_output_block(frames)
 
-            # 出力バッファにコピー
-            outdata[:] = waveform
+            # チャンネル数に応じて出力
+            if self.available_channels == 2:
+                # 2chデバイス: 最初の2チャンネルのみ使用
+                outdata[:] = waveform[:, :2]
+            elif self.available_channels == 4:
+                # 4chデバイス: 全チャンネル使用
+                outdata[:] = waveform
+            else:
+                outdata.fill(0)
 
         except Exception as e:
             print(f"Error in audio callback: {e}")
@@ -178,7 +276,41 @@ class HapticController:
             "block_size": self.block_size,
             "channels": self.get_current_parameters()["channels"],
             "latency_ms": self.get_latency_ms(),
+            "device_info": {
+                "available": self.device_info.get('available', False),
+                "channels": self.available_channels,
+                "name": self.device_info.get('name', 'Unknown'),
+                "device_mode": "dual" if self.available_channels == 4 else "single"
+            }
         }
+
+    def _start_mock_streaming(self) -> None:
+        """モックストリーミングを開始（オーディオデバイスが利用できない場合）"""
+        def mock_stream():
+            while not self._stop_flag:
+                start_time = time.time()
+                
+                # 波形データを生成
+                with self._lock:
+                    output = self.device.generate_output(self.block_size)
+                
+                # WebSocketで送信するためのコールバックを呼び出す
+                if hasattr(self, '_waveform_callback'):
+                    self._waveform_callback(output)
+                
+                # 実際のオーディオストリーミングのタイミングをシミュレート
+                elapsed = time.time() - start_time
+                sleep_time = (self.block_size / self.sample_rate) - elapsed
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+        
+        self._mock_thread = threading.Thread(target=mock_stream)
+        self._mock_thread.daemon = True
+        self._mock_thread.start()
+
+    def set_waveform_callback(self, callback) -> None:
+        """波形データコールバックを設定（モックモード用）"""
+        self._waveform_callback = callback
 
     def __enter__(self):
         """コンテキストマネージャー: 開始"""

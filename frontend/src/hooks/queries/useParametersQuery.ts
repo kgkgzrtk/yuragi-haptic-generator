@@ -283,15 +283,18 @@ export const useBatchParameterUpdates = (debounceMs: number = 300) => {
       }
 
       // Set new timer
-      debounceTimerRef.current = setTimeout(() => {
+      debounceTimerRef.current = setTimeout(async () => {
         // Process all pending updates
-        pendingUpdatesRef.current.forEach((params, channelId) => {
-          updateChannelMutation.mutate({ channelId, params })
-        })
-
-        // Clear pending updates
+        const updates = Array.from(pendingUpdatesRef.current.entries())
+        
+        // Clear pending updates immediately after capturing them
         pendingUpdatesRef.current.clear()
         setUpdateTrigger(prev => prev + 1)
+        
+        // Execute updates
+        for (const [channelId, params] of updates) {
+          updateChannelMutation.mutate({ channelId, params })
+        }
       }, debounceMs)
     },
     [updateChannelMutation, debounceMs]

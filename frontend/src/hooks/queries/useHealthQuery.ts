@@ -73,11 +73,21 @@ export const useStreamingStatusQuery = () => {
     ...queryDefaults.realTime,
     // Only refetch when streaming is active or we need to check status
     refetchInterval: data => {
-      // If streaming is active, check more frequently
-      if (data?.isStreaming) {
-        return 1000 // 1 second when streaming
+      // With WebSocket connection, we don't need frequent polling
+      const connectionState = useHapticStore.getState().connection
+      
+      // If WebSocket is connected, reduce polling frequency
+      if (connectionState.isConnected) {
+        return 30000 // 30 seconds - just for health check
       }
-      return 5000 // 5 seconds when not streaming
+      
+      // If streaming is active but no WebSocket, check more frequently
+      if (data?.isStreaming) {
+        return 3000 // 3 seconds when streaming without WebSocket
+      }
+      
+      // Default idle interval
+      return 10000 // 10 seconds when idle
     },
     onError: (error: any) => {
       logger.error('Failed to fetch streaming status', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)

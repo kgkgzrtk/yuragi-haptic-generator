@@ -7,6 +7,7 @@ import { useHapticStore } from '@/contexts/hapticStore'
 import { queryKeys, invalidateHapticQueries } from '@/lib/queryClient'
 import { HapticService } from '@/services/hapticService'
 import { logger } from '@/utils/logger'
+import { notificationManager } from '@/hooks/useErrorHandler'
 
 /**
  * Hook for starting streaming with optimistic updates
@@ -46,6 +47,31 @@ export const useStartStreamingMutation = () => {
       }
 
       logger.error('Failed to start streaming', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
+      
+      // Show user-friendly error notification
+      let errorMessage = 'Failed to start streaming'
+      
+      if (error?.response?.data?.detail) {
+        const detail = error.response.data.detail
+        if (detail.includes('Invalid number of channels')) {
+          errorMessage = 'Audio device error: No compatible audio device found. Please connect a 4-channel audio device.'
+        } else {
+          errorMessage = detail
+        }
+      } else if (error?.message) {
+        errorMessage = error.message
+      }
+      
+      notificationManager.addNotification({
+        title: 'Streaming Error',
+        message: errorMessage,
+        type: 'error',
+        duration: 7000,
+        action: {
+          label: 'Check Device',
+          handler: () => window.location.reload()
+        }
+      })
     },
 
     onSuccess: data => {
@@ -129,23 +155,39 @@ export const useToggleStreamingMutation = () => {
   const startStreamingMutation = useStartStreamingMutation()
   const stopStreamingMutation = useStopStreamingMutation()
   const isStreaming = useHapticStore(state => state.isStreaming)
+  const isTogglingRef = useRef(false)
 
   const toggleStreaming = useCallback(async () => {
+    // Prevent multiple simultaneous toggles
+    if (isTogglingRef.current) {
+      logger.warn('Toggle already in progress, ignoring request')
+      return
+    }
+
+    isTogglingRef.current = true
+
     try {
       if (isStreaming) {
-        return await stopStreamingMutation.mutateAsync()
+        const result = await stopStreamingMutation.mutateAsync()
+        return result
       } else {
-        return await startStreamingMutation.mutateAsync()
+        const result = await startStreamingMutation.mutateAsync()
+        return result
       }
     } catch (error) {
       logger.error('Failed to toggle streaming', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
       throw error
+    } finally {
+      // Add a small delay before allowing next toggle to prevent chattering
+      setTimeout(() => {
+        isTogglingRef.current = false
+      }, 300)
     }
   }, [isStreaming, startStreamingMutation, stopStreamingMutation])
 
   return {
     toggleStreaming,
-    isToggling: startStreamingMutation.isPending || stopStreamingMutation.isPending,
+    isToggling: startStreamingMutation.isPending || stopStreamingMutation.isPending || isTogglingRef.current,
     error: startStreamingMutation.error || stopStreamingMutation.error,
 
     // Individual mutation objects for advanced usage

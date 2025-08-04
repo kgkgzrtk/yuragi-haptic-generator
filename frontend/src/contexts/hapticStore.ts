@@ -23,10 +23,10 @@ interface HapticStore extends IHapticSystemState, QuerySyncActions {
 // Initial state
 const initialState: IHapticSystemState = {
   channels: [
-    { channelId: CHANNEL_IDS.DEVICE1_X, frequency: 0, amplitude: 0, phase: 0, polarity: true },
-    { channelId: CHANNEL_IDS.DEVICE1_Y, frequency: 0, amplitude: 0, phase: 0, polarity: true },
-    { channelId: CHANNEL_IDS.DEVICE2_X, frequency: 0, amplitude: 0, phase: 0, polarity: true },
-    { channelId: CHANNEL_IDS.DEVICE2_Y, frequency: 0, amplitude: 0, phase: 0, polarity: true },
+    { channelId: CHANNEL_IDS.DEVICE1_X, frequency: 60, amplitude: 0.5, phase: 90, polarity: true },
+    { channelId: CHANNEL_IDS.DEVICE1_Y, frequency: 60, amplitude: 0.5, phase: 90, polarity: true },
+    { channelId: CHANNEL_IDS.DEVICE2_X, frequency: 60, amplitude: 0.5, phase: 90, polarity: true },
+    { channelId: CHANNEL_IDS.DEVICE2_Y, frequency: 60, amplitude: 0.5, phase: 90, polarity: true },
   ],
   isStreaming: false,
   status: null,

@@ -79,6 +79,17 @@ export class HapticService {
     })
     return response.data
   }
+
+  // Device info
+  static async getDeviceInfo(): Promise<{
+    available: boolean
+    channels: number
+    name: string
+    device_mode: 'dual' | 'single' | 'none'
+  }> {
+    const response = await api.get('/device-info')
+    return response.data
+  }
 }
 
 // Export default instance

@@ -63,14 +63,17 @@ export const createWaveformData = (
   data: number[],
   sampleRate: number
 ): ChartData<'line'> => {
-  const timePoints = data.map((_, index) => (index / sampleRate) * 1000) // Convert to ms
+  // Create {x, y} data points for Chart.js
+  const dataPoints = data.map((value, index) => ({
+    x: (index / sampleRate) * 1000, // Time in ms
+    y: value
+  }))
 
   return {
-    labels: timePoints,
     datasets: [
       {
         label: `Channel ${channelId}`,
-        data: data,
+        data: dataPoints,
         borderColor: CHANNEL_COLORS[channelId as keyof typeof CHANNEL_COLORS],
         backgroundColor: 'transparent',
         borderWidth: 2,
