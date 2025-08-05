@@ -1,6 +1,7 @@
 import React, { ReactElement } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, RenderOptions, renderHook as renderHookLib } from '@testing-library/react'
+import { vi } from 'vitest'
 import { useHapticStore } from '@/contexts/hapticStore'
 import type { IHapticSystemState, IChannelParameters } from '@/types/hapticTypes'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
@@ -20,11 +21,6 @@ export const createTestQueryClient = () =>
       mutations: {
         retry: false,
       },
-    },
-    logger: {
-      log: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
     },
   })
 
@@ -158,7 +154,7 @@ export const mockImplementations = {
     }
 
     // Mock the constructor
-    global.WebSocket = vi.fn(() => mockWS) as any
+    globalThis.WebSocket = vi.fn(() => mockWS) as any
 
     return mockWS
   },
@@ -172,7 +168,7 @@ export const mockImplementations = {
       text: vi.fn().mockResolvedValue(JSON.stringify(response)),
     }
 
-    global.fetch = vi.fn().mockResolvedValue(mockResponse)
+    globalThis.fetch = vi.fn().mockResolvedValue(mockResponse)
     return mockResponse
   },
 
@@ -220,7 +216,7 @@ export const userInteractionHelpers = {
   }),
 
   // Helper to simulate async operations
-  flushPromises: () => new Promise(resolve => setImmediate(resolve)),
+  flushPromises: () => new Promise(resolve => setTimeout(resolve, 0)),
 }
 
 // Custom renderHook with providers

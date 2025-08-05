@@ -89,14 +89,11 @@ export const getStreamingChartOptions = (channelId: number): ChartOptions<'line'
   ...getWaveformChartOptions(channelId),
   scales: {
     x: {
-      type: 'realtime' as any, // Type assertion for chartjs-plugin-streaming
-      realtime: {
-        duration: 2000, // Show last 2 seconds
-        refresh: 50, // Refresh every 50ms
-        delay: 100, // Delay of 100ms
-        onRefresh: () => {
-          // Callback for data updates (to be implemented in component)
-        },
+      type: 'linear',
+      min: 0,
+      max: 100,
+      ticks: {
+        display: false, // Hide x-axis labels for cleaner look
       },
     },
     y: {
