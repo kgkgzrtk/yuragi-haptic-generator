@@ -96,17 +96,18 @@ class ConnectionManager:
                 except Exception as e:
                     logger.error(f"Error broadcasting to connection: {e}")
                     disconnected.append(connection)
-            
+
             # Remove disconnected connections
             for connection in disconnected:
                 if connection in self.active_connections:
                     self.active_connections.remove(connection)
-                    logger.info(f"Removed disconnected WebSocket. Remaining connections: {len(self.active_connections)}")
+                    logger.info(
+                        f"Removed disconnected WebSocket. Remaining connections: {len(self.active_connections)}"
+                    )
 
 
 # Global connection manager
 manager = ConnectionManager()
-
 
 
 @asynccontextmanager
@@ -249,33 +250,40 @@ async def get_device_info():
             "available": False,
             "channels": 0,
             "name": "Controller not initialized",
-            "device_mode": "none"
+            "device_mode": "none",
         }
-    
-    return controller.device_info | {"device_mode": "dual" if controller.available_channels == 4 else "single" if controller.available_channels == 2 else "none"}
+
+    return controller.device_info | {
+        "device_mode": "dual"
+        if controller.available_channels == 4
+        else "single"
+        if controller.available_channels == 2
+        else "none"
+    }
+
 
 @app.get("/api/debug/devices")
 async def debug_list_devices():
     """デバッグ用：利用可能なすべてのオーディオデバイスをリスト"""
     try:
         import sounddevice as sd
+
         devices = sd.query_devices()
         device_list = []
-        
+
         for idx, dev in enumerate(devices):
-            device_list.append({
-                "id": idx,
-                "name": dev['name'],
-                "max_input_channels": dev['max_input_channels'],
-                "max_output_channels": dev['max_output_channels'],
-                "default_samplerate": dev['default_samplerate'],
-                "is_default_output": idx == sd.default.device[1]
-            })
-        
-        return {
-            "default_output_id": sd.default.device[1],
-            "devices": device_list
-        }
+            device_list.append(
+                {
+                    "id": idx,
+                    "name": dev["name"],
+                    "max_input_channels": dev["max_input_channels"],
+                    "max_output_channels": dev["max_output_channels"],
+                    "default_samplerate": dev["default_samplerate"],
+                    "is_default_output": idx == sd.default.device[1],
+                }
+            )
+
+        return {"default_output_id": sd.default.device[1], "devices": device_list}
     except Exception as e:
         return {"error": str(e)}
 
@@ -411,7 +419,7 @@ async def get_waveform_data(request: WaveformRequest):
     # 現在のパラメータで波形を生成
     channels_data = []
     num_channels = min(4, controller.available_channels)  # Use available channels
-    
+
     for ch_id in range(num_channels):
         # 各チャンネルの波形を生成
         try:
@@ -422,7 +430,7 @@ async def get_waveform_data(request: WaveformRequest):
             logger.error(f"Error getting waveform for channel {ch_id}: {e}")
             # Provide zero data on error
             channels_data.append({"channelId": ch_id, "data": [0.0] * num_samples})
-    
+
     # Add zero data for remaining channels if in single device mode
     for ch_id in range(num_channels, 4):
         channels_data.append({"channelId": ch_id, "data": [0.0] * num_samples})
@@ -432,12 +440,6 @@ async def get_waveform_data(request: WaveformRequest):
         "sample_rate": request.sample_rate,
         "channels": channels_data,
     }
-
-
-
-
-
-
 
 
 # ベクトル力覚
@@ -569,8 +571,6 @@ async def broadcast_status_update(status_data: dict[str, Any]):
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     await manager.broadcast(message)
-
-
 
 
 if __name__ == "__main__":

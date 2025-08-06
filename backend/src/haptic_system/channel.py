@@ -51,12 +51,12 @@ class HapticChannel:
 
         # 位相連続性のための累積時間
         self.cumulative_time = 0.0
-        
+
         # Resonator設定
         self.resonator_enabled = False
         self.resonator_f_n = 180.0  # Default resonance frequency
         self.resonator_zeta = 0.08  # Default damping ratio
-        
+
         # Noise設定
         self.noise_enabled = False
         self.noise_level = 0.03  # Default 3% noise
@@ -125,29 +125,31 @@ class HapticChannel:
 
         # 累積時間を更新
         self.cumulative_time += duration
-        
+
         # Apply resonator if enabled
         if self.resonator_enabled:
-            wave = resonator(wave, self.sample_rate, self.resonator_f_n, self.resonator_zeta)
-        
+            wave = resonator(
+                wave, self.sample_rate, self.resonator_f_n, self.resonator_zeta
+            )
+
         # Apply noise if enabled
         if self.noise_enabled:
             if self.noise_rng is not None:
                 noise = self.noise_rng.normal(0, self.noise_level, len(wave))
             else:
                 noise = np.random.normal(0, self.noise_level, len(wave))
-            
+
             # Scale noise by signal RMS for relative noise level
             signal_rms = np.sqrt(np.mean(wave**2))
             if signal_rms > 0:
                 wave = wave + noise * signal_rms
 
         return wave.astype(np.float32)
-    
+
     def enable_resonator(self, f_n: float = 180.0, zeta: float = 0.08) -> None:
         """
         Enable resonator filter for this channel.
-        
+
         Args:
             f_n: Natural frequency (resonance frequency) in Hz
             zeta: Damping ratio (typically 0.08 for Q≈6)
@@ -155,33 +157,33 @@ class HapticChannel:
         self.resonator_enabled = True
         self.resonator_f_n = f_n
         self.resonator_zeta = zeta
-    
+
     def disable_resonator(self) -> None:
         """Disable resonator filter for this channel."""
         self.resonator_enabled = False
-    
+
     def enable_noise(self, level: float = 0.03, seed: Optional[int] = None) -> None:
         """
         Enable noise simulation for this channel.
-        
+
         Args:
             level: Noise level as fraction of signal RMS (default 0.03 = 3%)
             seed: Random seed for reproducible noise (optional)
-            
+
         Raises:
             ValueError: If noise level is invalid
         """
         if level < 0 or level > 1.0:
             raise ValueError("Noise level must be between 0 and 1.0")
-        
+
         self.noise_enabled = True
         self.noise_level = level
-        
+
         if seed is not None:
             self.noise_rng = np.random.RandomState(seed)
         else:
             self.noise_rng = None
-    
+
     def disable_noise(self) -> None:
         """Disable noise simulation for this channel."""
         self.noise_enabled = False

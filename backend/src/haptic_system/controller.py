@@ -34,76 +34,91 @@ class HapticController:
         self.device = HapticDevice(sample_rate)
         self.logger = get_logger(__name__)
         self._lock = threading.Lock()
-        
+
         # デバイス情報
         self.device_info = self._detect_audio_device()
-        self.available_channels = self.device_info.get('channels', 0)
+        self.available_channels = self.device_info.get("channels", 0)
 
     def _detect_audio_device(self) -> dict[str, Any]:
         """利用可能なオーディオデバイスを検出"""
         if sd is None:
             return {"available": False, "channels": 0, "name": "No sounddevice module"}
-        
+
         try:
             devices = sd.query_devices()
-            self.logger.info("Audio devices detected", extra={"device_count": len(devices)})
-            
+            self.logger.info(
+                "Audio devices detected", extra={"device_count": len(devices)}
+            )
+
             # デフォルトデバイスを優先的に確認
             default_device_id = sd.default.device[1]  # デフォルト出力デバイス
             if default_device_id is not None and default_device_id >= 0:
                 default_dev = devices[default_device_id]
-                self.logger.info("Default audio device info", extra={
-                    "device_name": default_dev['name'],
-                    "channels": default_dev['max_output_channels']
-                })
-                
+                self.logger.info(
+                    "Default audio device info",
+                    extra={
+                        "device_name": default_dev["name"],
+                        "channels": default_dev["max_output_channels"],
+                    },
+                )
+
                 # デフォルトデバイスが4ch以上をサポートしていれば使用
-                if default_dev['max_output_channels'] >= 4:
+                if default_dev["max_output_channels"] >= 4:
                     return {
                         "available": True,
                         "channels": 4,
                         "device_id": default_device_id,
-                        "name": default_dev['name'],
-                        "sample_rate": default_dev['default_samplerate']
+                        "name": default_dev["name"],
+                        "sample_rate": default_dev["default_samplerate"],
                     }
                 # デフォルトデバイスが2chをサポートしていれば使用
-                elif default_dev['max_output_channels'] >= 2:
+                elif default_dev["max_output_channels"] >= 2:
                     return {
                         "available": True,
                         "channels": 2,
                         "device_id": default_device_id,
-                        "name": default_dev['name'],
-                        "sample_rate": default_dev['default_samplerate']
+                        "name": default_dev["name"],
+                        "sample_rate": default_dev["default_samplerate"],
                     }
-            
+
             # デフォルトデバイスが使えない場合、他のデバイスを探す
             # 4chデバイスを探す（出力デバイスのみ）
             for idx, dev in enumerate(devices):
-                if dev['max_output_channels'] >= 4 and dev['max_input_channels'] == 0:
-                    self.logger.info("Found 4-channel audio device", extra={"device_name": dev['name'], "device_id": idx})
+                if dev["max_output_channels"] >= 4 and dev["max_input_channels"] == 0:
+                    self.logger.info(
+                        "Found 4-channel audio device",
+                        extra={"device_name": dev["name"], "device_id": idx},
+                    )
                     return {
                         "available": True,
                         "channels": 4,
                         "device_id": idx,
-                        "name": dev['name'],
-                        "sample_rate": dev['default_samplerate']
+                        "name": dev["name"],
+                        "sample_rate": dev["default_samplerate"],
                     }
-            
+
             # 2chデバイスを探す（出力デバイスのみ）
             for idx, dev in enumerate(devices):
-                if dev['max_output_channels'] >= 2 and dev['max_input_channels'] == 0:
-                    self.logger.info("Found 2-channel audio device", extra={"device_name": dev['name'], "device_id": idx})
+                if dev["max_output_channels"] >= 2 and dev["max_input_channels"] == 0:
+                    self.logger.info(
+                        "Found 2-channel audio device",
+                        extra={"device_name": dev["name"], "device_id": idx},
+                    )
                     return {
                         "available": True,
                         "channels": 2,
                         "device_id": idx,
-                        "name": dev['name'],
-                        "sample_rate": dev['default_samplerate']
+                        "name": dev["name"],
+                        "sample_rate": dev["default_samplerate"],
                     }
-            
+
             # デバイスが見つからない
-            return {"available": False, "channels": 0, "name": "No suitable output device"}
-            
+            return {
+                "available": False,
+                "channels": 0,
+                "name": "No suitable output device",
+            }
+
         except Exception as e:
             return {"available": False, "channels": 0, "name": f"Error: {str(e)}"}
 
@@ -151,7 +166,6 @@ class HapticController:
                 )
             return params
 
-
     def get_status(self) -> dict[str, Any]:
         """
         システム状態を取得
@@ -164,11 +178,11 @@ class HapticController:
             "block_size": self.block_size,
             "channels": self.get_current_parameters()["channels"],
             "device_info": {
-                "available": self.device_info.get('available', False),
+                "available": self.device_info.get("available", False),
                 "channels": self.available_channels,
-                "name": self.device_info.get('name', 'Unknown'),
-                "device_mode": "dual" if self.available_channels == 4 else "single"
-            }
+                "name": self.device_info.get("name", "Unknown"),
+                "device_mode": "dual" if self.available_channels == 4 else "single",
+            },
         }
 
     def set_vector_force(self, vector_params: dict[str, Any]) -> None:
@@ -183,7 +197,7 @@ class HapticController:
             angle = vector_params.get("angle", 0.0)
             magnitude = vector_params.get("magnitude", 0.0)
             frequency = vector_params.get("frequency", 60.0)  # デフォルト60Hz
-            
+
             self.device.set_vector_force(device_id, angle, magnitude, frequency)
 
     def get_latency_ms(self) -> float:
@@ -196,8 +210,6 @@ class HapticController:
         # ストリーミング削除後は固定の理論値を返す
         # block_size / sample_rate * 1000
         return (self.block_size / self.sample_rate) * 1000
-
-
 
     def __enter__(self):
         """コンテキストマネージャー: 開始"""

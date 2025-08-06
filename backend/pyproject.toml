@@ -66,5 +66,5 @@ ignore = ["E501", "N805", "W293"]  # line too long, cls in validators, blank lin
 
 [tool.black]
 line-length = 88
-target-version = ['py312']
+target-version = ['py311']
 include = '\.pyi?$'

@@ -100,18 +100,18 @@ class SawtoothWaveform:
 def resonator(u: np.ndarray, fs: float, f_n: float, zeta: float) -> np.ndarray:
     """
     2nd order resonator filter using bilinear transform (Tustin method).
-    
+
     Implements transfer function: G(s) = ωn²/(s² + 2ζωn*s + ωn²)
-    
+
     Args:
         u: Input signal array
         fs: Sampling frequency in Hz
         f_n: Natural frequency (resonance frequency) in Hz
         zeta: Damping ratio (typically 0.08 for Q≈6)
-        
+
     Returns:
         Filtered output signal
-        
+
     Raises:
         ValueError: If parameters are invalid
     """
@@ -119,14 +119,14 @@ def resonator(u: np.ndarray, fs: float, f_n: float, zeta: float) -> np.ndarray:
     if fs <= 0:
         raise ValueError("Sampling frequency must be positive")
     if f_n <= 0:
-        raise ValueError("Natural frequency must be positive") 
+        raise ValueError("Natural frequency must be positive")
     if zeta <= 0:
         raise ValueError("Damping ratio must be positive")
-    
+
     # Convert to angular frequency
     w_n = 2 * np.pi * f_n
     dt = 1 / fs
-    
+
     # Bilinear transform coefficients
     # From continuous s-domain to discrete z-domain
     a0 = 4 + 4 * zeta * w_n * dt + (w_n * dt) ** 2
@@ -135,13 +135,14 @@ def resonator(u: np.ndarray, fs: float, f_n: float, zeta: float) -> np.ndarray:
     b2 = b0
     a1 = 2 * ((w_n * dt) ** 2 - 4)
     a2 = 4 - 4 * zeta * w_n * dt + (w_n * dt) ** 2
-    
+
     # Initialize output array
     y = np.zeros_like(u, dtype=np.float64)
-    
+
     # Apply IIR filter (Direct Form II)
     for n in range(2, len(u)):
-        y[n] = (b0 * u[n] + b1 * u[n - 1] + b2 * u[n - 2]
-                - a1 * y[n - 1] - a2 * y[n - 2]) / a0
-    
+        y[n] = (
+            b0 * u[n] + b1 * u[n - 1] + b2 * u[n - 2] - a1 * y[n - 1] - a2 * y[n - 2]
+        ) / a0
+
     return y
