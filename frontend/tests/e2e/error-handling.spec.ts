@@ -7,6 +7,7 @@ import {
   testSelectors,
   testErrorScenarios,
   testWebSocketMessages,
+  testParameterSets,
 } from './fixtures/testData'
 
 test.describe('Error Handling and Recovery - Functional Tests', () => {
@@ -35,30 +36,15 @@ test.describe('Error Handling and Recovery - Functional Tests', () => {
   test('should handle API server unavailable (503 errors)', async ({ page }) => {
     await hapticPage.navigateToApp()
 
-    // Mock server error for parameter updates
-    await helpers.mockApiError(testUrls.api.parameters, 503, 'Service temporarily unavailable')
-
-    // Try to update a channel parameter
-    await hapticPage.setChannelFrequency(0, 75)
-
-    // Verify error notification is shown
-    await helpers.expectErrorNotification('Service temporarily unavailable')
-
-    // Verify the input still shows the attempted value (optimistic updates)
-    const values = await hapticPage.getChannelValues(0)
-    expect(values.frequency).toBe(75)
-
-    // Mock recovery - server comes back online
-    await helpers.mockApiResponse(testUrls.api.parameters, testApiResponses.parameters)
-
-    // Try the update again
-    await hapticPage.setChannelFrequency(0, 80)
-
-    // Verify successful update (no error notification)
-    await page.waitForTimeout(1000)
-    const errorElements = page.locator('[class*="error"], [role="alert"][class*="error"]')
-    const visibleErrors = await errorElements.count()
-    expect(visibleErrors).toBe(0)
+    // Use extracted helper for server recovery workflow
+    await hapticPage.testServerRecoveryWorkflow(
+      0, // channelId
+      60, // initial value (from default)
+      75, // new value to test
+      helpers,
+      testUrls.api.parameters,
+      testApiResponses.parameters
+    )
   })
 
   test('should handle network timeouts gracefully', async ({ page }) => {
@@ -107,40 +93,8 @@ test.describe('Error Handling and Recovery - Functional Tests', () => {
   test('should handle WebSocket connection failures', async ({ page }) => {
     await hapticPage.navigateToApp()
 
-    // Simulate WebSocket connection failure
-    await page.evaluate(() => {
-      // Mock WebSocket that fails to connect
-      class FailingWebSocket {
-        public readyState = WebSocket.CONNECTING
-        public onopen: ((event: Event) => void) | null = null
-        public onmessage: ((event: MessageEvent) => void) | null = null
-        public onclose: ((event: CloseEvent) => void) | null = null
-        public onerror: ((event: Event) => void) | null = null
-
-        constructor(public url: string) {
-          // Simulate connection failure after a short delay
-          setTimeout(() => {
-            this.readyState = WebSocket.CLOSED
-            if (this.onerror) {
-              this.onerror(new Event('error'))
-            }
-            if (this.onclose) {
-              this.onclose(new CloseEvent('close', { code: 1006, reason: 'Connection failed' }))
-            }
-          }, 100)
-        }
-
-        send(data: string): void {
-          throw new Error('WebSocket is not connected')
-        }
-
-        close(): void {
-          this.readyState = WebSocket.CLOSED
-        }
-      }
-
-      ;(window as any).WebSocket = FailingWebSocket
-    })
+    // Use extracted helper for WebSocket failure simulation
+    await helpers.mockWebSocketFailure()
 
     // Reload to trigger WebSocket connection attempt with failing mock
     await page.reload()
@@ -158,43 +112,32 @@ test.describe('Error Handling and Recovery - Functional Tests', () => {
   test('should handle concurrent API failures and retries', async ({ page }) => {
     await hapticPage.navigateToApp()
 
-    let requestCount = 0
+    // Use extracted helper for API retry simulation
+    const retryScenario = testErrorScenarios.retryScenarios.failTwiceThenSucceed
+    await helpers.mockApiWithRetries(
+      testUrls.api.parameters,
+      retryScenario.failureCount,
+      testApiResponses.parameters,
+      retryScenario.errorStatus,
+      retryScenario.errorMessage
+    )
 
-    // Mock API that fails first few requests then succeeds
-    await page.route(`**${testUrls.api.parameters}`, async route => {
-      requestCount++
-
-      if (requestCount <= 2) {
-        // Fail first 2 requests
-        await route.fulfill({
-          status: 500,
-          contentType: 'application/json',
-          body: JSON.stringify({ error: 'Internal server error' }),
-        })
-      } else {
-        // Succeed on subsequent requests
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(testApiResponses.parameters),
-        })
-      }
+    // Use extracted helper for rapid parameter changes
+    await hapticPage.setMultipleChannelParametersRapidly(0, {
+      frequency: 60,
+      amplitude: 0.7,
+      phase: 90,
     })
-
-    // Make multiple rapid parameter changes
-    await hapticPage.setChannelFrequency(0, 60)
-    await hapticPage.setChannelAmplitude(0, 0.7)
-    await hapticPage.setChannelPhase(0, 90)
 
     // Wait for retries to complete
     await page.waitForTimeout(3000)
 
-    // Verify that errors were shown but eventually resolved
-    // The app should handle this gracefully without breaking
-    const values = await hapticPage.getChannelValues(0)
-    expect(values.frequency).toBe(60)
-    expect(values.amplitude).toBe(0.7)
-    expect(values.phase).toBe(90)
+    // Verify data consistency after retry completion
+    await hapticPage.verifyDataConsistency(0, {
+      frequency: 60,
+      amplitude: 0.7,
+      phase: 90,
+    })
   })
 
   test('should recover from temporary network disconnection', async ({ page }) => {
@@ -204,10 +147,8 @@ test.describe('Error Handling and Recovery - Functional Tests', () => {
     await hapticPage.setChannelFrequency(0, 50)
     await page.waitForTimeout(500)
 
-    // Simulate network disconnection
-    await page.route('**/*', route => {
-      route.abort('internetdisconnected')
-    })
+    // Use extracted helper for network disconnection simulation
+    await helpers.simulateNetworkDisconnection()
 
     // Try operations during disconnection
     await hapticPage.setChannelFrequency(0, 75)
@@ -215,8 +156,8 @@ test.describe('Error Handling and Recovery - Functional Tests', () => {
     // Verify error handling during disconnection
     await helpers.expectErrorNotification('network')
 
-    // Restore network connection
-    await page.unroute('**/*')
+    // Use extracted helper to restore network connection
+    await helpers.restoreNetworkConnection()
     await helpers.mockApiResponse(testUrls.api.parameters, testApiResponses.parameters)
 
     // Try operation after reconnection
@@ -224,21 +165,14 @@ test.describe('Error Handling and Recovery - Functional Tests', () => {
 
     // Verify successful operation after recovery
     await page.waitForTimeout(1000)
-    const values = await hapticPage.getChannelValues(0)
-    expect(values.frequency).toBe(80)
+    await hapticPage.verifyDataConsistency(0, { frequency: 80 })
   })
 
   test('should handle malformed API responses', async ({ page }) => {
     await hapticPage.navigateToApp()
 
-    // Mock malformed JSON response
-    await page.route(`**${testUrls.api.parameters}`, route => {
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: 'invalid json response',
-      })
-    })
+    // Use extracted helper for malformed API response
+    await helpers.mockMalformedApiResponse(testUrls.api.parameters)
 
     // Try to update parameter
     await hapticPage.setChannelFrequency(0, 65)
@@ -254,13 +188,8 @@ test.describe('Error Handling and Recovery - Functional Tests', () => {
   test('should handle WebSocket message parsing errors', async ({ page }) => {
     await hapticPage.navigateToApp()
 
-    // Send malformed WebSocket message
-    await page.evaluate(() => {
-      const mockWs = (window as any).mockWebSocketInstance
-      if (mockWs && mockWs.onmessage) {
-        mockWs.onmessage(new MessageEvent('message', { data: 'invalid json' }))
-      }
-    })
+    // Use extracted helper for malformed WebSocket message
+    await helpers.sendMalformedWebSocketMessage()
 
     // Wait for error handling
     await page.waitForTimeout(1000)
@@ -280,74 +209,38 @@ test.describe('Error Handling and Recovery - Functional Tests', () => {
     // Mock API to always return errors
     await helpers.mockApiError(testUrls.api.parameters, 500, 'Server error')
 
-    // Make rapid consecutive parameter changes
-    for (let i = 0; i < 10; i++) {
-      await hapticPage.setChannelFrequency(0, 50 + i)
-      await page.waitForTimeout(100)
-    }
+    // Use extracted helper for rapid parameter changes
+    await hapticPage.triggerRapidParameterChanges(0, 10, 50, 100)
 
     // Wait for all errors to be processed
     await page.waitForTimeout(2000)
 
-    // Verify that error notifications don't stack up excessively
-    const errorNotifications = page.locator('[class*="error"], [role="alert"][class*="error"]')
-    const errorCount = await errorNotifications.count()
-
-    // Should have some error indication but not overwhelm the UI
-    expect(errorCount).toBeGreaterThan(0)
-    expect(errorCount).toBeLessThan(5) // Reasonable limit for visible errors
+    // Use extracted helper to verify limited error notifications
+    await helpers.expectLimitedErrorNotifications(5)
   })
 
   test('should show appropriate error messages for different failure types', async ({ page }) => {
     await hapticPage.navigateToApp()
 
-    // Test different error scenarios
-    const errorScenarios = [
-      {
-        url: testUrls.api.parameters,
-        status: 401,
-        message: 'Unauthorized access',
-        expectedText: 'Unauthorized',
-      },
-      {
-        url: testUrls.api.streaming,
-        status: 403,
-        message: 'Forbidden operation',
-        expectedText: 'Forbidden',
-      },
-      {
-        url: testUrls.api.vectorForce,
-        status: 404,
-        message: 'Endpoint not found',
-        expectedText: 'not found',
-      },
-      {
-        url: testUrls.api.parameters,
-        status: 429,
-        message: 'Too many requests',
-        expectedText: 'Too many',
-      },
-    ]
-
-    for (const scenario of errorScenarios) {
-      // Mock specific error
-      await helpers.mockApiError(scenario.url, scenario.status, scenario.message)
-
-      // Trigger the error
-      if (scenario.url.includes('parameters')) {
-        await hapticPage.setChannelFrequency(0, Math.random() * 100)
-      } else if (scenario.url.includes('streaming')) {
-        await hapticPage.toggleStreaming()
-      } else if (scenario.url.includes('vector')) {
-        await hapticPage.applyVectorForce(1)
+    // Use extracted helper with predefined error scenarios
+    const scenarios = testErrorScenarios.httpErrorScenarios.map(scenario => {
+      const fullUrl = testUrls.api[scenario.url.split('/')[2] as keyof typeof testUrls.api]
+      return {
+        ...scenario,
+        url: fullUrl,
+        triggerAction: async () => {
+          if (scenario.url.indexOf('parameters') !== -1) {
+            await hapticPage.setChannelFrequency(0, Math.random() * 100)
+          } else if (scenario.url.indexOf('streaming') !== -1) {
+            await hapticPage.toggleStreaming()
+          } else if (scenario.url.indexOf('vector') !== -1) {
+            await hapticPage.applyVectorForce(1)
+          }
+        },
       }
+    })
 
-      // Verify appropriate error message
-      await helpers.expectErrorNotification(scenario.expectedText)
-
-      // Wait before next test
-      await page.waitForTimeout(1000)
-    }
+    await helpers.testErrorScenarios(scenarios)
   })
 
   test('should maintain data consistency during error recovery', async ({ page }) => {
@@ -395,42 +288,11 @@ test.describe('Error Handling and Recovery - Functional Tests', () => {
   test('should handle error recovery during streaming operations', async ({ page }) => {
     await hapticPage.navigateToApp()
 
-    // Start streaming successfully
-    await helpers.mockApiResponse(testUrls.api.streaming, {
-      ...testApiResponses.systemStatus,
-      isStreaming: true,
-    })
-
-    await hapticPage.toggleStreaming()
-
-    // Verify streaming started
-    let isStreaming = await hapticPage.getStreamingStatus()
-    expect(isStreaming).toBe(true)
-
-    // Mock streaming error
-    await helpers.mockApiError(testUrls.api.streaming, 503, 'Streaming service unavailable')
-
-    // Try to stop streaming
-    await hapticPage.toggleStreaming()
-
-    // Verify error is handled
-    await helpers.expectErrorNotification('Streaming service unavailable')
-
-    // Verify streaming state remains consistent
-    isStreaming = await hapticPage.getStreamingStatus()
-    expect(isStreaming).toBe(true) // Should remain true since stop failed
-
-    // Restore streaming API
-    await helpers.mockApiResponse(testUrls.api.streaming, {
-      ...testApiResponses.systemStatus,
-      isStreaming: false,
-    })
-
-    // Try to stop streaming again
-    await hapticPage.toggleStreaming()
-
-    // Verify successful stop after recovery
-    isStreaming = await hapticPage.getStreamingStatus()
-    expect(isStreaming).toBe(false)
+    // Use extracted helper for streaming error recovery workflow
+    await hapticPage.testStreamingErrorRecovery(
+      helpers,
+      testUrls.api.streaming,
+      testApiResponses.systemStatus
+    )
   })
 })
