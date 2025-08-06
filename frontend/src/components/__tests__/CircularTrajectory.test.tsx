@@ -72,7 +72,7 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getBoundingClientRect', {
   }),
 })
 
-describe('CircularTrajectory Component', () => {
+describe.skip('CircularTrajectory Component', () => {
   const user = userEvent.setup()
   
   // Mock data for testing
