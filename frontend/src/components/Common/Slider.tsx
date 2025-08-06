@@ -40,10 +40,10 @@ export const Slider: React.FC<SliderProps> = ({
           </span>
         )}
       </div>
-      
+
       <div className='slider-wrapper'>
         {showMinMax && <span className='slider-min'>{min}</span>}
-        
+
         <div className='slider-track-container'>
           <input
             type='range'
@@ -59,10 +59,10 @@ export const Slider: React.FC<SliderProps> = ({
             }}
           />
         </div>
-        
+
         {showMinMax && <span className='slider-max'>{max}</span>}
       </div>
-      
+
       {error && <span className='slider-error-message'>{error}</span>}
     </div>
   )

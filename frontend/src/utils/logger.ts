@@ -3,7 +3,7 @@
  * Provides structured logging with different levels and remote logging capabilities
  */
 
-import { env, isDevelopment, isProduction } from '../config/environment'
+import { env, isDevelopment, isProduction } from '@/config/environment'
 
 export enum LogLevel {
   DEBUG = 0,

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { useHapticStore } from '@/contexts/hapticStore'
 import { act, renderHook } from '@/test/test-utils'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 import type { IChannelParameters, IVectorForce, IStatusResponse } from '@/types/hapticTypes'
-import { useHapticStore } from '../hapticStore'
 
 describe('hapticStore', () => {
   beforeEach(() => {

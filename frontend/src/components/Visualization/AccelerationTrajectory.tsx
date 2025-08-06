@@ -20,31 +20,31 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
 
   // Calculate trajectory points from acceleration data
   const trajectoryPoints = useMemo(() => {
-    if (!xData?.length || !yData?.length) return []
-    
+    if (!xData?.length || !yData?.length) {return []}
+
     // Ensure arrays are valid
     if (!Array.isArray(xData) || !Array.isArray(yData)) {
       logger.warn('Invalid data provided to AccelerationTrajectory', { xDataType: typeof xData, yDataType: typeof yData, xDataLength: xData?.length, yDataLength: yData?.length })
       return []
     }
-    
+
     const minLength = Math.min(xData.length, yData.length)
     const points: { x: number; y: number }[] = []
-    
+
     for (let i = 0; i < minLength; i++) {
       // Validate data points
       const x = xData[i]
       const y = yData[i]
-      
+
       if (typeof x === 'number' && typeof y === 'number' && !isNaN(x) && !isNaN(y)) {
         // Clamp values to prevent overflow
-        points.push({ 
-          x: Math.max(-2, Math.min(2, x)), 
-          y: Math.max(-2, Math.min(2, y)) 
+        points.push({
+          x: Math.max(-2, Math.min(2, x)),
+          y: Math.max(-2, Math.min(2, y))
         })
       }
     }
-    
+
     // Keep only the last maxPoints
     return points.slice(-maxPoints)
   }, [xData, yData, maxPoints])
@@ -55,10 +55,10 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas) {return}
 
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {return}
 
     try {
       // Set canvas size
@@ -67,7 +67,7 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
         // Canvas has no size, skip rendering
         return
       }
-      
+
       canvas.width = rect.width
       canvas.height = rect.height
 
@@ -81,13 +81,13 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
     // Draw grid
     ctx.strokeStyle = '#e0e0e0'
     ctx.lineWidth = 1
-    
+
     // X axis
     ctx.beginPath()
     ctx.moveTo(0, centerY)
     ctx.lineTo(canvas.width, centerY)
     ctx.stroke()
-    
+
     // Y axis
     ctx.beginPath()
     ctx.moveTo(centerX, 0)
@@ -105,18 +105,18 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
     // Draw trajectory
     if (trajectoryRef.current.length > 1) {
       ctx.lineWidth = 2
-      
+
       for (let i = 1; i < trajectoryRef.current.length; i++) {
         const prevPoint = trajectoryRef.current[i - 1]
         const currPoint = trajectoryRef.current[i]
-        
+
         // Calculate color based on position in trajectory (gradient effect)
         const progress = i / trajectoryRef.current.length
         const hue = progress * 60 + 180 // Blue to cyan gradient
         const opacity = 0.3 + progress * 0.7
-        
+
         ctx.strokeStyle = `hsla(${hue}, 70%, 50%, ${opacity})`
-        
+
         ctx.beginPath()
         ctx.moveTo(
           centerX + prevPoint.x * scale,
@@ -128,13 +128,13 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
         )
         ctx.stroke()
       }
-      
+
       // Draw current position marker
       const lastPoint = trajectoryRef.current[trajectoryRef.current.length - 1]
       ctx.fillStyle = '#45B7D1'
       ctx.strokeStyle = 'white'
       ctx.lineWidth = 2
-      
+
       ctx.beginPath()
       ctx.arc(
         centerX + lastPoint.x * scale,
@@ -152,19 +152,19 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
     ctx.font = '12px sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    
+
     ctx.fillText('X', canvas.width - 20, centerY - 10)
     ctx.fillText('Y', centerX + 10, 20)
-    
+
     // Draw scale indicators
     ctx.fillStyle = '#999'
     ctx.font = '10px sans-serif'
-    
+
     ctx.fillText('1.0', centerX + scale + 5, centerY + 15)
     ctx.fillText('-1.0', centerX - scale - 20, centerY + 15)
     ctx.fillText('1.0', centerX - 25, centerY - scale)
     ctx.fillText('-1.0', centerX - 25, centerY + scale)
-    
+
     } catch (error) {
       logger.error('Error rendering acceleration trajectory', { deviceId, error: error instanceof Error ? error.message : error })
     }

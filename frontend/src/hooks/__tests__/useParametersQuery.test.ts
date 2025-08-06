@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { HapticService } from '@/services/hapticService'
-import { mockParametersResponse, setupMockScenarios } from '@/test/mocks'
-import { renderHook, waitFor, act } from '@/test/test-utils'
-import { CHANNEL_IDS } from '@/types/hapticTypes'
-import type { IChannelParameters } from '@/types/hapticTypes'
 import {
   useParametersQuery,
   useUpdateParametersMutation,
   useUpdateChannelMutation,
   useParameterManagement,
   useBatchParameterUpdates,
-} from '../queries/useParametersQuery'
+} from '@/hooks/queries/useParametersQuery'
+import { HapticService } from '@/services/hapticService'
+import { mockParametersResponse, setupMockScenarios } from '@/test/mocks'
+import { renderHook, waitFor, act } from '@/test/test-utils'
+import { CHANNEL_IDS } from '@/types/hapticTypes'
+import type { IChannelParameters } from '@/types/hapticTypes'
 
 vi.mock('@/services/hapticService', () => ({
   HapticService: {

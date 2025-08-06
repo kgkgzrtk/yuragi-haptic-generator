@@ -2,8 +2,8 @@
  * React Query hooks for device information
  */
 import { useQuery } from '@tanstack/react-query'
-import { HapticService } from '@/services/hapticService'
 import { queryKeys, queryDefaults } from '@/lib/queryClient'
+import { HapticService } from '@/services/hapticService'
 
 export interface DeviceInfo {
   available: boolean

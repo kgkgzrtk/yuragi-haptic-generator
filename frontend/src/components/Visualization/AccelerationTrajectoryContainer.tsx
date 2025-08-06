@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
-import { AccelerationTrajectory } from './AccelerationTrajectory'
 import { useChannelWaveformQuery } from '@/hooks/queries/useWaveformQuery'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
+import { AccelerationTrajectory } from './AccelerationTrajectory'
 
 interface AccelerationTrajectoryContainerProps {
   deviceId: 1 | 2
@@ -29,7 +29,7 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
 
   // Extract acceleration data from waveform data
   const xData = useMemo(() => {
-    if (!xChannelQuery.channelData?.data) return []
+    if (!xChannelQuery.channelData?.data) {return []}
     // Normalize the data to -1 to 1 range for visualization
     const rawData = xChannelQuery.channelData.data
     const maxValue = Math.max(...rawData.map(Math.abs))
@@ -37,7 +37,7 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
   }, [xChannelQuery.channelData])
 
   const yData = useMemo(() => {
-    if (!yChannelQuery.channelData?.data) return []
+    if (!yChannelQuery.channelData?.data) {return []}
     // Normalize the data to -1 to 1 range for visualization
     const rawData = yChannelQuery.channelData.data
     const maxValue = Math.max(...rawData.map(Math.abs))
@@ -63,7 +63,7 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
       </div>
     )
   }
-  
+
   // Show empty state when no data is available
   if (!xData.length && !yData.length) {
     return (

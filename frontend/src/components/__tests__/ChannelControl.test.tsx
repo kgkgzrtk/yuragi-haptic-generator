@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { ChannelControl } from '@/components/ControlPanel/ChannelControl'
 import {
   useParameterManagement,
   useBatchParameterUpdates,
@@ -9,7 +10,6 @@ import { setupMockScenarios } from '@/test/mocks'
 import { render, screen, waitFor } from '@/test/test-utils'
 import { CHANNEL_IDS, CONSTRAINTS } from '@/types/hapticTypes'
 import type { IChannelParameters } from '@/types/hapticTypes'
-import { ChannelControl } from '../ControlPanel/ChannelControl'
 
 // Mock the hooks
 vi.mock('@/hooks/queries/useParametersQuery')

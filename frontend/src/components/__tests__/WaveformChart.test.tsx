@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { WaveformChart } from '@/components/Visualization/WaveformChart'
 import { render, screen } from '@/test/test-utils'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 import type { IWaveformData } from '@/types/hapticTypes'
 import * as chartConfig from '@/utils/chartConfig'
-import { WaveformChart } from '../Visualization/WaveformChart'
 
 // Mock Chart.js - need to match the import pattern in WaveformChart.tsx
 vi.mock('chart.js', () => {

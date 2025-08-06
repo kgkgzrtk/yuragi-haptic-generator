@@ -4,11 +4,12 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { NotificationContainer } from '@/components/Common/NotificationContainer'
 import { DeviceWarningDialog } from '@/components/Common/DeviceWarningDialog'
 import { HapticControlPanel } from '@/components/ControlPanel/HapticControlPanel'
-import { WaveformChartContainer } from '@/components/Visualization/WaveformChartContainer'
 import { AccelerationTrajectoryContainer } from '@/components/Visualization/AccelerationTrajectoryContainer'
+import { WaveformChartContainer } from '@/components/Visualization/WaveformChartContainer'
+import { useHapticStore } from '@/contexts/hapticStore'
+import { useDeviceInfoQuery } from '@/hooks/queries/useDeviceQuery'
 import { useSystemStatusQuery } from '@/hooks/queries/useHealthQuery'
 import { useParametersQuery } from '@/hooks/queries/useParametersQuery'
-import { useDeviceInfoQuery } from '@/hooks/queries/useDeviceQuery'
 import { useQueryStoreIntegration } from '@/hooks/useQueryStoreIntegration'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { queryClient, startBackgroundSync } from '@/lib/queryClient'
@@ -82,7 +83,7 @@ function HapticApp() {
 
         <section className='visualization-section'>
           <h2>Visualization</h2>
-          
+
           <div className='visualization-subsection'>
             <h3>Waveforms</h3>
             <div className={`waveform-grid ${isSingleDeviceMode ? 'single-device' : ''}`}>

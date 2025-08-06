@@ -20,7 +20,6 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
   const { batchUpdate, hasPendingUpdates, clearPending } = useBatchParameterUpdates(300) // 300ms debounce
   const { handleParameterError } = useHapticErrorHandler()
 
-
   const [errors, setErrors] = useState<Partial<Record<keyof IChannelParameters, string>>>({})
 
   // Local state for input values
@@ -55,7 +54,7 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
 
   // Validate input
   const validateField = useCallback(
-    (field: keyof IChannelParameters, value: any): string | null => {
+    (field: keyof IChannelParameters, value: unknown): string | null => {
       // Handle NaN values (from empty inputs)
       if (typeof value === 'number' && isNaN(value)) {
         return null // Don't show error for empty inputs
@@ -85,7 +84,7 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
 
   // Handle field change with optimistic updates and batching
   const handleFieldChange = useCallback(
-    (field: keyof IChannelParameters, value: any) => {
+    (field: keyof IChannelParameters, value: unknown) => {
       // Update local state immediately
       switch (field) {
         case 'frequency':
