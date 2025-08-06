@@ -77,7 +77,7 @@ export class MockWebSocket implements WebSocket {
     this.connectionTimeout = setTimeout(() => {
       if (this.isDestroyed) return
       
-      if (this.options.simulateErrors && Math.random() < this.options.errorRate\!) {
+      if (this.options.simulateErrors && Math.random() < this.options.errorRate!) {
         this.simulateConnectionError()
       } else {
         this.simulateConnectionSuccess()
