@@ -10,7 +10,6 @@ import { useDeviceInfoQuery } from '@/hooks/queries/useDeviceQuery'
 import { useSystemStatusQuery } from '@/hooks/queries/useHealthQuery'
 import { useParametersQuery } from '@/hooks/queries/useParametersQuery'
 import { useQueryStoreIntegration } from '@/hooks/useQueryStoreIntegration'
-import { useWebSocket } from '@/hooks/useWebSocket'
 import { queryClient, startBackgroundSync } from '@/lib/queryClient'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 import './App.css'
@@ -27,12 +26,6 @@ function HapticApp() {
   const systemStatusQuery = useSystemStatusQuery()
   const deviceQuery = useDeviceInfoQuery()
 
-  // Initialize WebSocket connection
-  useWebSocket({
-    url: 'ws://localhost:8000/ws',
-    reconnectInterval: 3000,
-    maxReconnectAttempts: 5,
-  })
 
   // Initialize background sync
   useEffect(() => {

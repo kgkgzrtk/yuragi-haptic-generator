@@ -3,13 +3,10 @@ FastAPI メインアプリケーション
 """
 
 import asyncio
-import json
 import logging
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
-from typing import Any
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -40,74 +37,6 @@ except Exception as e:
     controller = None
 
 
-# WebSocket message types (matching frontend)
-class WSMessageType:
-    PARAMETERS_UPDATE = "parameters_update"
-    STATUS_UPDATE = "status_update"
-    ERROR = "error"
-
-
-# WebSocket connection manager
-class ConnectionManager:
-    """WebSocket connection manager for handling multiple clients"""
-
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
-        self.lock = asyncio.Lock()
-
-    async def connect(self, websocket: WebSocket):
-        """Accept new WebSocket connection"""
-        await websocket.accept()
-        async with self.lock:
-            self.active_connections.append(websocket)
-        logger.info(
-            f"WebSocket connected. Total connections: {len(self.active_connections)}"
-        )
-
-    async def disconnect(self, websocket: WebSocket):
-        """Remove WebSocket connection"""
-        async with self.lock:
-            if websocket in self.active_connections:
-                self.active_connections.remove(websocket)
-        logger.info(
-            f"WebSocket disconnected. Total connections: {len(self.active_connections)}"
-        )
-
-    async def send_personal_message(self, message: dict, websocket: WebSocket):
-        """Send message to specific WebSocket connection"""
-        try:
-            await websocket.send_text(json.dumps(message))
-        except Exception as e:
-            logger.error(f"Error sending personal message: {e}")
-            await self.disconnect(websocket)
-
-    async def broadcast(self, message: dict):
-        """Broadcast message to all connected clients"""
-        if not self.active_connections:
-            return
-
-        async with self.lock:
-            disconnected = []
-            for connection in self.active_connections[
-                :
-            ]:  # Copy to avoid modification during iteration
-                try:
-                    await connection.send_text(json.dumps(message))
-                except Exception as e:
-                    logger.error(f"Error broadcasting to connection: {e}")
-                    disconnected.append(connection)
-
-            # Remove disconnected connections
-            for connection in disconnected:
-                if connection in self.active_connections:
-                    self.active_connections.remove(connection)
-                    logger.info(
-                        f"Removed disconnected WebSocket. Remaining connections: {len(self.active_connections)}"
-                    )
-
-
-# Global connection manager
-manager = ConnectionManager()
 
 
 @asynccontextmanager
@@ -341,20 +270,6 @@ async def update_parameters(params: ParametersUpdate):
         ]
     }
     controller.update_parameters(update_dict)
-
-    # Broadcast parameter updates to WebSocket clients
-    channels_data = [
-        {
-            "channelId": ch.channel_id,
-            "frequency": ch.frequency,
-            "amplitude": ch.amplitude,
-            "phase": ch.phase,
-            "polarity": ch.polarity,
-        }
-        for ch in params.channels
-    ]
-    asyncio.create_task(broadcast_parameters_update(channels_data))
-
     return {"status": "updated"}
 
 
@@ -380,21 +295,6 @@ async def update_channel(channel_id: int, params: ChannelUpdate):
 
     # 更新を適用
     controller.update_parameters({"channels": channels})
-
-    # Broadcast updated parameters to WebSocket clients
-    updated_params = controller.get_current_parameters()
-    channels_data = [
-        {
-            "channelId": i,
-            "frequency": ch.get("frequency", 0.0),
-            "amplitude": ch.get("amplitude", 0.0),
-            "phase": ch.get("phase", 0.0),
-            "polarity": bool(ch.get("polarity", True)),
-        }
-        for i, ch in enumerate(updated_params.get("channels", [{}] * 4))
-    ]
-    asyncio.create_task(broadcast_parameters_update(channels_data))
-
     return {"channel_id": channel_id, "status": "updated"}
 
 
@@ -458,119 +358,9 @@ async def set_vector_force(request: VectorForceRequest):
         magnitude=request.magnitude,
         frequency=request.frequency,
     )
-
-    # Broadcast updated parameters to WebSocket clients after vector force application
-    updated_params = controller.get_current_parameters()
-    channels_data = [
-        {
-            "channelId": i,
-            "frequency": ch.get("frequency", 0.0),
-            "amplitude": ch.get("amplitude", 0.0),
-            "phase": ch.get("phase", 0.0),
-            "polarity": bool(ch.get("polarity", True)),
-        }
-        for i, ch in enumerate(updated_params.get("channels", [{}] * 4))
-    ]
-    asyncio.create_task(broadcast_parameters_update(channels_data))
-
     return {"status": "applied"}
 
 
-# WebSocket endpoint
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for real-time communication"""
-    await manager.connect(websocket)
-
-    try:
-        # Send initial status to newly connected client
-        if controller:
-            initial_status = {
-                "type": WSMessageType.STATUS_UPDATE,
-                "data": {
-                    "sampleRate": controller.sample_rate,
-                    "blockSize": controller.block_size,
-                },
-                "timestamp": datetime.now(UTC).isoformat(),
-            }
-            await manager.send_personal_message(initial_status, websocket)
-
-            # Send current parameters
-            params = controller.get_current_parameters()
-            parameters_msg = {
-                "type": WSMessageType.PARAMETERS_UPDATE,
-                "data": [
-                    {
-                        "channelId": i,
-                        "frequency": ch.get("frequency", 0.0),
-                        "amplitude": ch.get("amplitude", 0.0),
-                        "phase": ch.get("phase", 0.0),
-                        "polarity": bool(ch.get("polarity", True)),
-                    }
-                    for i, ch in enumerate(params.get("channels", [{}] * 4))
-                ],
-                "timestamp": datetime.now(UTC).isoformat(),
-            }
-            await manager.send_personal_message(parameters_msg, websocket)
-
-        # Keep connection alive and handle incoming messages
-        while True:
-            try:
-                # Wait for incoming messages (for future client->server communication)
-                message = await websocket.receive_text()
-                logger.info(f"Received WebSocket message: {message}")
-
-                # Parse and handle incoming messages if needed
-                try:
-                    data = json.loads(message)
-                    # Handle different message types from client
-                    # This can be extended for client->server commands
-                    logger.info(f"Parsed WebSocket data: {data}")
-                except json.JSONDecodeError:
-                    error_msg = {
-                        "type": WSMessageType.ERROR,
-                        "data": {"message": "Invalid JSON format"},
-                        "timestamp": datetime.now(UTC).isoformat(),
-                    }
-                    await manager.send_personal_message(error_msg, websocket)
-
-            except WebSocketDisconnect:
-                break
-            except Exception as e:
-                logger.error(f"Error in WebSocket loop: {e}")
-                error_msg = {
-                    "type": WSMessageType.ERROR,
-                    "data": {"message": str(e)},
-                    "timestamp": datetime.now(UTC).isoformat(),
-                }
-                await manager.send_personal_message(error_msg, websocket)
-                break
-
-    except Exception as e:
-        logger.error(f"WebSocket connection error: {e}")
-    finally:
-        await manager.disconnect(websocket)
-
-
-# Helper functions for WebSocket broadcasting
-async def broadcast_parameters_update(channels_data: list[dict[str, Any]]):
-    """Broadcast parameter updates to all connected clients"""
-    message = {
-        "type": WSMessageType.PARAMETERS_UPDATE,
-        "data": channels_data,
-        "timestamp": datetime.now(UTC).isoformat(),
-    }
-    await manager.broadcast(message)
-
-
-async def broadcast_status_update(status_data: dict[str, Any]):
-    """Broadcast status updates to all connected clients"""
-    message = {
-        "type": WSMessageType.STATUS_UPDATE,
-        "data": status_data,
-        "timestamp": datetime.now(UTC).isoformat(),
-    }
-    await manager.broadcast(message)
 
 
 if __name__ == "__main__":

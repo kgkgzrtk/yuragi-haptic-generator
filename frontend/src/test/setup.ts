@@ -65,19 +65,6 @@ beforeEach(() => {
 // Setup fetch mock
 globalThis.fetch = vi.fn()
 
-// Mock WebSocket
-globalThis.WebSocket = vi.fn(() => ({
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  close: vi.fn(),
-  send: vi.fn(),
-  readyState: WebSocket.CONNECTING,
-  CONNECTING: 0,
-  OPEN: 1,
-  CLOSING: 2,
-  CLOSED: 3,
-})) as any
-
 // Mock matchMedia for responsive components
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

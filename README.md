@@ -12,8 +12,8 @@ Yuragi Haptic Generatorは、サwtooth波を用いた非対称振動により、
 - 🎯 **ベクトル力覚**: X/Y軸協調による360度任意方向の力生成
 - 🎛️ **4チャンネル独立制御**: 2つの2軸アクチュエータを完全制御
 - ⚡ **低レイテンシ**: 10ms以下の応答性を実現
-- 🔧 **REST API + WebSocket**: FastAPIによるハイブリッド通信
-- 📊 **リアルタイム可視化**: React + Chart.js + WebSocketによる即座の波形更新
+- 🔧 **REST API**: FastAPIによる高性能API
+- 📊 **リアルタイム可視化**: React + Chart.jsによる波形表示
 
 ## システム構成
 
@@ -34,7 +34,7 @@ yuragi-haptic-generator/
 
 ### 必要条件
 
-- Python 3.9以上
+- Python 3.12以上
 - Node.js 16以上
 - pnpm 9.0以上（フロントエンド用）
 - Miraisense Hapticsデバイス（または互換4チャンネルオーディオデバイス）
@@ -153,34 +153,15 @@ curl -X PUT "http://localhost:8000/api/parameters" \
     ]
   }'
 
-# ストリーミング開始
-curl -X POST "http://localhost:8000/api/streaming/start"
-```
-
-### WebSocket接続
-
-```javascript
-// リアルタイム波形データの受信
-const ws = new WebSocket('ws://localhost:8000/ws');
-
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  
-  switch (message.type) {
-    case 'waveform_data':
-      // 波形データを可視化
-      updateWaveformChart(message.data);
-      break;
-    case 'parameters_update':
-      // パラメータ更新を反映
-      updateControlPanel(message.data);
-      break;
-    case 'status_update':
-      // ストリーミング状態を更新
-      updateStatusDisplay(message.data);
-      break;
-  }
-};
+# ベクトル力覚設定
+curl -X POST "http://localhost:8000/api/vector-force" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "device_id": 1,
+    "angle": 45,
+    "magnitude": 0.8,
+    "frequency": 60
+  }'
 ```
 
 ## 開発

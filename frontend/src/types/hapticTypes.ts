@@ -39,19 +39,6 @@ export interface IStatusResponse {
   blockSize: number
 }
 
-// WebSocket message types
-export enum WSMessageType {
-  PARAMETERS_UPDATE = 'parameters_update',
-  STATUS_UPDATE = 'status_update',
-  ERROR = 'error',
-}
-
-export interface IWSMessage<T = unknown> {
-  type: WSMessageType
-  data: T
-  timestamp: string
-}
-
 // UI state types
 export interface IHapticSystemState {
   channels: IChannelParameters[]

@@ -5,7 +5,10 @@ Haptic controller module for API integration
 import threading
 from typing import Any
 
-from config.logging import get_logger
+try:
+    from src.config.logging import get_logger
+except ImportError:
+    from config.logging import get_logger
 
 from .device import HapticDevice
 

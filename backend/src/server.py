@@ -4,7 +4,7 @@ Production server startup script
 
 import uvicorn
 
-from config.settings import get_settings
+from src.config.settings import get_settings
 
 
 def main():

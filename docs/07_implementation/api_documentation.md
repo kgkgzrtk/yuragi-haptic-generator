@@ -2,7 +2,7 @@
 
 ## 概要
 
-Yuragi Haptic GeneratorはREST APIとWebSocket接続の両方を提供し、触覚デバイスのリアルタイム制御と監視を可能にします。APIはFastAPIで構築され、`/docs`で対話的なドキュメントを自動生成します。
+Yuragi Haptic GeneratorはREST APIを提供し、触覚デバイスのリアルタイム制御と監視を可能にします。APIはFastAPIで構築され、`/docs`で対話的なドキュメントを自動生成します。
 
 ## ベースURL
 
@@ -177,43 +177,6 @@ APIの基本情報を提供するルートエンドポイント
 }
 ```
 
-### ストリーミング制御
-
-#### POST /api/streaming/start
-触覚ストリーミングを開始
-
-**レスポンス:**
-```json
-{
-  "status": "streaming started",
-  "is_streaming": true
-}
-```
-
-#### POST /api/streaming/stop
-触覚ストリーミングを停止
-
-**レスポンス:**
-```json
-{
-  "status": "streaming stopped",
-  "is_streaming": false
-}
-```
-
-#### GET /api/streaming/status
-現在のストリーミングステータスを取得
-
-**レスポンス:**
-```json
-{
-  "is_streaming": true,
-  "sample_rate": 44100,
-  "block_size": 512,
-  "latency_ms": 11.6
-}
-```
-
 ### ベクトル力覚制御
 
 #### POST /api/vector-force
@@ -239,127 +202,6 @@ APIの基本情報を提供するルートエンドポイント
 }
 ```
 
-## WebSocket API
-
-### 接続
-
-WebSocketエンドポイントへの接続:
-```
-ws://localhost:8000/ws
-```
-
-### メッセージタイプ
-
-#### 受信メッセージ（サーバー → クライアント）
-
-##### parameters_update
-チャンネルパラメータが更新されたときに送信
-```json
-{
-  "type": "parameters_update",
-  "data": {
-    "channels": [/* チャンネルデータ */]
-  },
-  "timestamp": "2025-08-04T12:00:00Z"
-}
-```
-
-##### waveform_data
-リアルタイム波形データ（ストリーミング中は100ms毎に送信）
-```json
-{
-  "type": "waveform_data",
-  "data": {
-    "timestamp": "2025-08-04T12:00:00Z",
-    "sampleRate": 44100,
-    "channels": [
-      {
-        "channelId": 0,
-        "data": [/* 波形サンプル */]
-      }
-    ]
-  },
-  "timestamp": "2025-08-04T12:00:00Z"
-}
-```
-
-##### status_update
-ストリーミングステータスの変更
-```json
-{
-  "type": "status_update",
-  "data": {
-    "is_streaming": true,
-    "sample_rate": 44100,
-    "block_size": 512
-  },
-  "timestamp": "2025-08-04T12:00:00Z"
-}
-```
-
-##### error
-エラーメッセージ
-```json
-{
-  "type": "error",
-  "data": {
-    "message": "エラーの説明",
-    "code": "ERROR_CODE"
-  },
-  "timestamp": "2025-08-04T12:00:00Z"
-}
-```
-
-#### 送信メッセージ（クライアント → サーバー）
-
-現在、WebSocket接続は主に更新の受信用です。制御コマンドはREST API経由で送信してください。
-
-### 接続ライフサイクル
-
-1. **接続**: クライアントが `/ws` に接続
-2. **初期ステータス**: サーバーが接続時に現在のステータスを送信
-3. **更新**: サーバーがすべての接続クライアントに更新をブロードキャスト
-4. **再接続**: クライアントは指数バックオフで自動再接続を実装すべき
-
-### WebSocketクライアント例
-
-```javascript
-const ws = new WebSocket('ws://localhost:8000/ws');
-
-ws.onopen = () => {
-  console.log('触覚システムに接続しました');
-};
-
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  
-  switch (message.type) {
-    case 'waveform_data':
-      updateWaveformDisplay(message.data);
-      break;
-    case 'parameters_update':
-      updateControlPanel(message.data);
-      break;
-    case 'status_update':
-      updateStatusIndicator(message.data);
-      break;
-    case 'error':
-      showError(message.data);
-      break;
-  }
-};
-
-ws.onerror = (error) => {
-  console.error('WebSocketエラー:', error);
-};
-
-ws.onclose = (event) => {
-  if (event.code !== 1000) {
-    // 正常なクローズでない場合は再接続
-    setTimeout(() => reconnect(), 3000);
-  }
-};
-```
 
 ## エラーハンドリング
 
@@ -398,17 +240,14 @@ ws.onclose = (event) => {
 
 ## レート制限
 
-現在、レート制限は実装されていません。本番環境では：
-- WebSocketブロードキャスト: 10 Hz (100ms間隔)
-- 推奨クライアントポーリング: 最大 20 Hz (50ms間隔)
+現在、レート制限は実装されていません。本番環境では適切なレート制限の実装を推奨します。
 
 ## ベストプラクティス
 
 1. **パラメータ更新**: 複数チャンネル変更時は `/api/parameters` でバッチ更新を使用
-2. **ストリーミング**: 開始前に常にストリーミングステータスを確認
-3. **WebSocket**: 指数バックオフで再接続ロジックを実装
-4. **エラーハンドリング**: 常に503エラー（サービス利用不可）を処理
-5. **リソースクリーンアップ**: アプリケーション終了時にストリーミングを停止
+2. **エラーハンドリング**: 常に503エラー（サービス利用不可）を処理
+3. **波形データ取得**: 必要に応じて `/api/waveform` エンドポイントを使用
+4. **ベクトル力覚**: デバイスごとに角度と強度を設定
 
 ## APIバージョニング
 
