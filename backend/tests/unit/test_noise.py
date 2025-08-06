@@ -178,7 +178,10 @@ class TestPinkNoiseGeneration:
     def test_noise_amplitude_distribution_approximately_gaussian(self):
         """Pink noise amplitude distribution should be approximately Gaussian"""
         # Arrange
-        from scipy import stats
+        try:
+            from scipy import stats
+        except ImportError:
+            pytest.skip("scipy not available")
 
         from haptic_system.modulation import NoiseGenerator
 
