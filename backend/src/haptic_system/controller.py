@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 
 from .device import HapticDevice
+from ..config.logging import get_logger
 
 try:
     import sounddevice as sd
@@ -36,6 +37,7 @@ class HapticController:
         self.block_size = block_size
         self.device = HapticDevice(sample_rate)
         self.is_streaming = False
+        self.logger = get_logger(__name__)
 
         # ストリーミング関連
         self._stream = None
@@ -76,7 +78,7 @@ class HapticController:
                     self._stream.start()
                 except Exception as e:
                     # If that fails, try without device ID (use default device)
-                    print(f"Failed with device_id, trying default device: {e}")
+                    self.logger.warning("Failed with device_id, trying default device", extra={"error": str(e)})
                     self._stream = sd.OutputStream(
                         channels=self.available_channels,
                         samplerate=self.sample_rate,
@@ -97,13 +99,16 @@ class HapticController:
         
         try:
             devices = sd.query_devices()
-            print(f"Available devices: {len(devices)}")
+            self.logger.info("Audio devices detected", extra={"device_count": len(devices)})
             
             # デフォルトデバイスを優先的に確認
             default_device_id = sd.default.device[1]  # デフォルト出力デバイス
             if default_device_id is not None and default_device_id >= 0:
                 default_dev = devices[default_device_id]
-                print(f"Default device: {default_dev['name']} (channels: {default_dev['max_output_channels']})")
+                self.logger.info("Default audio device info", extra={
+                    "device_name": default_dev['name'],
+                    "channels": default_dev['max_output_channels']
+                })
                 
                 # デフォルトデバイスが4ch以上をサポートしていれば使用
                 if default_dev['max_output_channels'] >= 4:
@@ -128,7 +133,7 @@ class HapticController:
             # 4chデバイスを探す（出力デバイスのみ）
             for idx, dev in enumerate(devices):
                 if dev['max_output_channels'] >= 4 and dev['max_input_channels'] == 0:
-                    print(f"Found 4ch device: {dev['name']}")
+                    self.logger.info("Found 4-channel audio device", extra={"device_name": dev['name'], "device_id": idx})
                     return {
                         "available": True,
                         "channels": 4,
@@ -140,7 +145,7 @@ class HapticController:
             # 2chデバイスを探す（出力デバイスのみ）
             for idx, dev in enumerate(devices):
                 if dev['max_output_channels'] >= 2 and dev['max_input_channels'] == 0:
-                    print(f"Found 2ch device: {dev['name']}")
+                    self.logger.info("Found 2-channel audio device", extra={"device_name": dev['name'], "device_id": idx})
                     return {
                         "available": True,
                         "channels": 2,
@@ -177,7 +182,7 @@ class HapticController:
         start_time = time.perf_counter()
 
         if status:
-            print(f"Audio callback status: {status}")
+            self.logger.debug("Audio callback status", extra={"status": str(status)})
 
         if self._stop_flag:
             outdata.fill(0)
@@ -199,7 +204,7 @@ class HapticController:
                 outdata.fill(0)
 
         except Exception as e:
-            print(f"Error in audio callback: {e}")
+            self.logger.error("Error in audio callback", extra={"error": str(e)})
             outdata.fill(0)
 
         # レイテンシ測定

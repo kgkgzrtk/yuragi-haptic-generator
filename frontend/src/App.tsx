@@ -16,6 +16,7 @@ import { useWebSocket } from '@/hooks/useWebSocket'
 import { queryClient, startBackgroundSync } from '@/lib/queryClient'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 import { useHapticStore } from '@/contexts/hapticStore'
+import { logger } from '@/utils/logger'
 import './App.css'
 
 function HapticApp() {
@@ -65,7 +66,7 @@ function HapticApp() {
           useHapticStore.getState().setStreaming(data.is_streaming)
         }
       } catch (error) {
-        console.error('Failed to sync streaming status:', error)
+        logger.error('Failed to sync streaming status', { error: error instanceof Error ? error.message : error })
       }
     }
     

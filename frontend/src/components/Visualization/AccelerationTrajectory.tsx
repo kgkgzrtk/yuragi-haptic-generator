@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useMemo } from 'react'
+import { logger } from '@/utils/logger'
 import './AccelerationTrajectory.css'
 
 interface AccelerationTrajectoryProps {
@@ -23,7 +24,7 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
     
     // Ensure arrays are valid
     if (!Array.isArray(xData) || !Array.isArray(yData)) {
-      console.warn('Invalid data provided to AccelerationTrajectory', { xData, yData })
+      logger.warn('Invalid data provided to AccelerationTrajectory', { xDataType: typeof xData, yDataType: typeof yData, xDataLength: xData?.length, yDataLength: yData?.length })
       return []
     }
     
@@ -165,7 +166,7 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
     ctx.fillText('-1.0', centerX - 25, centerY + scale)
     
     } catch (error) {
-      console.error('Error rendering acceleration trajectory:', error)
+      logger.error('Error rendering acceleration trajectory', { deviceId, error: error instanceof Error ? error.message : error })
     }
 
   }, [trajectoryPoints])

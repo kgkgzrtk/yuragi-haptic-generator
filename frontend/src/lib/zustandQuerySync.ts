@@ -234,7 +234,7 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
     },
 
     handleStreamingError: (error: any) => {
-      console.error('Streaming error:', error)
+      logger.error('Streaming error', { error: error instanceof Error ? error.message : error })
 
       // Force local streaming state to false on critical errors
       if (error.code === 'NETWORK_ERROR') {
@@ -249,7 +249,7 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
     },
 
     handleConnectionError: (error: any) => {
-      console.error('Connection error:', error)
+      logger.error('Connection error', { error: error instanceof Error ? error.message : error })
 
       // Update connection state in store
       if (store.getState().setConnection) {
