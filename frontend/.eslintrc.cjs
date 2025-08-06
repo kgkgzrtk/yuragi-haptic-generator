@@ -51,7 +51,7 @@ module.exports = {
   rules: {
     // React rules
     'react-refresh/only-export-components': [
-      'off', // TODO: Enable after refactoring
+      'warn', // Enabled after refactoring
       { allowConstantExport: true },
     ],
     'react/prop-types': 'off', // Using TypeScript for prop validation
@@ -69,7 +69,7 @@ module.exports = {
     ],
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
-    '@typescript-eslint/no-explicit-any': 'off', // TODO: Remove after proper typing
+    '@typescript-eslint/no-explicit-any': 'error', // Enabled after proper typing
     '@typescript-eslint/no-var-requires': 'error',
     
     // Import sorting and organization
@@ -109,6 +109,19 @@ module.exports = {
     'import/no-unresolved': 'error',
     'import/no-unused-modules': 'warn',
     'import/no-duplicates': 'error',
+    
+    // Enforce @/ absolute imports over relative imports
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: ['../*'],
+            message: 'Relative imports are not allowed. Use @/ absolute imports instead.',
+          },
+        ],
+      },
+    ],
     
     // General code quality
     'no-console': ['warn', { allow: ['error', 'warn', 'info'] }],

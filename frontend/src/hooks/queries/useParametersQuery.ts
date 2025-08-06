@@ -4,7 +4,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useHapticStore } from '@/contexts/hapticStore'
-import { queryKeys, queryDefaults, invalidateHapticQueries } from '@/lib/queryClient'
+import { queryKeys, queryDefaults } from '@/lib/queryClient'
 import { HapticService } from '@/services/hapticService'
 import type { IChannelParameters, IParametersResponse } from '@/types/hapticTypes'
 import { logger } from '@/utils/logger'
@@ -26,13 +26,6 @@ export const useParametersQuery = () => {
       return result
     },
     ...queryDefaults.parameters,
-    onSuccess: data => {
-      // Always sync successful fetch with store
-      setChannels(data.channels)
-    },
-    onError: (error: any) => {
-      logger.error('Failed to fetch parameters', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
-    },
   })
 }
 
@@ -79,11 +72,6 @@ export const useUpdateParametersMutation = () => {
       logger.error('Failed to update parameters', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
     },
 
-    onSuccess: (_data, _variables) => {
-      // Invalidate and refetch related queries
-      invalidateHapticQueries.parameters()
-      invalidateHapticQueries.waveform()
-    },
 
     onSettled: () => {
       // Always refetch after mutation
@@ -156,17 +144,6 @@ export const useUpdateChannelMutation = () => {
       logger.error('Failed to update channel parameters', { channelId: variables.channelId, error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
     },
 
-    onSuccess: (_data, _variables) => {
-      // Invalidate related queries but don't refetch immediately
-      // to avoid overriding optimistic updates
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.parameters(),
-        refetchType: 'none', // Don't refetch immediately
-      })
-
-      // Invalidate waveform data since parameters changed
-      invalidateHapticQueries.waveform()
-    },
 
     onSettled: (_data, error, _variables) => {
       // Only refetch if there was an error or after a delay
@@ -204,9 +181,6 @@ export const useChannelParametersQuery = (channelId: number) => {
     // Enable this query only if channelId is valid
     enabled: channelId >= 0,
 
-    onError: (error: any) => {
-      logger.error('Failed to fetch channel parameters', { channelId, error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
-    },
   })
 }
 
@@ -260,12 +234,11 @@ export const useParameterManagement = () => {
  * Hook for batch parameter updates with debouncing
  */
 export const useBatchParameterUpdates = (debounceMs: number = 300) => {
-  const _queryClient = useQueryClient()
   const updateChannelMutation = useUpdateChannelMutation()
 
   // Use refs to persist values across renders
   const pendingUpdatesRef = useRef(new Map<number, Partial<IChannelParameters>>())
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const debounceTimerRef = useRef<number | null>(null)
   const [_updateTrigger, setUpdateTrigger] = useState(0)
 
   const batchUpdate = useCallback(
@@ -286,11 +259,11 @@ export const useBatchParameterUpdates = (debounceMs: number = 300) => {
       debounceTimerRef.current = setTimeout(async () => {
         // Process all pending updates
         const updates = Array.from(pendingUpdatesRef.current.entries())
-        
+
         // Clear pending updates immediately after capturing them
         pendingUpdatesRef.current.clear()
         setUpdateTrigger(prev => prev + 1)
-        
+
         // Execute updates
         for (const [channelId, params] of updates) {
           updateChannelMutation.mutate({ channelId, params })

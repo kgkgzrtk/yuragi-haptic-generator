@@ -123,3 +123,11 @@ docs/.doctrees/
 *.h5
 *.model
 *.pth
+
+# Git worktrees
+/.worktrees/
+
+# Claude and MCP related
+.claude/
+.mcp.json
+.serena/

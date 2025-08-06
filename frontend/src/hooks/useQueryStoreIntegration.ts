@@ -6,6 +6,7 @@ import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useHapticStore } from '@/contexts/hapticStore'
 import { useQueryStoreSync } from '@/lib/zustandQuerySync'
+import type { IChannelParameters, IStatusResponse, IVectorForce } from '@/types/hapticTypes'
 import { logger } from '@/utils/logger'
 
 /**
@@ -45,7 +46,7 @@ export const useManualSync = () => {
   const store = useHapticStore
 
   const syncParametersToStore = () => {
-    const parametersData = queryClient.getQueryData(['haptic', 'parameters']) as any
+    const parametersData = queryClient.getQueryData(['haptic', 'parameters']) as { channels?: IChannelParameters[] }
 
     if (parametersData?.channels) {
       store.getState().setChannels(parametersData.channels)
@@ -53,20 +54,19 @@ export const useManualSync = () => {
   }
 
   const syncStatusToStore = () => {
-    const statusData = queryClient.getQueryData(['haptic', 'streaming']) as any
+    const statusData = queryClient.getQueryData(['haptic', 'status']) as IStatusResponse | null
 
     if (statusData) {
       store.getState().setStatus(statusData)
-      store.getState().setStreaming(statusData.isStreaming)
     }
   }
 
   const syncConnectionToStore = () => {
-    const healthData = queryClient.getQueryData(['haptic', 'health']) as any
+    const healthData = queryClient.getQueryData(['haptic', 'health'])
 
     const isConnected =
       !!healthData && queryClient.getQueryState(['haptic', 'health'])?.status === 'success'
-    const error = queryClient.getQueryState(['haptic', 'health'])?.error as any
+    const error = queryClient.getQueryState(['haptic', 'health'])?.error as Error | null
 
     store.getState().setConnection(isConnected, error?.message || null)
   }
@@ -95,15 +95,15 @@ export const useOptimisticUpdates = () => {
   const { syncAll } = useManualSync()
 
   return {
-    updateParameterOptimistically: (channelId: number, updates: Partial<any>) => {
+    updateParameterOptimistically: (channelId: number, updates: Partial<IChannelParameters>) => {
       // Update both query cache and store
-      queryClient.setQueryData(['haptic', 'parameters'], (old: any) => {
+      queryClient.setQueryData(['haptic', 'parameters'], (old: { channels: IChannelParameters[] } | undefined) => {
         if (!old) {
           return old
         }
 
         const newData = {
-          channels: old.channels.map((channel: any) =>
+          channels: old.channels.map((channel: IChannelParameters) =>
             channel.channelId === channelId ? { ...channel, ...updates } : channel
           ),
         }
@@ -115,26 +115,14 @@ export const useOptimisticUpdates = () => {
       })
     },
 
-    updateStreamingOptimistically: (isStreaming: boolean) => {
-      // Update both query cache and store
-      queryClient.setQueryData(['haptic', 'streaming'], (old: any) => {
-        const newData = old ? { ...old, isStreaming } : { isStreaming }
 
-        // Sync to store
-        store.getState().setStreaming(isStreaming)
-        store.getState().setStatus(newData)
-
-        return newData
-      })
-    },
-
-    updateVectorForceOptimistically: (deviceId: number, vectorForce: any) => {
+    updateVectorForceOptimistically: (deviceId: number, vectorForce: IVectorForce | null) => {
       // Update both query cache and store
       queryClient.setQueryData(['haptic', 'vector-force', deviceId], vectorForce)
       store.getState().setVectorForce(deviceId as 1 | 2, vectorForce)
     },
 
-    rollbackOptimisticUpdate: (queryKey: any[], previousData: any) => {
+    rollbackOptimisticUpdate: (queryKey: unknown[], previousData: unknown) => {
       // Rollback query cache
       queryClient.setQueryData(queryKey, previousData)
 
@@ -153,17 +141,9 @@ export const useIntegratedErrorHandling = () => {
   const { syncAll } = useManualSync()
 
   return {
-    handleNetworkError: (error: any) => {
+    handleNetworkError: (error: Error) => {
       // Update connection state in store
       store.getState().setConnection(false, error.message || 'Network error')
-
-      // Stop streaming if active
-      store.getState().setStreaming(false)
-
-      // Update query cache to reflect disconnected state
-      queryClient.setQueryData(['haptic', 'streaming'], (old: any) =>
-        old ? { ...old, isStreaming: false } : { isStreaming: false }
-      )
     },
 
     handleConnectionRestore: () => {
@@ -174,7 +154,7 @@ export const useIntegratedErrorHandling = () => {
       queryClient.invalidateQueries({ queryKey: ['haptic'] })
     },
 
-    handleMutationError: (queryKey: any[], previousData: any, error: any) => {
+    handleMutationError: (queryKey: unknown[], previousData: unknown, error: Error) => {
       // Rollback optimistic update
       queryClient.setQueryData(queryKey, previousData)
 
@@ -182,7 +162,7 @@ export const useIntegratedErrorHandling = () => {
       syncAll()
 
       // Log error
-      logger.error('Mutation failed, rolled back', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
+      logger.error('Mutation failed, rolled back', { error: error.message })
     },
   }
 }

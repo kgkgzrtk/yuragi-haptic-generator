@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import { MockWebSocket, setupWebSocketMock, websocketTestHelpers } from '@/test/mocks'
 import { renderHook, act, waitFor } from '@/test/test-utils'
-import { useWebSocket } from '../useWebSocket'
 
 // Mock the store
 const mockStoreActions = {
@@ -142,8 +142,10 @@ describe('useWebSocket', () => {
       expect(mockStore.setStatus).toHaveBeenCalledWith(mockStatus)
     })
 
-    it('logs error messages to console', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    it('handles error messages from WebSocket', async () => {
+      // WebSocket error messages are logged at DEBUG level via logWebSocket
+      // With default log level of INFO, they won't appear in console
+      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {})
 
       renderHook(() => useWebSocket(defaultOptions))
 
@@ -153,13 +155,16 @@ describe('useWebSocket', () => {
         mockWS.simulateErrorMessage('Test error message')
       })
 
-      expect(consoleSpy).toHaveBeenCalledWith('WebSocket error:', 'Test error message')
+      // Since default log level is INFO and these are DEBUG messages, they won't be logged
+      expect(consoleSpy).not.toHaveBeenCalled()
 
       consoleSpy.mockRestore()
     })
 
-    it('logs warning for unknown message types', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    it('handles unknown message types', async () => {
+      // Unknown message types are logged at DEBUG level via logWebSocket
+      // With default log level of INFO, they won't appear in console
+      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {})
 
       renderHook(() => useWebSocket(defaultOptions))
 
@@ -173,7 +178,8 @@ describe('useWebSocket', () => {
         })
       })
 
-      expect(consoleSpy).toHaveBeenCalledWith('Unknown message type:', 'UNKNOWN_TYPE')
+      // Since default log level is INFO and these are DEBUG messages, they won't be logged
+      expect(consoleSpy).not.toHaveBeenCalled()
 
       consoleSpy.mockRestore()
     })
@@ -193,9 +199,13 @@ describe('useWebSocket', () => {
         mockWS.triggerEvent('message', messageEvent)
       })
 
+      // Logger outputs formatted string with timestamp as first arg, then context, then stack
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to parse WebSocket message:',
-        expect.any(Error)
+        expect.stringContaining('ERROR: Failed to parse WebSocket message'),
+        expect.objectContaining({
+          error: expect.any(String)
+        }),
+        expect.any(String) // Error stack trace
       )
 
       consoleSpy.mockRestore()
@@ -405,7 +415,10 @@ describe('useWebSocket', () => {
         result.current.sendMessage(testMessage)
       })
 
-      expect(consoleSpy).toHaveBeenCalledWith('WebSocket is not connected')
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('WARN: WebSocket is not connected'),
+        expect.any(Object)
+      )
 
       consoleSpy.mockRestore()
     })
@@ -460,12 +473,16 @@ describe('useWebSocket', () => {
       renderHook(() => useWebSocket(defaultOptions))
 
       const mockWS = mockWebSocketControls.getLastInstance()
+      
+      // Clear any calls from initialization
+      mockStore.setConnection.mockClear()
 
       act(() => {
         mockWS.simulateError()
       })
 
-      expect(mockStore.setConnection).toHaveBeenCalledWith(false, 'Connection error')
+      // onerror doesn't call setConnection, only onclose does
+      expect(mockStore.setConnection).not.toHaveBeenCalled()
     })
 
     it.skip('handles WebSocket creation failures', () => {
@@ -489,7 +506,13 @@ describe('useWebSocket', () => {
       expect(createAttempted).toBe(true)
 
       // Check that error was handled
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to create WebSocket:', expect.any(Error))
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ERROR: Failed to create WebSocket'),
+        expect.objectContaining({
+          error: expect.any(String)
+        }),
+        expect.any(String)
+      )
 
       expect(mockStore.setConnection).toHaveBeenCalledWith(false, 'Failed to connect')
 

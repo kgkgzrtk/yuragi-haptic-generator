@@ -51,12 +51,12 @@ export function generateSawtoothWave(params: GenerateSawtoothParams): number[] {
   // Generate time array starting from startTime (for phase continuity)
   for (let i = 0; i < numSamples; i++) {
     const t = startTime + i / sampleRate
-    
+
     // Sawtooth wave formula: 2 * ((frequency * t + phase / 360) % 1) - 1
     // This generates a wave from -1 to 1
     const phaseInCycles = phase / 360.0
     const value = 2 * ((frequency * t + phaseInCycles) % 1.0) - 1
-    
+
     // Apply amplitude and polarity
     waveform[i] = absAmplitude * (polarity ? value : -value)
   }
@@ -81,10 +81,10 @@ export function generateMultiChannelWaveform(
   }>
 } {
   const timestamp = new Date().toISOString()
-  
+
   const channelData = channels.map(channel => {
     let data: number[]
-    
+
     if (!channel.isActive || channel.amplitude === 0) {
       // Inactive channels get zero data
       data = new Array(Math.floor(duration * sampleRate)).fill(0)
@@ -100,13 +100,13 @@ export function generateMultiChannelWaveform(
         startTime
       })
     }
-    
+
     return {
       channelId: channel.channelId,
       data
     }
   })
-  
+
   return {
     timestamp,
     sampleRate,

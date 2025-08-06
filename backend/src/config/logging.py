@@ -10,7 +10,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 class JSONFormatter(logging.Formatter):
@@ -95,7 +95,7 @@ class HealthFilter(logging.Filter):
 def setup_production_logging(
     app_name: str = "haptic-api",
     log_level: str = "INFO",
-    log_file: Optional[str] = None,
+    log_file: str | None = None,
     enable_json: bool = True,
     enable_health_filter: bool = True,
 ) -> None:
@@ -248,7 +248,7 @@ class LogContext:
 
 
 # Performance monitoring decorator
-def log_performance(logger: Optional[logging.Logger] = None):
+def log_performance(logger: logging.Logger | None = None):
     """Decorator to log function execution time"""
     import functools
     import time
@@ -287,7 +287,7 @@ def log_performance(logger: Optional[logging.Logger] = None):
 
 
 # Security audit logger
-def audit_log(event: str, user_id: Optional[str] = None, **extra):
+def audit_log(event: str, user_id: str | None = None, **extra):
     """Log security and audit events"""
     audit_logger = logging.getLogger("audit")
     audit_logger.info(

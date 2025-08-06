@@ -28,7 +28,6 @@ export const testApiResponses = {
     error: { status: 'error', message: 'Operation failed' },
   },
   systemStatus: {
-    isStreaming: false,
     sampleRate: 44100,
     blockSize: 512,
     latencyMs: 12,
@@ -130,7 +129,6 @@ export const testUrls = {
     health: '/api/health',
     status: '/api/status',
     parameters: '/api/parameters',
-    streaming: '/api/streaming',
     vectorForce: '/api/vector-force',
     waveform: '/api/waveform',
     // Legacy support
@@ -154,7 +152,7 @@ export const testWebSocketMessages = {
   },
   statusUpdate: {
     type: 'status_update',
-    data: { isStreaming: true },
+    data: { sampleRate: 44100, blockSize: 512 },
     timestamp: '2025-01-01T00:00:00.000Z',
   },
   error: {
@@ -180,5 +178,102 @@ export const testErrorScenarios = {
   websocketDisconnect: {
     closeCode: 1006,
     reason: 'Connection lost',
+  },
+  // HTTP status code scenarios for comprehensive error testing
+  httpErrorScenarios: [
+    {
+      description: 'Unauthorized access',
+      url: '/api/parameters',
+      status: 401,
+      message: 'Unauthorized access',
+      expectedText: 'Unauthorized',
+    },
+    {
+      description: 'Forbidden operation',
+      url: '/api/streaming',
+      status: 403,
+      message: 'Forbidden operation',
+      expectedText: 'Forbidden',
+    },
+    {
+      description: 'Endpoint not found',
+      url: '/api/vector-force',
+      status: 404,
+      message: 'Endpoint not found',
+      expectedText: 'not found',
+    },
+    {
+      description: 'Too many requests',
+      url: '/api/parameters',
+      status: 429,
+      message: 'Too many requests',
+      expectedText: 'Too many',
+    },
+  ],
+  // Common error recovery test patterns
+  serverRecoveryScenarios: {
+    serviceUnavailable: {
+      initialStatus: 503,
+      initialMessage: 'Service temporarily unavailable',
+      expectedErrorText: 'Service temporarily unavailable',
+    },
+    internalError: {
+      initialStatus: 500,
+      initialMessage: 'Internal server error',
+      expectedErrorText: 'Internal server error',
+    },
+    temporaryError: {
+      initialStatus: 500,
+      initialMessage: 'Temporary error',
+      expectedErrorText: 'Temporary error',
+    },
+  },
+  // WebSocket error scenarios
+  websocketErrorScenarios: {
+    connectionFailed: {
+      closeCode: 1006,
+      reason: 'Connection failed',
+    },
+    normalClosure: {
+      closeCode: 1000,
+      reason: 'Normal closure',
+    },
+    serverError: {
+      closeCode: 1011,
+      reason: 'Server error',
+    },
+  },
+  // API retry scenarios
+  retryScenarios: {
+    failTwiceThenSucceed: {
+      failureCount: 2,
+      errorStatus: 500,
+      errorMessage: 'Internal server error',
+    },
+    failOnceThenSucceed: {
+      failureCount: 1,
+      errorStatus: 503,
+      errorMessage: 'Service unavailable',
+    },
+  },
+} as const
+
+// Reusable test parameter sets for common testing patterns
+export const testParameterSets = {
+  channelUpdates: {
+    basic: { frequency: 75, amplitude: 0.6, phase: 45 },
+    rapid: [
+      { frequency: 50 },
+      { amplitude: 0.7 },
+      { phase: 90 },
+    ],
+    concurrent: {
+      channel0: { frequency: 60, amplitude: 0.5, phase: 0 },
+      channel1: { frequency: 80, amplitude: 0.7, phase: 90 },
+    },
+  },
+  vectorForce: {
+    basic: { angle: 45, magnitude: 0.7, frequency: 80 },
+    extreme: { angle: 359, magnitude: 1.0, frequency: 120 },
   },
 } as const

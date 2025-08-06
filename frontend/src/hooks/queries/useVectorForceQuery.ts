@@ -4,7 +4,7 @@
 import { useCallback, useMemo } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { useHapticStore } from '@/contexts/hapticStore'
-import { queryKeys, queryDefaults, invalidateHapticQueries } from '@/lib/queryClient'
+import { queryKeys, queryDefaults } from '@/lib/queryClient'
 import { HapticService } from '@/services/hapticService'
 import type { IVectorForce } from '@/types/hapticTypes'
 import { logger } from '@/utils/logger'
@@ -45,7 +45,7 @@ export const useSetVectorForceMutation = () => {
       return { previousVectorForce, deviceId: newVectorForce.deviceId }
     },
 
-    onError: (error: any, variables, context) => {
+    onError: (_error, variables, context) => {
       // Rollback optimistic update
       if (context) {
         setVectorForce(context.deviceId, context.previousVectorForce)
@@ -55,20 +55,11 @@ export const useSetVectorForceMutation = () => {
         )
       }
 
-      logger.error('Failed to set vector force for device', { deviceId: variables.deviceId, error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
+      logger.error('Failed to set vector force for device', { deviceId: variables.deviceId, error: _error instanceof Error ? _error.message : _error }, _error instanceof Error ? _error : undefined)
     },
 
-    onSuccess: (_data, variables) => {
-      // Confirm the update with server response
-      setVectorForce(variables.deviceId, variables)
 
-      // Invalidate related queries
-      invalidateHapticQueries.vectorForce()
-      invalidateHapticQueries.waveform() // Vector force affects waveform
-      invalidateHapticQueries.parameters() // May affect channel parameters
-    },
-
-    onSettled: (_data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       // Refetch to ensure consistency with server
       queryClient.invalidateQueries({
         queryKey: queryKeys.vectorForceByDevice(variables.deviceId),
@@ -117,7 +108,7 @@ export const useClearVectorForceMutation = () => {
       return { previousVectorForce, deviceId }
     },
 
-    onError: (error: any, deviceId, context) => {
+    onError: (_error, deviceId, context) => {
       // Rollback optimistic update
       if (context) {
         setVectorForce(context.deviceId, context.previousVectorForce)
@@ -127,19 +118,11 @@ export const useClearVectorForceMutation = () => {
         )
       }
 
-      logger.error('Failed to clear vector force for device', { deviceId, error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
+      logger.error('Failed to clear vector force for device', { deviceId, error: _error instanceof Error ? _error.message : _error }, _error instanceof Error ? _error : undefined)
     },
 
-    onSuccess: (_data, deviceId) => {
-      // Confirm the clear
-      setVectorForce(deviceId, null)
 
-      // Invalidate related queries
-      invalidateHapticQueries.vectorForce()
-      invalidateHapticQueries.waveform()
-    },
-
-    onSettled: (_data, error, deviceId) => {
+    onSettled: (_data, _error, deviceId) => {
       // Refetch to ensure consistency
       queryClient.invalidateQueries({
         queryKey: queryKeys.vectorForceByDevice(deviceId),
@@ -172,9 +155,6 @@ export const useVectorForceQuery = (deviceId: 1 | 2) => {
 
     enabled: true,
 
-    onError: (error: any) => {
-      logger.error('Failed to fetch vector force for device', { deviceId, error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
-    },
   })
 }
 

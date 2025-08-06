@@ -17,7 +17,7 @@ export const NotificationContainer: React.FC = () => {
       {notifications.length > 1 && (
         <div className='notification-header'>
           <span>{notifications.length} notifications</span>
-          <Button onClick={clearAll} variant='ghost' size='small'>
+          <Button onClick={clearAll} variant='secondary' size='small'>
             Clear All
           </Button>
         </div>
@@ -50,7 +50,7 @@ export const NotificationContainer: React.FC = () => {
 
             <Button
               onClick={() => removeNotification(notification.id)}
-              variant='ghost'
+              variant='secondary'
               size='small'
               aria-label='Dismiss notification'
             >

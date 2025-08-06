@@ -20,14 +20,13 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
   const { batchUpdate, hasPendingUpdates, clearPending } = useBatchParameterUpdates(300) // 300ms debounce
   const { handleParameterError } = useHapticErrorHandler()
 
-
   const [errors, setErrors] = useState<Partial<Record<keyof IChannelParameters, string>>>({})
 
   // Local state for input values
   const [frequency, setFrequency] = useState(channel?.frequency || 60)
   const [amplitude, setAmplitude] = useState(channel?.amplitude || 0.5)
   const [phase, setPhase] = useState(channel?.phase || 90)
-  const [polarity, setPolarity] = useState(channel?.polarity || true)
+  const [polarity, setPolarity] = useState<boolean>(channel?.polarity ?? true)
 
   // Sync local state with store when channel changes
   useEffect(() => {
@@ -55,25 +54,27 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
 
   // Validate input
   const validateField = useCallback(
-    (field: keyof IChannelParameters, value: any): string | null => {
+    (field: keyof IChannelParameters, value: unknown): string | null => {
+      const numValue = typeof value === 'string' ? parseFloat(value) : (value as number)
+      
       // Handle NaN values (from empty inputs)
-      if (typeof value === 'number' && isNaN(value)) {
+      if (typeof numValue === 'number' && isNaN(numValue)) {
         return null // Don't show error for empty inputs
       }
 
       switch (field) {
         case 'frequency':
-          if (value < CONSTRAINTS.FREQUENCY.MIN || value > CONSTRAINTS.FREQUENCY.MAX) {
+          if (numValue < CONSTRAINTS.FREQUENCY.MIN || numValue > CONSTRAINTS.FREQUENCY.MAX) {
             return `Frequency must be between ${CONSTRAINTS.FREQUENCY.MIN}-${CONSTRAINTS.FREQUENCY.MAX} Hz`
           }
           break
         case 'amplitude':
-          if (value < CONSTRAINTS.AMPLITUDE.MIN || value > CONSTRAINTS.AMPLITUDE.MAX) {
+          if (numValue < CONSTRAINTS.AMPLITUDE.MIN || numValue > CONSTRAINTS.AMPLITUDE.MAX) {
             return `Amplitude must be between ${CONSTRAINTS.AMPLITUDE.MIN}-${CONSTRAINTS.AMPLITUDE.MAX}`
           }
           break
         case 'phase':
-          if (value < CONSTRAINTS.PHASE.MIN || value > CONSTRAINTS.PHASE.MAX) {
+          if (numValue < CONSTRAINTS.PHASE.MIN || numValue > CONSTRAINTS.PHASE.MAX) {
             return `Phase must be between ${CONSTRAINTS.PHASE.MIN}-${CONSTRAINTS.PHASE.MAX} degrees`
           }
           break
@@ -85,20 +86,20 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
 
   // Handle field change with optimistic updates and batching
   const handleFieldChange = useCallback(
-    (field: keyof IChannelParameters, value: any) => {
+    (field: keyof IChannelParameters, value: unknown) => {
       // Update local state immediately
       switch (field) {
         case 'frequency':
-          setFrequency(value)
+          setFrequency(value as number)
           break
         case 'amplitude':
-          setAmplitude(value)
+          setAmplitude(value as number)
           break
         case 'phase':
-          setPhase(value)
+          setPhase(value as number)
           break
         case 'polarity':
-          setPolarity(value)
+          setPolarity(value as boolean)
           break
       }
 

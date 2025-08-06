@@ -4,6 +4,7 @@
  */
 import { QueryClient } from '@tanstack/react-query'
 import { StateCreator } from 'zustand'
+import type { HapticError } from '@/types/errors'
 import type {
   IChannelParameters,
   IStatusResponse,
@@ -17,12 +18,10 @@ export interface QuerySyncActions {
   // Query sync actions
   syncParametersFromQuery: (queryClient: QueryClient) => void
   syncStatusFromQuery: (queryClient: QueryClient) => void
-  syncStreamingFromQuery: (queryClient: QueryClient) => void
 
   // Mutation helpers
-  onParameterMutationSuccess: (queryClient: QueryClient, data: any) => void
-  onStreamingMutationSuccess: (queryClient: QueryClient, data: any) => void
-  onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: any) => void
+  onParameterMutationSuccess: (queryClient: QueryClient, data: IParametersResponse) => void
+  onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: IVectorForce) => void
 }
 
 /**
@@ -41,7 +40,6 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
           )
 
           if (parametersData?.channels) {
-            // @ts-expect-error - We know the store has setChannels method
             set(state => ({ ...state, channels: parametersData.channels }))
           }
         },
@@ -50,21 +48,12 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
           const statusData = queryClient.getQueryData<IStatusResponse>(queryKeys.status())
 
           if (statusData) {
-            // @ts-expect-error - We know the store has setStatus method
             set(state => ({ ...state, status: statusData }))
           }
         },
 
-        syncStreamingFromQuery: (queryClient: QueryClient) => {
-          const streamingData = queryClient.getQueryData<IStatusResponse>(queryKeys.streaming())
 
-          if (streamingData) {
-            // @ts-expect-error - We know the store has setStreaming method
-            set(state => ({ ...state, isStreaming: streamingData.isStreaming }))
-          }
-        },
-
-        onParameterMutationSuccess: (queryClient: QueryClient, data: any) => {
+        onParameterMutationSuccess: (queryClient: QueryClient, data: IParametersResponse) => {
           // Sync with query cache
           queryClient.setQueryData(
             queryKeys.parameters(),
@@ -77,17 +66,8 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
           )
         },
 
-        onStreamingMutationSuccess: (queryClient: QueryClient, data: any) => {
-          // Sync streaming state
-          queryClient.setQueryData(queryKeys.streaming(), (old: IStatusResponse | undefined) => {
-            if (!old) {
-              return { ...old, isStreaming: data.isStreaming }
-            }
-            return { ...old, isStreaming: data.isStreaming }
-          })
-        },
 
-        onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: any) => {
+        onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: IVectorForce) => {
           // Sync vector force state
           queryClient.setQueryData(queryKeys.vectorForceByDevice(deviceId), data)
         },
@@ -106,7 +86,7 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
  */
 export const useQueryStoreSync = (
   queryClient: QueryClient,
-  store: any // The Zustand store
+  store: any // The Zustand store - any is needed here for Zustand store access
 ) => {
   // Set up query cache subscribers to sync with Zustand
   const setupQuerySubscriptions = () => {
@@ -114,38 +94,27 @@ export const useQueryStoreSync = (
     const parametersUnsubscribe = queryClient.getQueryCache().subscribe(event => {
       if (event.type === 'updated' && event.query.queryKey[1] === 'parameters') {
         const data = event.query.state.data as IParametersResponse
-        if (data?.channels && store.getState().setChannels) {
+        if (data?.channels && store.getState()?.setChannels) {
           store.getState().setChannels(data.channels)
         }
       }
     })
 
-    // Subscribe to streaming status changes
-    const streamingUnsubscribe = queryClient.getQueryCache().subscribe(event => {
-      if (event.type === 'updated' && event.query.queryKey[1] === 'streaming') {
-        const data = event.query.state.data as IStatusResponse
-        if (data && store.getState().setStreaming && store.getState().setStatus) {
-          store.getState().setStreaming(data.isStreaming)
-          store.getState().setStatus(data)
-        }
-      }
-    })
 
     // Subscribe to health/connection changes
     const healthUnsubscribe = queryClient.getQueryCache().subscribe(event => {
       if (event.type === 'updated' && event.query.queryKey[1] === 'health') {
         const isSuccess = event.query.state.status === 'success'
-        const error = event.query.state.error
+        const error = event.query.state.error as Error | null
 
-        if (store.getState().setConnection) {
-          store.getState().setConnection(isSuccess, error ? (error as any).message : null)
+        if (store.getState()?.setConnection) {
+          store.getState().setConnection(isSuccess, error?.message || null)
         }
       }
     })
 
     return () => {
       parametersUnsubscribe()
-      streamingUnsubscribe()
       healthUnsubscribe()
     }
   }
@@ -155,14 +124,11 @@ export const useQueryStoreSync = (
 
     // Manual sync functions
     syncAll: () => {
-      if (store.getState().syncParametersFromQuery) {
+      if (store.getState()?.syncParametersFromQuery) {
         store.getState().syncParametersFromQuery(queryClient)
       }
-      if (store.getState().syncStatusFromQuery) {
+      if (store.getState()?.syncStatusFromQuery) {
         store.getState().syncStatusFromQuery(queryClient)
-      }
-      if (store.getState().syncStreamingFromQuery) {
-        store.getState().syncStreamingFromQuery(queryClient)
       }
     },
   }
@@ -188,12 +154,6 @@ export const createOptimisticUpdateHelpers = (queryClient: QueryClient) => {
       })
     },
 
-    // Optimistic streaming update
-    updateStreamingOptimistically: (isStreaming: boolean) => {
-      queryClient.setQueryData<IStatusResponse>(queryKeys.streaming(), old =>
-        old ? { ...old, isStreaming } : ({ isStreaming } as any)
-      )
-    },
 
     // Optimistic vector force update
     updateVectorForceOptimistically: (deviceId: number, vectorForce: IVectorForce | null) => {
@@ -201,13 +161,10 @@ export const createOptimisticUpdateHelpers = (queryClient: QueryClient) => {
     },
 
     // Rollback functions
-    rollbackParameter: (channelId: number, previousData: IParametersResponse) => {
+    rollbackParameter: (_channelId: number, previousData: IParametersResponse) => {
       queryClient.setQueryData(queryKeys.parameters(), previousData)
     },
 
-    rollbackStreaming: (previousData: IStatusResponse) => {
-      queryClient.setQueryData(queryKeys.streaming(), previousData)
-    },
 
     rollbackVectorForce: (deviceId: number, previousData: IVectorForce | null) => {
       queryClient.setQueryData(queryKeys.vectorForceByDevice(deviceId), previousData)
@@ -220,7 +177,7 @@ export const createOptimisticUpdateHelpers = (queryClient: QueryClient) => {
  */
 export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) => {
   return {
-    handleParameterError: (error: any, _channelId?: number) => {
+    handleParameterError: (error: HapticError | Error, _channelId?: number) => {
       // Set error state in both systems
       logger.error('Parameter error', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
 
@@ -228,31 +185,21 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
       queryClient.invalidateQueries({ queryKey: queryKeys.parameters() })
 
       // Update store error state if available
-      if (store.getState().setConnection && error.code === 'NETWORK_ERROR') {
+      if (store.getState()?.setConnection && 'code' in error && error.code === 'NETWORK_ERROR') {
         store.getState().setConnection(false, 'Network error during parameter update')
       }
     },
 
-    handleStreamingError: (error: any) => {
-      console.error('Streaming error:', error)
+    handleStreamingError: (error: HapticError | Error) => {
+      logger.error('Streaming error', { error: error instanceof Error ? error.message : error })
 
-      // Force local streaming state to false on critical errors
-      if (error.code === 'NETWORK_ERROR') {
-        queryClient.setQueryData(queryKeys.streaming(), (old: any) =>
-          old ? { ...old, isStreaming: false } : { isStreaming: false }
-        )
-
-        if (store.getState().setStreaming) {
-          store.getState().setStreaming(false)
-        }
-      }
     },
 
-    handleConnectionError: (error: any) => {
-      console.error('Connection error:', error)
+    handleConnectionError: (error: HapticError | Error) => {
+      logger.error('Connection error', { error: error instanceof Error ? error.message : error })
 
       // Update connection state in store
-      if (store.getState().setConnection) {
+      if (store.getState()?.setConnection) {
         store.getState().setConnection(false, error.message || 'Connection lost')
       }
 
@@ -269,7 +216,7 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
       logger.info('Connection restored')
 
       // Update connection state in store
-      if (store.getState().setConnection) {
+      if (store.getState()?.setConnection) {
         store.getState().setConnection(true, null)
       }
 

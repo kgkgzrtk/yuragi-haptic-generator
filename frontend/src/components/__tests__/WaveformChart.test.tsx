@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { WaveformChart } from '@/components/Visualization/WaveformChart'
 import { render, screen } from '@/test/test-utils'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 import type { IWaveformData } from '@/types/hapticTypes'
 import * as chartConfig from '@/utils/chartConfig'
-import { WaveformChart } from '../Visualization/WaveformChart'
 
 // Mock Chart.js - need to match the import pattern in WaveformChart.tsx
 vi.mock('chart.js', () => {
@@ -65,10 +65,10 @@ vi.mock('@/utils/chartConfig', () => ({
     datasets: [],
   })),
   CHANNEL_COLORS: {
-    [CHANNEL_IDS.DEVICE1_X]: '#FF6384',
-    [CHANNEL_IDS.DEVICE1_Y]: '#36A2EB',
-    [CHANNEL_IDS.DEVICE2_X]: '#FFCE56',
-    [CHANNEL_IDS.DEVICE2_Y]: '#4BC0C0',
+    0: '#FF6384',  // DEVICE1_X
+    1: '#36A2EB',  // DEVICE1_Y
+    2: '#FFCE56',  // DEVICE2_X
+    3: '#4BC0C0',  // DEVICE2_Y
   },
 }))
 

@@ -4,7 +4,6 @@ Application configuration settings
 
 import logging
 from functools import lru_cache
-from typing import Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
@@ -54,7 +53,7 @@ class Settings(BaseSettings):
         default="%(asctime)s - %(name)s - %(levelname)s - %(message)s", env="LOG_FORMAT"
     )
     enable_access_log: bool = Field(default=True, env="ENABLE_ACCESS_LOG")
-    log_file: Optional[str] = Field(default=None, env="LOG_FILE")
+    log_file: str | None = Field(default=None, env="LOG_FILE")
 
     # Performance Configuration
     request_timeout: int = Field(default=30, env="REQUEST_TIMEOUT")
@@ -62,7 +61,7 @@ class Settings(BaseSettings):
     max_request_size: int = Field(default=16777216, env="MAX_REQUEST_SIZE")  # 16MB
 
     # Security Configuration
-    api_key: Optional[str] = Field(default=None, env="API_KEY")
+    api_key: str | None = Field(default=None, env="API_KEY")
     allowed_hosts: list[str] = Field(default=["*"], env="ALLOWED_HOSTS")
     trust_host_header: bool = Field(default=False, env="TRUST_HOST_HEADER")
 

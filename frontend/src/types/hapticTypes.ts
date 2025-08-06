@@ -35,16 +35,13 @@ export interface IParametersResponse {
 }
 
 export interface IStatusResponse {
-  isStreaming: boolean
   sampleRate: number
   blockSize: number
-  latencyMs: number
 }
 
 // WebSocket message types
 export enum WSMessageType {
   PARAMETERS_UPDATE = 'parameters_update',
-  WAVEFORM_DATA = 'waveform_data',
   STATUS_UPDATE = 'status_update',
   ERROR = 'error',
 }
@@ -58,7 +55,6 @@ export interface IWSMessage<T = unknown> {
 // UI state types
 export interface IHapticSystemState {
   channels: IChannelParameters[]
-  isStreaming: boolean
   status: IStatusResponse | null
   vectorForce: {
     device1: IVectorForce | null

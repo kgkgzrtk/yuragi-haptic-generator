@@ -6,8 +6,8 @@ import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,7 +43,6 @@ except Exception as e:
 # WebSocket message types (matching frontend)
 class WSMessageType:
     PARAMETERS_UPDATE = "parameters_update"
-    WAVEFORM_DATA = "waveform_data"
     STATUS_UPDATE = "status_update"
     ERROR = "error"
 
@@ -97,86 +96,24 @@ class ConnectionManager:
                 except Exception as e:
                     logger.error(f"Error broadcasting to connection: {e}")
                     disconnected.append(connection)
-            
+
             # Remove disconnected connections
             for connection in disconnected:
                 if connection in self.active_connections:
                     self.active_connections.remove(connection)
-                    logger.info(f"Removed disconnected WebSocket. Remaining connections: {len(self.active_connections)}")
+                    logger.info(
+                        f"Removed disconnected WebSocket. Remaining connections: {len(self.active_connections)}"
+                    )
 
 
 # Global connection manager
 manager = ConnectionManager()
 
-# Background task for waveform streaming
-waveform_streaming_task = None
-streaming_interval = 0.1  # 100ms interval for waveform updates
-
-
-async def background_waveform_streamer():
-    """Background task to stream waveform data to WebSocket clients"""
-    global controller
-
-    while True:
-        try:
-            if (
-                controller
-                and controller.is_streaming
-                and manager.active_connections
-                and len(manager.active_connections) > 0
-            ):
-
-                # Generate waveform data for streaming
-                duration = streaming_interval
-                sample_rate = controller.sample_rate
-                num_samples = int(duration * sample_rate)
-
-                # Get waveform data from controller
-                channels_data = []
-                num_channels = min(4, controller.available_channels)  # Use available channels
-                
-                for ch_id in range(num_channels):
-                    try:
-                        channel = controller.device.channels[ch_id]
-                        waveform_data = channel.get_next_chunk(num_samples).tolist()
-                        channels_data.append(
-                            {"channelId": ch_id, "data": waveform_data}
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Error getting waveform data for channel {ch_id}: {e}"
-                        )
-                        # Provide zero data on error
-                        channels_data.append(
-                            {"channelId": ch_id, "data": [0.0] * num_samples}
-                        )
-                
-                # Add zero data for remaining channels if in single device mode
-                for ch_id in range(num_channels, 4):
-                    channels_data.append(
-                        {"channelId": ch_id, "data": [0.0] * num_samples}
-                    )
-
-                waveform_data = {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "sampleRate": sample_rate,
-                    "channels": channels_data,
-                }
-
-                # Broadcast waveform data
-                await broadcast_waveform_data(waveform_data)
-
-            await asyncio.sleep(streaming_interval)
-
-        except Exception as e:
-            logger.error(f"Error in background waveform streamer: {e}")
-            await asyncio.sleep(streaming_interval)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理"""
-    global controller, waveform_streaming_task
+    global controller
 
     logger.info("Starting application...")
 
@@ -190,27 +127,10 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Failed to initialize HapticController: {e}")
 
-    # Start background waveform streaming task
-    waveform_streaming_task = asyncio.create_task(background_waveform_streamer())
-    logger.info("Background waveform streaming task started")
-
     yield
 
     # 終了時
     logger.info("Shutting down application...")
-
-    if waveform_streaming_task:
-        waveform_streaming_task.cancel()
-        try:
-            await waveform_streaming_task
-        except asyncio.CancelledError:
-            pass
-        logger.info("Background waveform streaming task stopped")
-
-    if controller and controller.is_streaming:
-        controller.stop_streaming()
-        logger.info("HapticController stopped")
-
     logger.info("Application shutdown complete")
 
 
@@ -268,12 +188,12 @@ class ParametersUpdate(BaseModel):
 class ChannelUpdate(BaseModel):
     """単一チャンネル更新リクエスト"""
 
-    frequency: Optional[float] = Field(
+    frequency: float | None = Field(
         None, ge=settings.min_frequency, le=settings.max_frequency
     )
-    amplitude: Optional[float] = Field(None, ge=0.0, le=1.0)
-    phase: Optional[float] = Field(None, ge=0.0, le=360.0)
-    polarity: Optional[bool] = None
+    amplitude: float | None = Field(None, ge=0.0, le=1.0)
+    phase: float | None = Field(None, ge=0.0, le=360.0)
+    polarity: bool | None = None
 
 
 class WaveformRequest(BaseModel):
@@ -330,33 +250,40 @@ async def get_device_info():
             "available": False,
             "channels": 0,
             "name": "Controller not initialized",
-            "device_mode": "none"
+            "device_mode": "none",
         }
-    
-    return controller.device_info | {"device_mode": "dual" if controller.available_channels == 4 else "single" if controller.available_channels == 2 else "none"}
+
+    return controller.device_info | {
+        "device_mode": (
+            "dual"
+            if controller.available_channels == 4
+            else "single" if controller.available_channels == 2 else "none"
+        )
+    }
+
 
 @app.get("/api/debug/devices")
 async def debug_list_devices():
     """デバッグ用：利用可能なすべてのオーディオデバイスをリスト"""
     try:
         import sounddevice as sd
+
         devices = sd.query_devices()
         device_list = []
-        
+
         for idx, dev in enumerate(devices):
-            device_list.append({
-                "id": idx,
-                "name": dev['name'],
-                "max_input_channels": dev['max_input_channels'],
-                "max_output_channels": dev['max_output_channels'],
-                "default_samplerate": dev['default_samplerate'],
-                "is_default_output": idx == sd.default.device[1]
-            })
-        
-        return {
-            "default_output_id": sd.default.device[1],
-            "devices": device_list
-        }
+            device_list.append(
+                {
+                    "id": idx,
+                    "name": dev["name"],
+                    "max_input_channels": dev["max_input_channels"],
+                    "max_output_channels": dev["max_output_channels"],
+                    "default_samplerate": dev["default_samplerate"],
+                    "is_default_output": idx == sd.default.device[1],
+                }
+            )
+
+        return {"default_output_id": sd.default.device[1], "devices": device_list}
     except Exception as e:
         return {"error": str(e)}
 
@@ -492,7 +419,7 @@ async def get_waveform_data(request: WaveformRequest):
     # 現在のパラメータで波形を生成
     channels_data = []
     num_channels = min(4, controller.available_channels)  # Use available channels
-    
+
     for ch_id in range(num_channels):
         # 各チャンネルの波形を生成
         try:
@@ -503,86 +430,15 @@ async def get_waveform_data(request: WaveformRequest):
             logger.error(f"Error getting waveform for channel {ch_id}: {e}")
             # Provide zero data on error
             channels_data.append({"channelId": ch_id, "data": [0.0] * num_samples})
-    
+
     # Add zero data for remaining channels if in single device mode
     for ch_id in range(num_channels, 4):
-        channels_data.append({"channel_id": ch_id, "data": [0.0] * num_samples})
+        channels_data.append({"channelId": ch_id, "data": [0.0] * num_samples})
 
     return {
         "timestamp": "2024-08-04T00:00:00Z",  # 実際にはdatetimeを使用
         "sample_rate": request.sample_rate,
         "channels": channels_data,
-    }
-
-
-# ストリーミング制御
-@app.post("/api/streaming/start")
-async def start_streaming():
-    """ストリーミングを開始"""
-    if controller is None:
-        raise HTTPException(status_code=503, detail="Service not initialized")
-
-    if not controller.is_streaming:
-        try:
-            controller.start_streaming()
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Broadcast status update to WebSocket clients
-    status_data = {
-        "isStreaming": True,
-        "sampleRate": controller.sample_rate,
-        "blockSize": controller.block_size,
-        "latencyMs": controller.get_latency_ms(),
-    }
-    asyncio.create_task(broadcast_status_update(status_data))
-
-    return {"status": "started", "is_streaming": True}
-
-
-@app.post("/api/streaming/stop")
-async def stop_streaming():
-    """ストリーミングを停止"""
-    if controller is None:
-        raise HTTPException(status_code=503, detail="Service not initialized")
-
-    if controller.is_streaming:
-        controller.stop_streaming()
-
-    # Broadcast status update to WebSocket clients
-    status_data = {
-        "isStreaming": False,
-        "sampleRate": controller.sample_rate,
-        "blockSize": controller.block_size,
-        "latencyMs": controller.get_latency_ms(),
-    }
-    asyncio.create_task(broadcast_status_update(status_data))
-
-    return {"status": "stopped", "is_streaming": False}
-
-
-@app.get("/api/streaming/status")
-async def get_streaming_status():
-    """ストリーミング状態を取得"""
-    if controller is None:
-        return {
-            "is_streaming": False,
-            "sample_rate": 44100,
-            "block_size": 512,
-            "latency_ms": 0.0,
-        }
-
-    return {
-        "is_streaming": controller.is_streaming,
-        "sample_rate": controller.sample_rate,
-        "block_size": controller.block_size,
-        "latency_ms": controller.get_latency_ms(),
-        "device_info": {
-            "available": controller.device_info.get('available', False),
-            "channels": controller.available_channels,
-            "name": controller.device_info.get('name', 'Unknown'),
-            "device_mode": "dual" if controller.available_channels == 4 else "single"
-        }
     }
 
 
@@ -632,12 +488,10 @@ async def websocket_endpoint(websocket: WebSocket):
             initial_status = {
                 "type": WSMessageType.STATUS_UPDATE,
                 "data": {
-                    "isStreaming": controller.is_streaming,
                     "sampleRate": controller.sample_rate,
                     "blockSize": controller.block_size,
-                    "latencyMs": controller.get_latency_ms(),
                 },
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
             await manager.send_personal_message(initial_status, websocket)
 
@@ -655,7 +509,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     }
                     for i, ch in enumerate(params.get("channels", [{}] * 4))
                 ],
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
             await manager.send_personal_message(parameters_msg, websocket)
 
@@ -676,7 +530,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     error_msg = {
                         "type": WSMessageType.ERROR,
                         "data": {"message": "Invalid JSON format"},
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                     await manager.send_personal_message(error_msg, websocket)
 
@@ -687,7 +541,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 error_msg = {
                     "type": WSMessageType.ERROR,
                     "data": {"message": str(e)},
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
                 await manager.send_personal_message(error_msg, websocket)
                 break
@@ -704,7 +558,7 @@ async def broadcast_parameters_update(channels_data: list[dict[str, Any]]):
     message = {
         "type": WSMessageType.PARAMETERS_UPDATE,
         "data": channels_data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     await manager.broadcast(message)
 
@@ -714,17 +568,7 @@ async def broadcast_status_update(status_data: dict[str, Any]):
     message = {
         "type": WSMessageType.STATUS_UPDATE,
         "data": status_data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-    await manager.broadcast(message)
-
-
-async def broadcast_waveform_data(waveform_data: dict[str, Any]):
-    """Broadcast waveform data to all connected clients"""
-    message = {
-        "type": WSMessageType.WAVEFORM_DATA,
-        "data": waveform_data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     await manager.broadcast(message)
 

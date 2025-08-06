@@ -16,7 +16,7 @@ export const useWebSocket = ({
   maxReconnectAttempts = 5,
 }: UseWebSocketOptions) => {
   const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const reconnectTimeoutRef = useRef<number | null>(null)
   const reconnectAttemptsRef = useRef(0)
 
   const { setConnection, setChannels, setStatus } = useHapticStore()
@@ -33,9 +33,6 @@ export const useWebSocket = ({
             break
           case WSMessageType.STATUS_UPDATE:
             setStatus(message.data as any)
-            break
-          case WSMessageType.WAVEFORM_DATA:
-            // Waveform data is handled by React Query hooks
             break
           case WSMessageType.ERROR:
             logger.logWebSocket('error', { error: message.data })
@@ -103,11 +100,11 @@ export const useWebSocket = ({
         // Attempt to reconnect
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++
-          logger.logWebSocket('reconnecting', { 
-            attempt: reconnectAttemptsRef.current, 
-            maxAttempts: maxReconnectAttempts, 
+          logger.logWebSocket('reconnecting', {
+            attempt: reconnectAttemptsRef.current,
+            maxAttempts: maxReconnectAttempts,
             waitTime: reconnectInterval,
-            url 
+            url
           })
 
           reconnectTimeoutRef.current = setTimeout(() => {
@@ -121,7 +118,7 @@ export const useWebSocket = ({
     } catch (error) {
       logger.error('Failed to create WebSocket', { error: error instanceof Error ? error.message : error, url }, error instanceof Error ? error : undefined)
       setConnection(false, 'Failed to connect')
-      
+
       // Attempt to reconnect on creation failure
       if (reconnectAttemptsRef.current < maxReconnectAttempts) {
         reconnectAttemptsRef.current++
@@ -135,13 +132,13 @@ export const useWebSocket = ({
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
     logger.logWebSocket('disconnecting', { url })
-    
+
     // Clear any pending reconnect
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
       reconnectTimeoutRef.current = null
     }
-    
+
     // Reset reconnect attempts
     reconnectAttemptsRef.current = 0
 
@@ -163,29 +160,29 @@ export const useWebSocket = ({
       logger.warn('WebSocket is not initialized', { url })
       return false
     }
-    
+
     if (wsRef.current.readyState !== WebSocket.OPEN) {
-      logger.warn('WebSocket is not connected', { 
-        readyState: wsRef.current.readyState, 
+      logger.warn('WebSocket is not connected', {
+        readyState: wsRef.current.readyState,
         readyStateText: ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][wsRef.current.readyState],
-        url 
+        url
       })
-      
+
       // Attempt to reconnect if closed
       if (wsRef.current.readyState === WebSocket.CLOSED) {
         connect()
       }
       return false
     }
-    
+
     try {
       wsRef.current.send(JSON.stringify(message))
       return true
     } catch (error) {
-      logger.error('Failed to send WebSocket message', { 
+      logger.error('Failed to send WebSocket message', {
         error: error instanceof Error ? error.message : error,
         message,
-        url 
+        url
       }, error instanceof Error ? error : undefined)
       return false
     }

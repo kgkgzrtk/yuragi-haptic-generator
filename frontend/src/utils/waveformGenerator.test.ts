@@ -25,10 +25,10 @@ describe('waveformGenerator', () => {
       // Check waveform shape (should go from -1 to 1 linearly)
       // At t=0, phase=0: wave should be at -1
       expect(wave[0]).toBeCloseTo(-1, 2)
-      
+
       // At t=0.05s (halfway): wave should be at 0
       expect(wave[5]).toBeCloseTo(0, 2)
-      
+
       // At t=0.09s (near end): wave should be close to 1
       expect(wave[9]).toBeCloseTo(0.8, 1)
     })
@@ -121,7 +121,7 @@ describe('waveformGenerator', () => {
       const wave = generateSawtoothWave(params)
 
       expect(wave.length).toBe(10) // 0.01s * 1000Hz = 10 samples
-      
+
       // Should still form a sawtooth from -1 to 1
       expect(wave[0]).toBeCloseTo(-1, 2)
       expect(wave[5]).toBeCloseTo(0, 1)
@@ -139,7 +139,7 @@ describe('waveformGenerator', () => {
       }
 
       const wave1 = generateSawtoothWave(params)
-      
+
       // Continue from where we left off
       const wave2 = generateSawtoothWave({
         ...params,
@@ -249,11 +249,11 @@ describe('waveformGenerator', () => {
       const data1 = result1.channels[0].data
       const data2 = result2.channels[0].data
 
-      // With time offset of 0.1s and frequency of 10Hz, 
+      // With time offset of 0.1s and frequency of 10Hz,
       // the second waveform should start where the first one ended
       // At t=0.1s with 10Hz, we complete one full cycle, so wave returns to -1
       expect(data2[0]).toBeCloseTo(-1, 2)
-      
+
       // But the last value of data1 should be near 1 (end of cycle)
       expect(data1[data1.length - 1]).toBeCloseTo(0.8, 1)
     })
