@@ -2,7 +2,7 @@
 name = "haptic-system"
 version = "0.1.0"
 description = "Dual haptic generator system with sawtooth wave support"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = [
     "numpy>=1.24.0",
     "sounddevice>=0.4.6",
@@ -51,7 +51,7 @@ production = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
@@ -66,5 +66,5 @@ ignore = ["E501", "N805", "W293"]  # line too long, cls in validators, blank lin
 
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ['py312']
 include = '\.pyi?$'

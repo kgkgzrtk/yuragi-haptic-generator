@@ -3,7 +3,7 @@ name = "yuragi-haptic-generator"
 version = "0.1.0"
 description = "Yuragi-based dual haptic generator system with sawtooth wave force feedback"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Your Team", email = "team@example.com"},
@@ -15,9 +15,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Human Machine Interfaces",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
 dependencies = [
@@ -102,7 +100,7 @@ exclude_lines = [
 
 [tool.black]
 line-length = 88
-target-version = ['py39', 'py310', 'py311']
+target-version = ['py312']
 include = '\.pyi?$'
 
 [tool.isort]
@@ -112,7 +110,7 @@ multi_line_output = 3
 include_trailing_comma = true
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -128,7 +126,7 @@ strict_equality = true
 select = ["E", "F", "I", "N", "W", "B", "C4", "UP"]
 ignore = ["E501"]
 line-length = 88
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
