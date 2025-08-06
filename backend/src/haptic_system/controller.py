@@ -6,7 +6,7 @@ import threading
 from typing import Any
 
 from .device import HapticDevice
-from ..config.logging import get_logger
+from config.logging import get_logger
 
 try:
     import sounddevice as sd
@@ -40,9 +40,6 @@ class HapticController:
         self.available_channels = self.device_info.get('channels', 0)
 
     def _detect_audio_device(self) -> dict[str, Any]:
-        """ストリーミングを開始"""
-        if self.is_streaming:
-        """利用可能なオーディオデバイスを検出"""
         """利用可能なオーディオデバイスを検出"""
         if sd is None:
             return {"available": False, "channels": 0, "name": "No sounddevice module"}
@@ -173,6 +170,32 @@ class HapticController:
                 "device_mode": "dual" if self.available_channels == 4 else "single"
             }
         }
+
+    def set_vector_force(self, vector_params: dict[str, Any]) -> None:
+        """
+        ベクトル力制御を設定
+
+        Args:
+            vector_params: ベクトル力パラメータ
+        """
+        with self._lock:
+            device_id = vector_params.get("device_id", 1)
+            angle = vector_params.get("angle", 0.0)
+            magnitude = vector_params.get("magnitude", 0.0)
+            frequency = vector_params.get("frequency", 60.0)  # デフォルト60Hz
+            
+            self.device.set_vector_force(device_id, angle, magnitude, frequency)
+
+    def get_latency_ms(self) -> float:
+        """
+        レイテンシを取得（ストリーミング削除後は固定値）
+
+        Returns:
+            レイテンシ（ミリ秒）
+        """
+        # ストリーミング削除後は固定の理論値を返す
+        # block_size / sample_rate * 1000
+        return (self.block_size / self.sample_rate) * 1000
 
 
 

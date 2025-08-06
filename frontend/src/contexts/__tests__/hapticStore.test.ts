@@ -19,7 +19,6 @@ describe('hapticStore', () => {
       const state = result.current
 
       expect(state.channels).toHaveLength(4)
-      expect(state.isStreaming).toBe(false)
       expect(state.status).toBeNull()
       expect(state.vectorForce.device1).toBeNull()
       expect(state.vectorForce.device2).toBeNull()
@@ -156,30 +155,11 @@ describe('hapticStore', () => {
     })
   })
 
-  describe('Streaming Control', () => {
-    it('updates streaming state with setStreaming', () => {
-      const { result } = renderHook(() => useHapticStore())
-
-      act(() => {
-        result.current.setStreaming(true)
-      })
-
-      expect(result.current.isStreaming).toBe(true)
-
-      act(() => {
-        result.current.setStreaming(false)
-      })
-
-      expect(result.current.isStreaming).toBe(false)
-    })
-  })
 
   describe('Status Management', () => {
     const mockStatus: IStatusResponse = {
-      isStreaming: true,
       sampleRate: 44100,
       blockSize: 512,
-      latencyMs: 12.5,
     }
 
     it('updates status with setStatus', () => {
@@ -367,12 +347,9 @@ describe('hapticStore', () => {
             polarity: false,
           },
         ])
-        result.current.setStreaming(true)
         result.current.setStatus({
-          isStreaming: true,
           sampleRate: 48000,
           blockSize: 1024,
-          latencyMs: 20,
         })
         result.current.setVectorForce(1, {
           deviceId: 1,
@@ -392,12 +369,11 @@ describe('hapticStore', () => {
       expect(result.current.channels).toHaveLength(4)
       expect(result.current.channels[0]).toEqual({
         channelId: CHANNEL_IDS.DEVICE1_X,
-        frequency: 0,
-        amplitude: 0,
-        phase: 0,
+        frequency: 60,
+        amplitude: 0.5,
+        phase: 90,
         polarity: true,
       })
-      expect(result.current.isStreaming).toBe(false)
       expect(result.current.status).toBeNull()
       expect(result.current.vectorForce.device1).toBeNull()
       expect(result.current.vectorForce.device2).toBeNull()

@@ -201,7 +201,13 @@ describe('useUpdateParametersMutation', () => {
       )
     })
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to update parameters:', error)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('ERROR: Failed to update parameters'),
+      expect.objectContaining({
+        error: error.message
+      }),
+      expect.any(String)
+    )
 
     consoleSpy.mockRestore()
   })
@@ -260,7 +266,14 @@ describe('useUpdateChannelMutation', () => {
       expect(result.current.isError).toBe(true)
     })
 
-    expect(consoleSpy).toHaveBeenCalledWith(`Failed to update channel ${testChannelId}:`, error)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('ERROR: Failed to update channel parameters'),
+      expect.objectContaining({
+        channelId: testChannelId,
+        error: error.message
+      }),
+      expect.any(String)
+    )
 
     consoleSpy.mockRestore()
   })

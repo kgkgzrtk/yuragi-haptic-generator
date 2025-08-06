@@ -24,10 +24,8 @@ export const mockParametersResponse: IParametersResponse = {
 }
 
 export const mockStatusResponse: IStatusResponse = {
-  isStreaming: true,
   sampleRate: 44100,
   blockSize: 512,
-  latencyMs: 12.5,
 }
 
 export const mockWaveformData: IWaveformData = {

@@ -5,7 +5,7 @@ Tests discrete 22.5° step control as in reference implementation.
 
 import pytest
 import numpy as np
-from src.haptic_system.device import HapticDevice
+from haptic_system.device import HapticDevice
 
 
 class Test16DirectionMode:

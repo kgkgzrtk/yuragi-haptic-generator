@@ -5,7 +5,7 @@ Tests the 3% Gaussian noise addition as in reference implementation.
 
 import pytest
 import numpy as np
-from src.haptic_system.channel import HapticChannel
+from haptic_system.channel import HapticChannel
 
 
 class TestNoiseSimulation:

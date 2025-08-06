@@ -65,10 +65,10 @@ vi.mock('@/utils/chartConfig', () => ({
     datasets: [],
   })),
   CHANNEL_COLORS: {
-    [CHANNEL_IDS.DEVICE1_X]: '#FF6384',
-    [CHANNEL_IDS.DEVICE1_Y]: '#36A2EB',
-    [CHANNEL_IDS.DEVICE2_X]: '#FFCE56',
-    [CHANNEL_IDS.DEVICE2_Y]: '#4BC0C0',
+    0: '#FF6384',  // DEVICE1_X
+    1: '#36A2EB',  // DEVICE1_Y
+    2: '#FFCE56',  // DEVICE2_X
+    3: '#4BC0C0',  // DEVICE2_Y
   },
 }))
 

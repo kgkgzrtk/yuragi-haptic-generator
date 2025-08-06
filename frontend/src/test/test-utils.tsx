@@ -34,7 +34,6 @@ export const createMockHapticState = (
     { channelId: CHANNEL_IDS.DEVICE2_X, frequency: 0, amplitude: 0, phase: 0, polarity: true },
     { channelId: CHANNEL_IDS.DEVICE2_Y, frequency: 0, amplitude: 0, phase: 0, polarity: true },
   ],
-  isStreaming: false,
   status: null,
   vectorForce: {
     device1: null,
@@ -67,7 +66,6 @@ const AllTheProviders: React.FC<AllTheProvidersProps> = ({
     // Reset store to mock state
     store.reset()
     store.setChannels(mockState.channels)
-    store.setStreaming(mockState.isStreaming)
     store.setStatus(mockState.status)
     store.setConnection(mockState.connection.isConnected, mockState.connection.error)
 
