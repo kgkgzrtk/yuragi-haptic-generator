@@ -16,7 +16,7 @@ export const useWebSocket = ({
   maxReconnectAttempts = 5,
 }: UseWebSocketOptions) => {
   const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const reconnectTimeoutRef = useRef<number | null>(null)
   const reconnectAttemptsRef = useRef(0)
 
   const { setConnection, setChannels, setStatus } = useHapticStore()

@@ -2,7 +2,6 @@
  * Error handling and notification system for React Query integration
  */
 import { useCallback, useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useHapticStore } from '@/contexts/hapticStore'
 import { invalidateHapticQueries } from '@/lib/queryClient'
 import { logger } from '@/utils/logger'
@@ -36,7 +35,7 @@ class NotificationManager {
     this.notifyListeners()
 
     // Auto remove after duration
-    if (newNotification.duration > 0) {
+    if (newNotification.duration && newNotification.duration > 0) {
       setTimeout(() => {
         this.removeNotification(id)
       }, newNotification.duration)
@@ -109,7 +108,6 @@ export const useNotifications = () => {
  * Hook for handling React Query errors with proper categorization
  */
 export const useErrorHandler = () => {
-  const _queryClient = useQueryClient()
   const setConnection = useHapticStore(state => state.setConnection)
   const { addNotification } = useNotifications()
 
@@ -227,7 +225,7 @@ export const useErrorHandler = () => {
 
   // Retry logic with exponential backoff
   const createRetryFunction = useCallback(
-    (queryKey: any[], maxRetries: number = 3, baseDelay: number = 1000) => {
+    (_queryKey: any[], maxRetries: number = 3, baseDelay: number = 1000) => {
       return async (failureCount: number, error: any) => {
         const { retryable } = categorizeError(error)
 
@@ -277,7 +275,6 @@ export const useErrorHandler = () => {
  */
 export const useHapticErrorHandler = () => {
   const { handleError, createRetryFunction } = useErrorHandler()
-  const _queryClient = useQueryClient()
 
   const handleParameterError = useCallback(
     (error: any, channelId?: number) => {

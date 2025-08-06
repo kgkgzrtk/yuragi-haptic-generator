@@ -2,7 +2,6 @@ import axios from 'axios'
 import type {
   IChannelParameters,
   IParametersResponse,
-  IStatusResponse,
   IVectorForce,
   IWaveformData,
 } from '@/types/hapticTypes'

@@ -28,7 +28,6 @@ export const testApiResponses = {
     error: { status: 'error', message: 'Operation failed' },
   },
   systemStatus: {
-    isStreaming: false,
     sampleRate: 44100,
     blockSize: 512,
     latencyMs: 12,
@@ -130,7 +129,6 @@ export const testUrls = {
     health: '/api/health',
     status: '/api/status',
     parameters: '/api/parameters',
-    streaming: '/api/streaming',
     vectorForce: '/api/vector-force',
     waveform: '/api/waveform',
     // Legacy support
@@ -154,7 +152,7 @@ export const testWebSocketMessages = {
   },
   statusUpdate: {
     type: 'status_update',
-    data: { isStreaming: true },
+    data: { sampleRate: 44100, blockSize: 512 },
     timestamp: '2025-01-01T00:00:00.000Z',
   },
   error: {
@@ -277,9 +275,5 @@ export const testParameterSets = {
   vectorForce: {
     basic: { angle: 45, magnitude: 0.7, frequency: 80 },
     extreme: { angle: 359, magnitude: 1.0, frequency: 120 },
-  },
-  streamingStates: {
-    stopped: { isStreaming: false },
-    started: { isStreaming: true },
   },
 } as const

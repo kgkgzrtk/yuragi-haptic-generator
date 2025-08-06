@@ -61,7 +61,7 @@ const parseNumber = (value: string | undefined, defaultValue: number): number =>
  */
 const parseLogLevel = (value: string | undefined): 'debug' | 'info' | 'warn' | 'error' => {
   const validLevels = ['debug', 'info', 'warn', 'error'] as const
-  if (!value || !validLevels.includes(value as any)) {
+  if (!value || !validLevels.includes(value as typeof validLevels[number])) {
     return 'info'
   }
   return value as 'debug' | 'info' | 'warn' | 'error'
@@ -120,8 +120,8 @@ export const isProduction = import.meta.env.PROD
  * Get build-time information
  */
 export const buildInfo = {
-  version: (globalThis as any).__APP_VERSION__ || env.appVersion,
-  buildTime: (globalThis as any).__BUILD_TIME__ || new Date().toISOString(),
+  version: (globalThis as { __APP_VERSION__?: string }).__APP_VERSION__ || env.appVersion,
+  buildTime: (globalThis as { __BUILD_TIME__?: string }).__BUILD_TIME__ || new Date().toISOString(),
 }
 
 /**

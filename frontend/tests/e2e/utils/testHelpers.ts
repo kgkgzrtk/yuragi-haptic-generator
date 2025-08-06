@@ -553,17 +553,6 @@ export class HapticControlPage {
     await clearButton.click()
   }
 
-  // Streaming control methods
-  async toggleStreaming(): Promise<void> {
-    const streamingButton = this.page.locator(testSelectors.streaming.button)
-    await streamingButton.click()
-  }
-
-  async getStreamingStatus(): Promise<boolean> {
-    const streamingButton = this.page.locator(testSelectors.streaming.button)
-    const buttonText = await streamingButton.textContent()
-    return buttonText?.includes('Stop') || false
-  }
 
   async getConnectionStatus(): Promise<string> {
     const statusElement = this.page.locator(testSelectors.streaming.status)
@@ -684,52 +673,6 @@ export class HapticControlPage {
     await helpers.expectNoErrorNotifications()
   }
 
-  /**
-   * Test streaming error recovery workflow
-   */
-  async testStreamingErrorRecovery(
-    helpers: TestHelpers,
-    streamingUrl: string,
-    successResponse: object
-  ): Promise<void> {
-    // Start streaming successfully
-    await helpers.mockApiResponse(streamingUrl, {
-      ...successResponse,
-      isStreaming: true,
-    })
-
-    await this.toggleStreaming()
-
-    // Verify streaming started
-    let isStreaming = await this.getStreamingStatus()
-    expect(isStreaming).toBe(true)
-
-    // Mock streaming error
-    await helpers.mockApiError(streamingUrl, 503, 'Streaming service unavailable')
-
-    // Try to stop streaming
-    await this.toggleStreaming()
-
-    // Verify error is handled
-    await helpers.expectErrorNotification('Streaming service unavailable')
-
-    // Verify streaming state remains consistent
-    isStreaming = await this.getStreamingStatus()
-    expect(isStreaming).toBe(true) // Should remain true since stop failed
-
-    // Restore streaming API
-    await helpers.mockApiResponse(streamingUrl, {
-      ...successResponse,
-      isStreaming: false,
-    })
-
-    // Try to stop streaming again
-    await this.toggleStreaming()
-
-    // Verify successful stop after recovery
-    isStreaming = await this.getStreamingStatus()
-    expect(isStreaming).toBe(false)
-  }
 
   /**
    * Trigger rapid parameter changes (for testing error handling under load)

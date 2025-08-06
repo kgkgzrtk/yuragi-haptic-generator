@@ -7,7 +7,6 @@ import { useHapticStore } from '@/contexts/hapticStore'
 import { queryKeys, queryDefaults } from '@/lib/queryClient'
 import { HapticService } from '@/services/hapticService'
 import type { IWaveformData } from '@/types/hapticTypes'
-import { logger } from '@/utils/logger'
 
 interface WaveformQueryParams {
   duration?: number
@@ -26,7 +25,6 @@ export const useWaveformQuery = ({
   enabled = true,
   realTime = false,
 }: WaveformQueryParams = {}) => {
-  const isStreaming = useHapticStore(state => state.isStreaming)
 
   return useQuery({
     queryKey: queryKeys.waveformData(duration, sampleRate),
@@ -37,8 +35,8 @@ export const useWaveformQuery = ({
     // Use waveform-specific defaults for high-frequency updates
     ...queryDefaults.waveform,
 
-    // Enable query based on streaming status and enabled flag
-    enabled: enabled && isStreaming,
+    // Enable query based on enabled flag
+    enabled: enabled,
 
     // Adjust refetch interval based on real-time needs
     refetchInterval: realTime ? 50 : queryDefaults.waveform.refetchInterval, // 50ms for real-time, 100ms default
@@ -49,9 +47,6 @@ export const useWaveformQuery = ({
     // Don't show loading state for subsequent fetches (streaming data)
     notifyOnChangeProps: ['data', 'error'],
 
-    onError: (error: any) => {
-      logger.error('Failed to fetch waveform data', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
-    },
 
     // Structure query for efficient updates
     structuralSharing: false, // Disable for better performance with high-frequency updates
@@ -85,9 +80,6 @@ export const useInfiniteWaveformQuery = ({
     staleTime: 5000,
     gcTime: 30000,
 
-    onError: (error: any) => {
-      logger.error('Failed to fetch infinite waveform data', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
-    },
   })
 }
 
@@ -119,7 +111,6 @@ export const useRealTimeWaveformStream = ({
   channelId,
 }: WaveformQueryParams & { bufferSize?: number } = {}) => {
   const dataBuffer = useRef<IWaveformData[]>([])
-  const isStreaming = useHapticStore(state => state.isStreaming)
 
   const query = useQuery({
     queryKey: [...queryKeys.waveformData(duration, sampleRate), 'stream', channelId],
@@ -127,28 +118,27 @@ export const useRealTimeWaveformStream = ({
       return await HapticService.getWaveformData(duration, sampleRate)
     },
 
-    enabled: isStreaming,
+    enabled: true,
     refetchInterval: 50, // Very high frequency for real-time
     refetchIntervalInBackground: true,
 
     // Minimal cache time for streaming data
     staleTime: 0,
     gcTime: 1000,
+  })
 
-    onSuccess: data => {
+  // Update buffer when data changes
+  useEffect(() => {
+    if (query.data) {
       // Add to buffer
-      dataBuffer.current.push(data)
+      dataBuffer.current.push(query.data)
 
       // Maintain buffer size
       if (dataBuffer.current.length > bufferSize) {
         dataBuffer.current = dataBuffer.current.slice(-bufferSize)
       }
-    },
-
-    onError: (error: any) => {
-      logger.error('Real-time waveform stream error', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
-    },
-  })
+    }
+  }, [query.data, bufferSize])
 
   // Get channel-specific data from buffer
   const getChannelBuffer = (targetChannelId: number) => {
@@ -186,24 +176,23 @@ export const useRealTimeWaveformStream = ({
  */
 export const useMultiChannelWaveformQuery = (params: WaveformQueryParams = {}) => {
   const channels = useHapticStore(state => state.channels)
-  const isStreaming = useHapticStore(state => state.isStreaming)
 
   // Create queries for each channel at hook level to avoid calling hooks in loops
   const device1XQuery = useChannelWaveformQuery(0, {
     ...params,
-    enabled: params.enabled !== false && isStreaming,
+    enabled: params.enabled !== false,
   })
   const device1YQuery = useChannelWaveformQuery(1, {
     ...params,
-    enabled: params.enabled !== false && isStreaming,
+    enabled: params.enabled !== false,
   })
   const device2XQuery = useChannelWaveformQuery(2, {
     ...params,
-    enabled: params.enabled !== false && isStreaming,
+    enabled: params.enabled !== false,
   })
   const device2YQuery = useChannelWaveformQuery(3, {
     ...params,
-    enabled: params.enabled !== false && isStreaming,
+    enabled: params.enabled !== false,
   })
 
   // Map queries to channel data

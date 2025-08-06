@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
-import type { QuerySyncActions } from '@/lib/zustandQuerySync'
 import type {
   IHapticSystemState,
   IChannelParameters,
@@ -9,7 +8,7 @@ import type {
 } from '@/types/hapticTypes'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 
-interface HapticStore extends IHapticSystemState, QuerySyncActions {
+interface HapticStore extends IHapticSystemState {
   // Actions
   setChannels: (channels: IChannelParameters[]) => void
   updateChannel: (channelId: number, params: Partial<IChannelParameters>) => void
