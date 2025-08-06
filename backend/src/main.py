@@ -2,16 +2,15 @@
 FastAPI メインアプリケーション
 """
 
-import asyncio
 import logging
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field, field_validator
-from typing import Literal
 
 from src.config.settings import get_settings, setup_logging
 from src.haptic_system.controller import HapticController
@@ -36,8 +35,6 @@ except Exception as e:
     # sounddeviceがない環境では None のまま
     logger.warning(f"Failed to initialize HapticController: {e}")
     controller = None
-
-
 
 
 @asynccontextmanager
@@ -387,7 +384,7 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
 
     # プリセットに基づいてパラメータをマッピング
     preset_params = _get_yuragi_preset_params(request.preset)
-    
+
     if request.enabled:
         # プリセットパラメータを適用
         controller.device.set_vector_force(
@@ -396,7 +393,7 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
             magnitude=preset_params["magnitude"],
             frequency=preset_params["frequency"],
         )
-        
+
         return {
             "status": "applied",
             "preset": request.preset,
@@ -404,7 +401,7 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
             "enabled": True,
             "parameters": {
                 "angle": preset_params["initial_angle"],
-                "magnitude": preset_params["magnitude"], 
+                "magnitude": preset_params["magnitude"],
                 "frequency": preset_params["frequency"],
                 "rotation_freq": preset_params["rotation_freq"],
             },
@@ -417,7 +414,7 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
             magnitude=0.0,
             frequency=60.0,  # デフォルト周波数
         )
-        
+
         return {
             "status": "disabled",
             "preset": request.preset,
@@ -461,8 +458,6 @@ def _get_yuragi_preset_params(preset: str) -> dict:
         },
     }
     return presets.get(preset, presets["default"]).copy()
-
-
 
 
 if __name__ == "__main__":

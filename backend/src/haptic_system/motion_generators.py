@@ -7,17 +7,17 @@ The actual implementations are in the modulation module.
 """
 
 from .modulation import (
-    ModulatorBase,
-    CircularMotionGenerator,
     AmplitudeModulator,
+    CircularMotionGenerator,
     DirectionalFluctuationGenerator,
-    NoiseGenerator
+    ModulatorBase,
+    NoiseGenerator,
 )
 
 __all__ = [
-    'ModulatorBase',
-    'CircularMotionGenerator', 
-    'AmplitudeModulator',
-    'DirectionalFluctuationGenerator',
-    'NoiseGenerator'
+    "ModulatorBase",
+    "CircularMotionGenerator",
+    "AmplitudeModulator",
+    "DirectionalFluctuationGenerator",
+    "NoiseGenerator",
 ]
