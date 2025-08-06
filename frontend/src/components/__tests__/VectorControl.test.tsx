@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { VectorControl } from '@/components/ControlPanel/VectorControl'
-import { useVectorForceManagement } from '@/hooks/queries/useVectorForceQuery'
+import { useVectorForceManagement, useBatchVectorForceUpdates } from '@/hooks/queries/useVectorForceQuery'
 import { useHapticErrorHandler } from '@/hooks/useErrorHandler'
 import { render, screen, waitFor, fireEvent } from '@/test/test-utils'
 import { CONSTRAINTS } from '@/types/hapticTypes'
@@ -49,6 +49,15 @@ describe('VectorControl', () => {
       error: null,
       isError: false,
       refetch: vi.fn(),
+    })
+
+    vi.mocked(useBatchVectorForceUpdates).mockReturnValue({
+      batchUpdate: vi.fn(),
+      updateValues: vi.fn(),
+      hasPendingUpdates: false,
+      clearPending: vi.fn(),
+      isUpdating: false,
+      error: null,
     })
 
     vi.mocked(useHapticErrorHandler).mockReturnValue({
