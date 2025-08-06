@@ -721,4 +721,3 @@ describe('WebSocketService', () => {
     })
   })
 })
-EOF < /dev/null

@@ -533,4 +533,3 @@ describe('CircularTrajectory Component', () => {
     })
   })
 })
-EOF < /dev/null

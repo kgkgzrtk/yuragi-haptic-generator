@@ -431,4 +431,3 @@ export default {
   webSocketPerformanceUtils,
   statePerformanceUtils,
 }
-EOF < /dev/null

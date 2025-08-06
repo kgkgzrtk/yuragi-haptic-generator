@@ -470,4 +470,3 @@ export default {
   hapticMessageTypes,
   webSocketTestScenarios,
 }
-EOF < /dev/null

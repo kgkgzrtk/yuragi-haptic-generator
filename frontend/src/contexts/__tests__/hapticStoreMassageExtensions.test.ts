@@ -692,4 +692,3 @@ describe('HapticStore Massage Extensions', () => {
     })
   })
 })
-EOF < /dev/null

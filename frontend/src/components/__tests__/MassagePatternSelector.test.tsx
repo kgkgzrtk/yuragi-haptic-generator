@@ -652,4 +652,3 @@ describe('MassagePatternSelector Component', () => {
     })
   })
 })
-EOF < /dev/null

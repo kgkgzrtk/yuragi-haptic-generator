@@ -107,4 +107,3 @@ export const massageTestScenarios = {
     }, 16) // ~60fps
   },
 }
-EOF < /dev/null
