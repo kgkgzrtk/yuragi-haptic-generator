@@ -44,19 +44,43 @@ export type HapticError = APIError | WebSocketError | ValidationError | NetworkE
 
 // Error type guards
 export const isAPIError = (error: unknown): error is APIError => {
-  return typeof error === 'object' && error !== null && 'code' in error && 'message' in error && 'status' in error
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error &&
+    'status' in error
+  )
 }
 
 export const isWebSocketError = (error: unknown): error is WebSocketError => {
-  return typeof error === 'object' && error !== null && 'code' in error && 'message' in error && 'wasClean' in error
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error &&
+    'wasClean' in error
+  )
 }
 
 export const isValidationError = (error: unknown): error is ValidationError => {
-  return typeof error === 'object' && error !== null && 'code' in error && 'message' in error && 'field' in error
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error &&
+    'field' in error
+  )
 }
 
 export const isNetworkError = (error: unknown): error is NetworkError => {
-  return typeof error === 'object' && error !== null && 'code' in error && 'message' in error && 'isOnline' in error
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error &&
+    'isOnline' in error
+  )
 }
 
 // Error creation helpers
@@ -149,7 +173,7 @@ export enum ErrorSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 // Extended error with severity

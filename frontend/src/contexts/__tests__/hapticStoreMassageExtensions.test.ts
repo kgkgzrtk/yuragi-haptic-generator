@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, renderHook } from '@/test/test-utils'
-import { useHapticStore } from '../hapticStore'
+import { useHapticStore } from '@/contexts/hapticStore'
 
 // Mock massage pattern types
 interface IMassagePattern {
@@ -55,7 +55,7 @@ interface IMassagePatternState {
 interface IHapticStoreWithMassage {
   // Existing store properties...
   massagePattern: IMassagePatternState
-  
+
   // Massage pattern actions
   setMassagePattern: (pattern: IMassagePattern | null) => void
   playMassagePattern: (patternId?: string) => void
@@ -132,13 +132,13 @@ Object.defineProperty(globalThis, 'performance', {
 
 describe.skip('HapticStore Massage Extensions', () => {
   let currentTime = 0
-  
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.clearAllTimers()
     vi.useFakeTimers()
     currentTime = 0
-    
+
     mockPerformance.now.mockImplementation(() => currentTime)
   })
 
@@ -152,7 +152,7 @@ describe.skip('HapticStore Massage Extensions', () => {
       const { result } = renderHook(() => useHapticStore())
 
       const startTime = performance.now()
-      
+
       act(() => {
         result.current.setMassagePattern(mockPatterns.gentle_circular)
         result.current.playMassagePattern()
@@ -161,12 +161,12 @@ describe.skip('HapticStore Massage Extensions', () => {
       // Simulate 60fps updates for 1 second
       for (let i = 0; i < 60; i++) {
         currentTime += 16.67 // ~60fps
-        
+
         act(() => {
-          const angle = (i * 6) * Math.PI / 180 // 6 degrees per frame
+          const angle = (i * 6 * Math.PI) / 180 // 6 degrees per frame
           const x = Math.cos(angle) * 0.5
           const y = Math.sin(angle) * 0.5
-          
+
           result.current.updateMassageProgress(i * 16.67)
           result.current.setCircularMotionState({
             currentAngle: angle,
@@ -186,12 +186,12 @@ describe.skip('HapticStore Massage Extensions', () => {
 
     it('should batch multiple state updates within single frame', () => {
       const { result } = renderHook(() => useHapticStore())
-      
+
       const renderSpy = vi.spyOn(result.current, 'setCircularMotionState')
-      
+
       act(() => {
         result.current.setMassagePattern(mockPatterns.deep_kneading)
-        
+
         // Multiple rapid updates
         for (let i = 0; i < 10; i++) {
           result.current.setCircularMotionState({
@@ -214,11 +214,11 @@ describe.skip('HapticStore Massage Extensions', () => {
       // Perform multiple pattern transitions
       for (const patternId of Object.keys(mockPatterns)) {
         const startTime = performance.now()
-        
+
         act(() => {
           result.current.transitionToPattern(mockPatterns[patternId], 1000)
         })
-        
+
         // Simulate transition progress
         for (let progress = 0; progress <= 100; progress += 10) {
           currentTime += 10
@@ -254,7 +254,10 @@ describe.skip('HapticStore Massage Extensions', () => {
       expect(result.current.massagePattern.patternHistory.length).toBeLessThanOrEqual(100)
 
       // Should keep most recent entries
-      const lastEntry = result.current.massagePattern.patternHistory[result.current.massagePattern.patternHistory.length - 1]
+      const lastEntry =
+        result.current.massagePattern.patternHistory[
+          result.current.massagePattern.patternHistory.length - 1
+        ]
       expect(lastEntry.patternId).toBe('pattern_999')
     })
   })
@@ -269,9 +272,9 @@ describe.skip('HapticStore Massage Extensions', () => {
       })
 
       // Test various angles
-      const testAngles = [0, Math.PI/2, Math.PI, 3*Math.PI/2, 2*Math.PI]
+      const testAngles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2, 2 * Math.PI]
       const radius = 0.5
-      
+
       testAngles.forEach(angle => {
         act(() => {
           result.current.setCircularMotionState({
@@ -312,7 +315,9 @@ describe.skip('HapticStore Massage Extensions', () => {
         angle += Math.PI / 4
       }
 
-      expect(result.current.massagePattern.circularMotion.currentAngle).toBeCloseTo(7 * Math.PI / 4)
+      expect(result.current.massagePattern.circularMotion.currentAngle).toBeCloseTo(
+        (7 * Math.PI) / 4
+      )
 
       // Test counterclockwise direction
       act(() => {
@@ -332,7 +337,9 @@ describe.skip('HapticStore Massage Extensions', () => {
         angle -= Math.PI / 4
       }
 
-      expect(result.current.massagePattern.circularMotion.currentAngle).toBeCloseTo(-3 * Math.PI / 4)
+      expect(result.current.massagePattern.circularMotion.currentAngle).toBeCloseTo(
+        (-3 * Math.PI) / 4
+      )
     })
 
     it('should support figure-eight motion patterns', () => {
@@ -344,30 +351,30 @@ describe.skip('HapticStore Massage Extensions', () => {
       })
 
       const positions: { x: number; y: number }[] = []
-      
+
       // Generate figure-eight pattern
       for (let t = 0; t < 2 * Math.PI; t += Math.PI / 16) {
         const x = Math.sin(t) * 0.6
         const y = Math.sin(2 * t) * 0.6
-        
+
         act(() => {
           result.current.setCircularMotionState({
             centerX: x,
             centerY: y,
           })
         })
-        
+
         positions.push({ ...result.current.massagePattern.currentPosition })
       }
 
       // Should trace figure-eight shape
       expect(positions.length).toBe(32)
-      
+
       // Check symmetry
       const midPoint = positions.length / 2
       const firstHalf = positions.slice(0, midPoint)
       const secondHalf = positions.slice(midPoint).reverse()
-      
+
       firstHalf.forEach((pos, i) => {
         expect(pos.x).toBeCloseTo(-secondHalf[i].x, 2)
         expect(pos.y).toBeCloseTo(secondHalf[i].y, 2)
@@ -389,30 +396,33 @@ describe.skip('HapticStore Massage Extensions', () => {
       const targetRadius = 0.8
       const targetVelocity = 2.0
       const transitionDuration = 1000 // 1 second
-      
+
       act(() => {
-        result.current.transitionToPattern({
-          ...mockPatterns.gentle_circular,
-          parameters: {
-            ...mockPatterns.gentle_circular.parameters,
-            radius: targetRadius,
-            frequency: targetVelocity,
+        result.current.transitionToPattern(
+          {
+            ...mockPatterns.gentle_circular,
+            parameters: {
+              ...mockPatterns.gentle_circular.parameters,
+              radius: targetRadius,
+              frequency: targetVelocity,
+            },
           },
-        }, transitionDuration)
+          transitionDuration
+        )
       })
 
       // Simulate smooth transition over time
       const steps = 10
       for (let i = 1; i <= steps; i++) {
         currentTime += transitionDuration / steps
-        
+
         act(() => {
           result.current.updateMassageProgress(currentTime)
         })
 
         const progress = i / steps
         const expectedRadius = 0.2 + (targetRadius - 0.2) * progress
-        
+
         expect(result.current.massagePattern.circularMotion.radius).toBeCloseTo(expectedRadius, 2)
       }
     })
@@ -443,7 +453,7 @@ describe.skip('HapticStore Massage Extensions', () => {
       // Position should reflect new radius
       const expectedX = Math.cos(initialAngle) * 0.8
       const expectedY = Math.sin(initialAngle) * 0.8
-      
+
       expect(result.current.massagePattern.currentPosition.x).toBeCloseTo(expectedX, 5)
       expect(result.current.massagePattern.currentPosition.y).toBeCloseTo(expectedY, 5)
     })
@@ -469,16 +479,19 @@ describe.skip('HapticStore Massage Extensions', () => {
       // During transition, should blend parameters
       for (let t = 0; t <= 2000; t += 200) {
         currentTime = t
-        
+
         act(() => {
           result.current.updateMassageProgress(t)
         })
 
         const progress = t / 2000
-        
+
         // Intensity should transition from 0.3 to 0.8
         const expectedIntensity = 0.3 + (0.8 - 0.3) * progress
-        expect(result.current.massagePattern.customSettings.intensity).toBeCloseTo(expectedIntensity, 2)
+        expect(result.current.massagePattern.customSettings.intensity).toBeCloseTo(
+          expectedIntensity,
+          2
+        )
       }
 
       // After transition, should be fully on new pattern
@@ -536,7 +549,7 @@ describe.skip('HapticStore Massage Extensions', () => {
 
       expect(result.current.massagePattern.isPlaying).toBe(false)
       expect(result.current.massagePattern.isPaused).toBe(true)
-      
+
       const pausedTime = result.current.massagePattern.elapsedTime
 
       // Resume
@@ -654,11 +667,11 @@ describe.skip('HapticStore Massage Extensions', () => {
       // Simulate long-running pattern with many updates
       for (let i = 0; i < 10000; i++) {
         currentTime += 16.67 // 60fps
-        
+
         act(() => {
           result.current.updateMassageProgress(currentTime)
           result.current.setCircularMotionState({
-            currentAngle: (i * 6) * Math.PI / 180,
+            currentAngle: (i * 6 * Math.PI) / 180,
           })
         })
       }

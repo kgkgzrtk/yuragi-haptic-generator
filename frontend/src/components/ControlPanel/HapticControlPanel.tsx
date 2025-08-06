@@ -7,7 +7,9 @@ interface HapticControlPanelProps {
   isSingleDeviceMode?: boolean
 }
 
-export const HapticControlPanel: React.FC<HapticControlPanelProps> = ({ isSingleDeviceMode = false }) => {
+export const HapticControlPanel: React.FC<HapticControlPanelProps> = ({
+  isSingleDeviceMode = false,
+}) => {
   return (
     <div className='haptic-control-panel'>
       <h2 className='panel-title'>Haptic Control System</h2>

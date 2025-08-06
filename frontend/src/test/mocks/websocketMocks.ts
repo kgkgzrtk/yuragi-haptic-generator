@@ -76,7 +76,7 @@ export class MockWebSocket implements WebSocket {
 
     this.connectionTimeout = setTimeout(() => {
       if (this.isDestroyed) return
-      
+
       if (this.options.simulateErrors && Math.random() < this.options.errorRate!) {
         this.simulateConnectionError()
       } else {
@@ -87,26 +87,26 @@ export class MockWebSocket implements WebSocket {
 
   private simulateConnectionSuccess(): void {
     if (this.isDestroyed) return
-    
+
     this.readyState = WebSocket.OPEN
     const event = new Event('open')
     this.onopen?.(event)
     this.dispatchEvent(event)
-    
+
     // Send any queued messages
     this.flushMessageQueue()
   }
 
   private simulateConnectionError(): void {
     if (this.isDestroyed) return
-    
+
     this.readyState = WebSocket.CLOSED
     const event = new Event('error')
     this.onerror?.(event)
     this.dispatchEvent(event)
-    
-    const closeEvent = new CloseEvent('close', { 
-      code: 1006, 
+
+    const closeEvent = new CloseEvent('close', {
+      code: 1006,
       reason: 'Connection failed',
       wasClean: false,
     })
@@ -116,18 +116,18 @@ export class MockWebSocket implements WebSocket {
 
   private flushMessageQueue(): void {
     while (this.messageQueue.length > 0) {
-      const message = this.messageQueue.shift()\!
+      const message = this.messageQueue.shift()!
       this.sendToClient(message)
     }
   }
 
   private sendToClient(message: MockWebSocketMessage): void {
-    if (this.readyState \!== WebSocket.OPEN || this.isDestroyed) return
+    if (this.readyState !== WebSocket.OPEN || this.isDestroyed) return
 
     const delay = this.options.messageDelay || 0
     const sendMessage = () => {
       if (this.isDestroyed) return
-      
+
       const event = new MessageEvent('message', {
         data: JSON.stringify(message),
         origin: this.url,
@@ -135,7 +135,7 @@ export class MockWebSocket implements WebSocket {
         source: null,
         ports: [],
       })
-      
+
       this.onmessage?.(event)
       this.dispatchEvent(event)
     }
@@ -149,11 +149,11 @@ export class MockWebSocket implements WebSocket {
 
   // WebSocket interface methods
   send = vi.fn((data: string | ArrayBufferLike | Blob | ArrayBufferView): void => {
-    if (this.readyState \!== WebSocket.OPEN) {
+    if (this.readyState !== WebSocket.OPEN) {
       throw new Error('WebSocket is not open')
     }
 
-    if (this.options.simulateErrors && Math.random() < this.options.errorRate\!) {
+    if (this.options.simulateErrors && Math.random() < this.options.errorRate!) {
       throw new Error('Simulated network error')
     }
 
@@ -176,7 +176,7 @@ export class MockWebSocket implements WebSocket {
 
     setTimeout(() => {
       if (this.isDestroyed) return
-      
+
       this.readyState = WebSocket.CLOSED
       const event = new CloseEvent('close', {
         code,
@@ -189,10 +189,10 @@ export class MockWebSocket implements WebSocket {
   })
 
   addEventListener = vi.fn((type: string, listener: EventListener): void => {
-    if (\!this.eventListeners.has(type)) {
+    if (!this.eventListeners.has(type)) {
       this.eventListeners.set(type, new Set())
     }
-    this.eventListeners.get(type)\!.add(listener)
+    this.eventListeners.get(type)!.add(listener)
   })
 
   removeEventListener = vi.fn((type: string, listener: EventListener): void => {
@@ -272,7 +272,11 @@ export class WebSocketServiceMock {
   private mockInstances: Map<string, MockWebSocket> = new Map()
   private messageHandlers: Map<string, Set<(message: any) => void>> = new Map()
 
-  createMockWebSocket(url: string, protocols?: string | string[], options?: MockWebSocketOptions): MockWebSocket {
+  createMockWebSocket(
+    url: string,
+    protocols?: string | string[],
+    options?: MockWebSocketOptions
+  ): MockWebSocket {
     const mock = new MockWebSocket(url, protocols, options)
     this.mockInstances.set(url, mock)
     return mock
@@ -311,10 +315,10 @@ export class WebSocketServiceMock {
   }
 
   onMessage(type: string, handler: (message: any) => void): void {
-    if (\!this.messageHandlers.has(type)) {
+    if (!this.messageHandlers.has(type)) {
       this.messageHandlers.set(type, new Set())
     }
-    this.messageHandlers.get(type)\!.add(handler)
+    this.messageHandlers.get(type)!.add(handler)
   }
 
   offMessage(type: string, handler: (message: any) => void): void {
@@ -325,13 +329,17 @@ export class WebSocketServiceMock {
 /**
  * Global WebSocket mock setup
  */
-export function setupGlobalWebSocketMock(defaultOptions?: MockWebSocketOptions): WebSocketServiceMock {
+export function setupGlobalWebSocketMock(
+  defaultOptions?: MockWebSocketOptions
+): WebSocketServiceMock {
   const serviceMock = new WebSocketServiceMock()
   const originalWebSocket = globalThis.WebSocket
 
-  globalThis.WebSocket = vi.fn().mockImplementation((url: string, protocols?: string | string[]) => {
-    return serviceMock.createMockWebSocket(url, protocols, defaultOptions)
-  }) as any
+  globalThis.WebSocket = vi
+    .fn()
+    .mockImplementation((url: string, protocols?: string | string[]) => {
+      return serviceMock.createMockWebSocket(url, protocols, defaultOptions)
+    }) as any
 
   // Add static properties
   Object.defineProperty(globalThis.WebSocket, 'CONNECTING', { value: 0 })

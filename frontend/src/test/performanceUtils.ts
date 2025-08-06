@@ -38,10 +38,10 @@ export class PerformanceMeasurement {
   end(): PerformanceMetrics {
     this.endTime = performance.now()
     const executionTime = this.endTime - this.startTime
-    
+
     const finalMemory = process.memoryUsage?.()
     let memoryUsage
-    
+
     if (this.initialMemory && finalMemory) {
       memoryUsage = {
         heapUsed: finalMemory.heapUsed - this.initialMemory.heapUsed,
@@ -100,7 +100,7 @@ export function measureRenderPerformance<T>(
     const renderStart = performance.now()
     renderFunction()
     const renderEnd = performance.now()
-    
+
     renderTimes.push(renderEnd - renderStart)
     measurement.markRender()
   }
@@ -125,7 +125,7 @@ export function measureAnimationPerformance(
   const targetFrameRate = 60
   const frameInterval = 1000 / targetFrameRate
   const totalFrames = Math.floor(durationMs / frameInterval)
-  
+
   const frameTimes: number[] = []
   let droppedFrames = 0
 
@@ -134,7 +134,7 @@ export function measureAnimationPerformance(
   for (let i = 0; i < totalFrames; i++) {
     const frameStart = performance.now()
     const time = i * frameInterval
-    
+
     try {
       animationCallback(time, i)
       measurement.markFrame()
@@ -172,19 +172,19 @@ export function measureStressPerformance<T>(
   steps: number = 10
 ): Array<{ load: number; metrics: PerformanceMetrics }> {
   const results: Array<{ load: number; metrics: PerformanceMetrics }> = []
-  
+
   for (let i = 1; i <= steps; i++) {
     const load = Math.floor((i / steps) * maxLoad)
     const measurement = new PerformanceMeasurement()
-    
+
     measurement.start()
-    
+
     try {
       testFunction(load)
     } catch (error) {
       console.warn(`Stress test failed at load ${load}:`, error)
     }
-    
+
     const metrics = measurement.end()
     results.push({ load, metrics })
   }
@@ -207,7 +207,7 @@ export const performanceAssertions = {
    * Assert that frame rate meets minimum requirement
    */
   expectFrameRate(metrics: PerformanceMetrics, minFps: number): void {
-    if (metrics.frameRate \!== undefined) {
+    if (metrics.frameRate !== undefined) {
       expect(metrics.frameRate).toBeGreaterThanOrEqual(minFps)
     }
   },
@@ -216,7 +216,7 @@ export const performanceAssertions = {
    * Assert that memory usage is within acceptable range
    */
   expectMemoryUsage(metrics: PerformanceMetrics, maxMemoryMB: number): void {
-    if (metrics.memoryUsage?.heapUsed \!== undefined) {
+    if (metrics.memoryUsage?.heapUsed !== undefined) {
       const memoryMB = metrics.memoryUsage.heapUsed / (1024 * 1024)
       expect(memoryMB).toBeLessThan(maxMemoryMB)
     }
@@ -226,7 +226,7 @@ export const performanceAssertions = {
    * Assert that render count is reasonable
    */
   expectRenderCount(metrics: PerformanceMetrics, maxRenders: number): void {
-    if (metrics.renderCount \!== undefined) {
+    if (metrics.renderCount !== undefined) {
       expect(metrics.renderCount).toBeLessThanOrEqual(maxRenders)
     }
   },
@@ -237,7 +237,7 @@ export const performanceAssertions = {
  */
 export function createMockPerformanceTimer() {
   let currentTime = 0
-  
+
   const mockPerformance = {
     now: vi.fn(() => currentTime),
     mark: vi.fn(),
@@ -270,17 +270,17 @@ export const canvasPerformanceUtils = {
     drawingFunction: (ctx: CanvasRenderingContext2D) => void,
     iterations: number = 100
   ): PerformanceMetrics {
-    const ctx = canvas.getContext('2d')\!
+    const ctx = canvas.getContext('2d')!
     const measurement = new PerformanceMeasurement()
-    
+
     measurement.start()
-    
+
     for (let i = 0; i < iterations; i++) {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       drawingFunction(ctx)
       measurement.markRender()
     }
-    
+
     return measurement.end()
   },
 
@@ -289,7 +289,7 @@ export const canvasPerformanceUtils = {
    */
   createMockCanvasWithTracking() {
     const operations: string[] = []
-    
+
     const mockContext = {
       clearRect: vi.fn((...args) => operations.push('clearRect')),
       beginPath: vi.fn((...args) => operations.push('beginPath')),
@@ -307,7 +307,7 @@ export const canvasPerformanceUtils = {
       rotate: vi.fn((...args) => operations.push('rotate')),
       scale: vi.fn((...args) => operations.push('scale')),
       getOperations: () => [...operations],
-      clearOperations: () => operations.length = 0,
+      clearOperations: () => (operations.length = 0),
     }
 
     const mockCanvas = {
@@ -342,9 +342,9 @@ export const webSocketPerformanceUtils = {
   ): PerformanceMetrics {
     const measurement = new PerformanceMeasurement()
     const message = 'x'.repeat(messageSize)
-    
+
     measurement.start()
-    
+
     for (let i = 0; i < messageCount; i++) {
       try {
         mockWebSocket.send(JSON.stringify({ id: i, data: message }))
@@ -352,7 +352,7 @@ export const webSocketPerformanceUtils = {
         // Count as failed send
       }
     }
-    
+
     return measurement.end()
   },
 
@@ -361,14 +361,14 @@ export const webSocketPerformanceUtils = {
    */
   addLatencyToWebSocketMock(mockWebSocket: any, latencyMs: number) {
     const originalSend = mockWebSocket.send
-    
+
     mockWebSocket.send = vi.fn(async (data: string) => {
       await new Promise(resolve => setTimeout(resolve, latencyMs))
       return originalSend.call(mockWebSocket, data)
     })
-    
+
     const originalOnMessage = mockWebSocket.onmessage
-    
+
     mockWebSocket.simulateMessage = (data: any) => {
       setTimeout(() => {
         const event = new MessageEvent('message', { data: JSON.stringify(data) })
@@ -385,37 +385,31 @@ export const statePerformanceUtils = {
   /**
    * Measure state update performance
    */
-  measureStateUpdates<T>(
-    stateUpdater: () => T,
-    updateCount: number
-  ): PerformanceMetrics {
+  measureStateUpdates<T>(stateUpdater: () => T, updateCount: number): PerformanceMetrics {
     const measurement = new PerformanceMeasurement()
-    
+
     measurement.start()
-    
+
     for (let i = 0; i < updateCount; i++) {
       stateUpdater()
       measurement.markRender()
     }
-    
+
     return measurement.end()
   },
 
   /**
    * Measure state selector performance
    */
-  measureStateSelectors<T>(
-    selector: () => T,
-    selectionCount: number
-  ): PerformanceMetrics {
+  measureStateSelectors<T>(selector: () => T, selectionCount: number): PerformanceMetrics {
     const measurement = new PerformanceMeasurement()
-    
+
     measurement.start()
-    
+
     for (let i = 0; i < selectionCount; i++) {
       selector()
     }
-    
+
     return measurement.end()
   },
 }

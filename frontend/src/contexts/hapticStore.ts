@@ -85,7 +85,7 @@ export const useHapticStore = create<HapticStore>()(
           const angleRad = (force.angle * Math.PI) / 180
           const xComponent = force.magnitude * Math.cos(angleRad)
           const yComponent = force.magnitude * Math.sin(angleRad)
-          
+
           // Amplitude is always positive, polarity indicates direction
           const xAmplitude = Math.abs(xComponent)
           const yAmplitude = Math.abs(yComponent)
@@ -133,19 +133,21 @@ export const useHapticStore = create<HapticStore>()(
           yuragi: {
             ...state.yuragi,
             [`device${deviceId}`]: status,
-            isActive: status ? true : (
-              deviceId === 1 
-                ? !!state.yuragi.device2?.enabled 
-                : !!state.yuragi.device1?.enabled
-            ),
+            isActive: status
+              ? true
+              : deviceId === 1
+                ? !!state.yuragi.device2?.enabled
+                : !!state.yuragi.device1?.enabled,
           },
         })),
 
       updateYuragiProgress: (deviceId, progress) =>
         set(state => {
           const currentStatus = state.yuragi[`device${deviceId}`]
-          if (!currentStatus) return state
-          
+          if (!currentStatus) {
+            return state
+          }
+
           return {
             yuragi: {
               ...state.yuragi,

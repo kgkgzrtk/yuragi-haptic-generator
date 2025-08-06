@@ -553,7 +553,6 @@ export class HapticControlPage {
     await clearButton.click()
   }
 
-
   async getConnectionStatus(): Promise<string> {
     const statusElement = this.page.locator(testSelectors.streaming.status)
     return (await statusElement.textContent()) || ''
@@ -584,7 +583,7 @@ export class HapticControlPage {
   }
 
   // Data consistency and error recovery methods
-  
+
   /**
    * Set multiple channel parameters rapidly (for testing concurrent operations)
    */
@@ -618,7 +617,7 @@ export class HapticControlPage {
     expectedValues: { frequency?: number; amplitude?: number; phase?: number }
   ): Promise<void> {
     const actualValues = await this.getChannelValues(channelId)
-    
+
     if (expectedValues.frequency !== undefined) {
       expect(actualValues.frequency).toBe(expectedValues.frequency)
     }
@@ -672,7 +671,6 @@ export class HapticControlPage {
     await this.page.waitForTimeout(1000)
     await helpers.expectNoErrorNotifications()
   }
-
 
   /**
    * Trigger rapid parameter changes (for testing error handling under load)

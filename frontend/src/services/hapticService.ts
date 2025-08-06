@@ -54,7 +54,6 @@ export class HapticService {
     return response.data
   }
 
-
   // Vector force control
   static async setVectorForce(params: IVectorForce): Promise<{ status: string }> {
     const response = await api.post('/vector-force', {

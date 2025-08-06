@@ -216,7 +216,11 @@ export const useErrorHandler = () => {
       }
 
       // Log error for debugging
-      logger.error(`[${category.toUpperCase()}] ${title}`, { category, title, error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
+      logger.error(
+        `[${category.toUpperCase()}] ${title}`,
+        { category, title, error: error instanceof Error ? error.message : error },
+        error instanceof Error ? error : undefined
+      )
 
       return { category, severity, retryable }
     },
@@ -290,7 +294,6 @@ export const useHapticErrorHandler = () => {
     },
     [handleError]
   )
-
 
   const handleWaveformError = useCallback(
     (error: any) => {

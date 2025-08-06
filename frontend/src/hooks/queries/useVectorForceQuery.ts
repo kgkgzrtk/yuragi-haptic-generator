@@ -20,49 +20,49 @@ export const useSetVectorForceMutation = () => {
     mutationFn: async (params: IVectorForce) => {
       // Set vector force
       const result = await HapticService.setVectorForce(params)
-      
+
       // Calculate X and Y amplitudes from vector force
       const angleRad = (params.angle * Math.PI) / 180
       const xComponent = params.magnitude * Math.cos(angleRad)
       const yComponent = params.magnitude * Math.sin(angleRad)
-      
+
       // Amplitude is always positive, polarity indicates direction
       const xAmplitude = Math.abs(xComponent)
       const yAmplitude = Math.abs(yComponent)
       const xPolarity = xComponent >= 0
       const yPolarity = yComponent >= 0
-      
+
       // Determine channel IDs based on device
       const xChannelId = params.deviceId === 1 ? 0 : 2
       const yChannelId = params.deviceId === 1 ? 1 : 3
-      
+
       // Update channels with calculated amplitudes
       const currentParams = await HapticService.getParameters()
       const updatedChannels = currentParams.channels.map(ch => {
         if (ch.channelId === xChannelId) {
-          return { 
+          return {
             channelId: ch.channelId,
             frequency: params.frequency,
             amplitude: xAmplitude,
             phase: ch.phase,
-            polarity: xPolarity
+            polarity: xPolarity,
           }
         }
         if (ch.channelId === yChannelId) {
-          return { 
+          return {
             channelId: ch.channelId,
             frequency: params.frequency,
             amplitude: yAmplitude,
             phase: ch.phase,
-            polarity: yPolarity
+            polarity: yPolarity,
           }
         }
         return ch
       })
-      
+
       // Send updated parameters to backend
       await HapticService.updateParameters(updatedChannels)
-      
+
       return result
     },
 
@@ -100,16 +100,19 @@ export const useSetVectorForceMutation = () => {
         )
       }
 
-      logger.error('Failed to set vector force for device', { deviceId: variables.deviceId, error: _error instanceof Error ? _error.message : _error }, _error instanceof Error ? _error : undefined)
+      logger.error(
+        'Failed to set vector force for device',
+        { deviceId: variables.deviceId, error: _error instanceof Error ? _error.message : _error },
+        _error instanceof Error ? _error : undefined
+      )
     },
-
 
     onSettled: (_data, _error, variables) => {
       // Refetch to ensure consistency with server
       queryClient.invalidateQueries({
         queryKey: queryKeys.vectorForceByDevice(variables.deviceId),
       })
-      
+
       // Also invalidate parameters query to update channels
       queryClient.invalidateQueries({
         queryKey: queryKeys.parameters(),
@@ -136,11 +139,11 @@ export const useClearVectorForceMutation = () => {
       }
 
       const result = await HapticService.setVectorForce(clearForce)
-      
+
       // Clear the corresponding channels
       const xChannelId = deviceId === 1 ? 0 : 2
       const yChannelId = deviceId === 1 ? 1 : 3
-      
+
       // Update channels to zero amplitude
       const currentParams = await HapticService.getParameters()
       const updatedChannels = currentParams.channels.map(ch => {
@@ -149,10 +152,10 @@ export const useClearVectorForceMutation = () => {
         }
         return ch
       })
-      
+
       // Send updated parameters to backend
       await HapticService.updateParameters(updatedChannels)
-      
+
       return result
     },
 
@@ -186,16 +189,19 @@ export const useClearVectorForceMutation = () => {
         )
       }
 
-      logger.error('Failed to clear vector force for device', { deviceId, error: _error instanceof Error ? _error.message : _error }, _error instanceof Error ? _error : undefined)
+      logger.error(
+        'Failed to clear vector force for device',
+        { deviceId, error: _error instanceof Error ? _error.message : _error },
+        _error instanceof Error ? _error : undefined
+      )
     },
-
 
     onSettled: (_data, _error, deviceId) => {
       // Refetch to ensure consistency
       queryClient.invalidateQueries({
         queryKey: queryKeys.vectorForceByDevice(deviceId),
       })
-      
+
       // Also invalidate parameters query to update channels
       queryClient.invalidateQueries({
         queryKey: queryKeys.parameters(),
@@ -227,7 +233,6 @@ export const useVectorForceQuery = (deviceId: 1 | 2) => {
     ...queryDefaults.parameters,
 
     enabled: true,
-
   })
 }
 
@@ -237,7 +242,7 @@ export const useVectorForceQuery = (deviceId: 1 | 2) => {
 export const useBatchVectorForceUpdates = (deviceId: 1 | 2, debounceMs: number = 300) => {
   const setVectorForceMutation = useSetVectorForceMutation()
   const setVectorForce = useHapticStore(state => state.setVectorForce)
-  
+
   // Use refs to persist values across renders
   const pendingUpdateRef = useRef<Partial<Omit<IVectorForce, 'deviceId'>> | null>(null)
   const currentValuesRef = useRef<Omit<IVectorForce, 'deviceId'>>({
@@ -252,7 +257,7 @@ export const useBatchVectorForceUpdates = (deviceId: 1 | 2, debounceMs: number =
     if (pendingUpdateRef.current && Object.keys(pendingUpdateRef.current).length > 0) {
       // Merge pending updates with current values
       const mergedValues = { ...currentValuesRef.current, ...pendingUpdateRef.current }
-      
+
       // Execute the mutation
       setVectorForceMutation.mutate({
         deviceId,
@@ -261,7 +266,7 @@ export const useBatchVectorForceUpdates = (deviceId: 1 | 2, debounceMs: number =
 
       // Update current values
       currentValuesRef.current = mergedValues
-      
+
       // Clear pending
       pendingUpdateRef.current = null
       setHasPendingUpdates(false)
@@ -297,12 +302,9 @@ export const useBatchVectorForceUpdates = (deviceId: 1 | 2, debounceMs: number =
     [deviceId, debounceMs, flushUpdates, setVectorForce]
   )
 
-  const updateValues = useCallback(
-    (values: Omit<IVectorForce, 'deviceId'>) => {
-      currentValuesRef.current = values
-    },
-    []
-  )
+  const updateValues = useCallback((values: Omit<IVectorForce, 'deviceId'>) => {
+    currentValuesRef.current = values
+  }, [])
 
   const clearPending = useCallback(() => {
     if (debounceTimerRef.current) {
@@ -375,26 +377,29 @@ export const useVectorForceValidation = () => {
 export const useVectorForcePresets = () => {
   const setVectorForceMutation = useSetVectorForceMutation()
 
-  const presets = useMemo(() => ({
-    // Directional presets
-    north: { angle: 90, magnitude: 0.5, frequency: 80 },
-    south: { angle: 270, magnitude: 0.5, frequency: 80 },
-    east: { angle: 0, magnitude: 0.5, frequency: 80 },
-    west: { angle: 180, magnitude: 0.5, frequency: 80 },
+  const presets = useMemo(
+    () => ({
+      // Directional presets
+      north: { angle: 90, magnitude: 0.5, frequency: 80 },
+      south: { angle: 270, magnitude: 0.5, frequency: 80 },
+      east: { angle: 0, magnitude: 0.5, frequency: 80 },
+      west: { angle: 180, magnitude: 0.5, frequency: 80 },
 
-    // Intensity presets
-    gentle: { angle: 45, magnitude: 0.3, frequency: 60 },
-    moderate: { angle: 45, magnitude: 0.6, frequency: 80 },
-    strong: { angle: 45, magnitude: 0.9, frequency: 100 },
+      // Intensity presets
+      gentle: { angle: 45, magnitude: 0.3, frequency: 60 },
+      moderate: { angle: 45, magnitude: 0.6, frequency: 80 },
+      strong: { angle: 45, magnitude: 0.9, frequency: 100 },
 
-    // Pattern presets
-    circle: [
-      { angle: 0, magnitude: 0.5, frequency: 70 },
-      { angle: 90, magnitude: 0.5, frequency: 70 },
-      { angle: 180, magnitude: 0.5, frequency: 70 },
-      { angle: 270, magnitude: 0.5, frequency: 70 },
-    ],
-  }), [])
+      // Pattern presets
+      circle: [
+        { angle: 0, magnitude: 0.5, frequency: 70 },
+        { angle: 90, magnitude: 0.5, frequency: 70 },
+        { angle: 180, magnitude: 0.5, frequency: 70 },
+        { angle: 270, magnitude: 0.5, frequency: 70 },
+      ],
+    }),
+    []
+  )
 
   const applyPreset = useCallback(
     async (deviceId: 1 | 2, presetName: keyof typeof presets) => {

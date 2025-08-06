@@ -61,7 +61,7 @@ const parseNumber = (value: string | undefined, defaultValue: number): number =>
  */
 const parseLogLevel = (value: string | undefined): 'debug' | 'info' | 'warn' | 'error' => {
   const validLevels = ['debug', 'info', 'warn', 'error'] as const
-  if (!value || !validLevels.includes(value as typeof validLevels[number])) {
+  if (!value || !validLevels.includes(value as (typeof validLevels)[number])) {
     return 'info'
   }
   return value as 'debug' | 'info' | 'warn' | 'error'

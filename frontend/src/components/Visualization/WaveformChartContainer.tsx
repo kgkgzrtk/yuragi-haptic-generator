@@ -15,7 +15,7 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
 }) => {
   // Get channel parameters from store
   const channel = useHapticStore(state => state.channels.find(ch => ch.channelId === channelId))
-  
+
   // State for waveform data
   const [waveformData, setWaveformData] = useState<IWaveformData | null>(null)
 
@@ -46,7 +46,7 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
       polarity: channel.polarity,
       duration,
       sampleRate,
-      startTime: startTimeRef.current
+      startTime: startTimeRef.current,
     })
 
     return {
@@ -57,31 +57,31 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
           channelId: channel.channelId,
           data: waveforms.voltage,
           current: waveforms.current,
-          acceleration: waveforms.acceleration
-        }
-      ]
+          acceleration: waveforms.acceleration,
+        },
+      ],
     }
   }, [channel])
-  
+
   // Animation loop
   const animate = useCallback(() => {
     const data = generateWaveform()
     if (data) {
       setWaveformData(data)
     }
-    
+
     animationFrameRef.current = requestAnimationFrame(animate)
   }, [generateWaveform])
-  
+
   // Always show animated waveform
   useEffect(() => {
     // Reset time tracking
     startTimeRef.current = 0
     lastFrameTimeRef.current = performance.now()
-    
+
     // Start animation
     animationFrameRef.current = requestAnimationFrame(animate)
-    
+
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)

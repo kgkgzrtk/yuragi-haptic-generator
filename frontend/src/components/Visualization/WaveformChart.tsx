@@ -45,10 +45,10 @@ export const WaveformChart: React.FC<WaveformChartProps> = ({
       // Return empty data structure
       return createWaveformData(channelId, [], 44100)
     }
-    
+
     return createWaveformData(
-      channelId, 
-      channelData.data, 
+      channelId,
+      channelData.data,
       waveformData.sampleRate,
       channelData.current,
       channelData.acceleration
