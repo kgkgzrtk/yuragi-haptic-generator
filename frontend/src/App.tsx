@@ -13,6 +13,7 @@ import { useQueryStoreIntegration } from '@/hooks/useQueryStoreIntegration'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { queryClient, startBackgroundSync } from '@/lib/queryClient'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
+import { logger } from '@/utils/logger'
 import './App.css'
 
 function HapticApp() {
