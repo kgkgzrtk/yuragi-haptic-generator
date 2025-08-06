@@ -4,6 +4,8 @@ import type {
   IParametersResponse,
   IVectorForce,
   IWaveformData,
+  IYURAGIRequest,
+  IYURAGIStatus,
 } from '@/types/hapticTypes'
 
 const API_BASE_URL = '/api'
@@ -72,6 +74,17 @@ export class HapticService {
     device_mode: 'dual' | 'single' | 'none'
   }> {
     const response = await api.get('/device-info')
+    return response.data
+  }
+
+  // YURAGI massage control
+  static async yuragiPreset(params: IYURAGIRequest): Promise<IYURAGIStatus> {
+    const response = await api.post('/yuragi/preset', {
+      device_id: params.deviceId,
+      preset: params.preset,
+      duration: params.duration,
+      enabled: params.enabled,
+    })
     return response.data
   }
 }

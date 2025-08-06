@@ -5,6 +5,7 @@ import type {
   IChannelParameters,
   IVectorForce,
   IStatusResponse,
+  IYURAGIStatus,
 } from '@/types/hapticTypes'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 
@@ -15,6 +16,8 @@ interface HapticStore extends IHapticSystemState {
   setStatus: (status: IStatusResponse | null) => void
   setVectorForce: (deviceId: 1 | 2, force: IVectorForce | null) => void
   setConnection: (isConnected: boolean, error?: string | null) => void
+  setYuragiStatus: (deviceId: 1 | 2, status: IYURAGIStatus | null) => void
+  updateYuragiProgress: (deviceId: 1 | 2, progress: number) => void
   reset: () => void
 }
 
@@ -30,6 +33,11 @@ const initialState: IHapticSystemState = {
   vectorForce: {
     device1: null,
     device2: null,
+  },
+  yuragi: {
+    device1: null,
+    device2: null,
+    isActive: false,
   },
   connection: {
     isConnected: false,
@@ -118,6 +126,35 @@ export const useHapticStore = create<HapticStore>()(
       setConnection: (isConnected, error = null) =>
         set({
           connection: { isConnected, error },
+        }),
+
+      setYuragiStatus: (deviceId, status) =>
+        set(state => ({
+          yuragi: {
+            ...state.yuragi,
+            [`device${deviceId}`]: status,
+            isActive: status ? true : (
+              deviceId === 1 
+                ? !!state.yuragi.device2?.enabled 
+                : !!state.yuragi.device1?.enabled
+            ),
+          },
+        })),
+
+      updateYuragiProgress: (deviceId, progress) =>
+        set(state => {
+          const currentStatus = state.yuragi[`device${deviceId}`]
+          if (!currentStatus) return state
+          
+          return {
+            yuragi: {
+              ...state.yuragi,
+              [`device${deviceId}`]: {
+                ...currentStatus,
+                progress,
+              },
+            },
+          }
         }),
 
       reset: () => set(initialState),

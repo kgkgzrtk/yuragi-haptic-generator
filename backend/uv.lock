@@ -207,6 +207,7 @@ name = "haptic-system"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "fastapi" },
     { name = "numpy" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -234,6 +235,7 @@ production = [
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
+    { name = "fastapi", specifier = ">=0.116.1" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.100.0" },
     { name = "gunicorn", marker = "extra == 'production'", specifier = ">=21.0.0" },
     { name = "httptools", marker = "extra == 'api'", specifier = ">=0.6.0" },

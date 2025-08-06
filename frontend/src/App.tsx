@@ -4,6 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { NotificationContainer } from '@/components/Common/NotificationContainer'
 import { DeviceWarningDialog } from '@/components/Common/DeviceWarningDialog'
 import { HapticControlPanel } from '@/components/ControlPanel/HapticControlPanel'
+import { YURAGIControl } from '@/components/ControlPanel/YURAGIControl'
 import { AccelerationTrajectoryContainer } from '@/components/Visualization/AccelerationTrajectoryContainer'
 import { WaveformChartContainer } from '@/components/Visualization/WaveformChartContainer'
 import { useDeviceInfoQuery } from '@/hooks/queries/useDeviceQuery'
@@ -68,7 +69,12 @@ function HapticApp() {
               Failed to load parameters. Please check your connection.
             </div>
           ) : (
-            <HapticControlPanel isSingleDeviceMode={isSingleDeviceMode} />
+            <>
+              <HapticControlPanel isSingleDeviceMode={isSingleDeviceMode} />
+              <div style={{ marginTop: '20px' }}>
+                <YURAGIControl deviceId={1} />
+              </div>
+            </>
           )}
         </section>
 

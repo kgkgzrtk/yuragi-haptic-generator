@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field, field_validator
+from typing import Literal
 
 from src.config.settings import get_settings, setup_logging
 from src.haptic_system.controller import HapticController
@@ -144,6 +145,23 @@ class VectorForceRequest(BaseModel):
         le=settings.max_frequency,
         description="Frequency in Hz",
     )
+
+    @field_validator("device_id")
+    @classmethod
+    def validate_device_id(cls, v):
+        if v not in [1, 2]:
+            raise ValueError("Device ID must be 1 or 2")
+        return v
+
+
+class YURAGIPresetRequest(BaseModel):
+    """YURAGIプリセットリクエスト"""
+
+    device_id: int = Field(..., description="Device ID (1 or 2)")
+    preset: Literal["default", "gentle", "strong", "slow"] = Field(
+        "default", description="Preset name"
+    )
+    enabled: bool = Field(True, description="Enable/disable the preset")
 
     @field_validator("device_id")
     @classmethod
@@ -359,6 +377,90 @@ async def set_vector_force(request: VectorForceRequest):
         frequency=request.frequency,
     )
     return {"status": "applied"}
+
+
+@app.post("/api/yuragi/preset")
+async def set_yuragi_preset(request: YURAGIPresetRequest):
+    """YURAGIプリセットを適用"""
+    if controller is None:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+
+    # プリセットに基づいてパラメータをマッピング
+    preset_params = _get_yuragi_preset_params(request.preset)
+    
+    if request.enabled:
+        # プリセットパラメータを適用
+        controller.device.set_vector_force(
+            device_id=request.device_id,
+            angle=preset_params["initial_angle"],
+            magnitude=preset_params["magnitude"],
+            frequency=preset_params["frequency"],
+        )
+        
+        return {
+            "status": "applied",
+            "preset": request.preset,
+            "device_id": request.device_id,
+            "enabled": True,
+            "parameters": {
+                "angle": preset_params["initial_angle"],
+                "magnitude": preset_params["magnitude"], 
+                "frequency": preset_params["frequency"],
+                "rotation_freq": preset_params["rotation_freq"],
+            },
+        }
+    else:
+        # 無効化の場合は振幅を0に設定
+        controller.device.set_vector_force(
+            device_id=request.device_id,
+            angle=0.0,
+            magnitude=0.0,
+            frequency=60.0,  # デフォルト周波数
+        )
+        
+        return {
+            "status": "disabled",
+            "preset": request.preset,
+            "device_id": request.device_id,
+            "enabled": False,
+            "parameters": {
+                "angle": 0.0,
+                "magnitude": 0.0,
+                "frequency": 60.0,
+                "rotation_freq": 0.0,
+            },
+        }
+
+
+def _get_yuragi_preset_params(preset: str) -> dict:
+    """YURAGIプリセットのパラメータを取得"""
+    presets = {
+        "default": {
+            "initial_angle": 0.0,
+            "magnitude": 0.7,
+            "frequency": 60.0,
+            "rotation_freq": 0.33,  # 約3秒/周
+        },
+        "gentle": {
+            "initial_angle": 45.0,  # 45度方向
+            "magnitude": 0.4,
+            "frequency": 40.0,
+            "rotation_freq": 0.2,  # 5秒/周
+        },
+        "strong": {
+            "initial_angle": 90.0,  # 上方向
+            "magnitude": 1.0,
+            "frequency": 80.0,
+            "rotation_freq": 0.5,  # 2秒/周
+        },
+        "slow": {
+            "initial_angle": 180.0,  # 左方向
+            "magnitude": 0.8,
+            "frequency": 25.0,
+            "rotation_freq": 0.15,  # 6.7秒/周
+        },
+    }
+    return presets.get(preset, presets["default"]).copy()
 
 
 
