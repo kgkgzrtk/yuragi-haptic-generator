@@ -1142,9 +1142,30 @@ export const XYTrajectory: React.FC = () => {
 };
 ```
 
-## 4. Web UI 統合設計
+## 4. 高度な触覚フィードバック機能（ゆらぎ付き円運動系）
 
-### 4.1 メインアプリケーション (frontend/App.tsx)
+詳細な設計については、[マッサージ機能設計書](massage_feature_design.md)を参照してください。
+
+### 4.1 概要
+
+基本的なノコギリ波生成に加えて、より自然で心地よい触覚フィードバックを実現する「ゆらぎ付き円運動系の力覚ベクトル」機能を提供します。
+
+### 4.2 主要機能
+
+- **円運動生成**: 0.2-0.6Hzの低周波回転で自然な力覚ベクトル
+- **1/f風ゆらぎ**: ローパスフィルタによる自然なノイズパターン
+- **マッサージモード**: 振幅変調と方向ゆらぎによる心地よい触感
+- **複数プリセット**: gentle, strong, slowなど用途別の振動パターン
+
+### 4.3 実装モジュール
+
+- `modulation.py`: 各種変調器（CircularMotionGenerator, AmplitudeModulator等）
+- `massage_controller.py`: マッサージ波形制御
+- `force_generator.py`: 力覚生成インターフェース
+
+## 5. Web UI 統合設計
+
+### 5.1 メインアプリケーション (frontend/App.tsx)
 
 ```typescript
 import React, { useEffect } from 'react';
@@ -1191,7 +1212,7 @@ function App() {
 export default App;
 ```
 
-### 4.2 API Client Hook (frontend/hooks/useAPIClient.ts)
+### 5.2 API Client Hook (frontend/hooks/useAPIClient.ts)
 
 ```typescript
 import { useCallback, useRef, useEffect } from 'react';
@@ -1256,9 +1277,9 @@ export const useAPIClient = () => {
 };
 ```
 
-## 5. パフォーマンス最適化
+## 6. パフォーマンス最適化
 
-### 5.1 Numba JIT最適化
+### 6.1 Numba JIT最適化
 
 重要な処理ループはNumbaでコンパイル：
 
@@ -1290,7 +1311,7 @@ def process_multichannel_sawtooth(
     return output
 ```
 
-### 5.2 メモリ管理
+### 6.2 メモリ管理
 
 ```python
 class BufferPool:
@@ -1314,7 +1335,7 @@ class BufferPool:
         return np.zeros(self.buffer_size, dtype=np.float32)
 ```
 
-### 5.3 ロックフリーリングバッファ
+### 6.3 ロックフリーリングバッファ
 
 ```python
 class LockFreeRingBuffer:
@@ -1337,9 +1358,9 @@ class LockFreeRingBuffer:
         pass
 ```
 
-## 6. テスト戦略
+## 7. テスト戦略
 
-### 6.1 単体テスト
+### 7.1 単体テスト
 
 ```python
 # tests/unit/test_sawtooth_generator.py
@@ -1394,7 +1415,7 @@ class TestSawtoothGenerator:
         assert aliasing_power / total_power < 0.01  # 1%以下
 ```
 
-### 6.2 統合テスト
+### 7.2 統合テスト
 
 ```python
 # tests/integration/test_vector_control.py
@@ -1420,7 +1441,7 @@ class TestVectorControl:
             # （実機でのセンサー測定が必要）
 ```
 
-### 6.3 パフォーマンステスト
+### 7.3 パフォーマンステスト
 
 ```python
 # benchmarks/latency_test.py
@@ -1456,9 +1477,13 @@ def benchmark_callback_latency():
     assert np.percentile(latencies_array, 99) < 10.0  # 99%が10ms以下
 ```
 
-## 7. 設定ファイル
+### 7.4 マッサージ機能テスト
 
-### 7.1 pyproject.toml
+マッサージ機能の詳細なテスト戦略については、[テスト戦略設計書](test_strategy.md#4-マッサージ機能テスト)を参照してください。
+
+## 8. 設定ファイル
+
+### 8.1 pyproject.toml
 
 ```toml
 [project]
@@ -1557,7 +1582,7 @@ include = [
 packages = ["src/sawtooth_haptic"]
 ```
 
-### 7.2 package.json
+### 8.2 package.json
 
 ```json
 {
@@ -1591,7 +1616,7 @@ packages = ["src/sawtooth_haptic"]
 }
 ```
 
-### 7.3 開発サーバー起動スクリプト
+### 8.3 開発サーバー起動スクリプト
 
 ```python
 # scripts/start_dev.py
@@ -1649,9 +1674,9 @@ if __name__ == "__main__":
     main()
 ```
 
-## 8. 使用例
+## 9. 使用例
 
-### 8.1 基本的な使用例
+### 9.1 基本的な使用例
 
 ```python
 # examples/basic_sawtooth.py
@@ -1688,7 +1713,7 @@ input("Press Enter to stop...")
 actuator.stop()
 ```
 
-### 8.2 ベクトル力覚の例
+### 9.2 ベクトル力覚の例
 
 ```python
 # examples/vector_force_demo.py
@@ -1715,7 +1740,7 @@ for t in range(360):
 actuator.stop()
 ```
 
-### 8.3 Web UIの使用例
+### 9.3 Web UIの使用例
 
 ```bash
 # 開発環境の起動
@@ -1739,17 +1764,17 @@ Web UIの操作:
    - ベクトル力覚の方向を可視化
    - グラデーション付き軌跡表示
 
-## 9. まとめ
+## 10. まとめ
 
 本設計書では、ノコギリ波出力デバイスのソフトウェア実装について、以下の要素を定義しました：
 
-### 9.1 主要機能の実現
+### 10.1 主要機能の実現
 1. **周波数可変制御**: 40-120Hzの範囲で各チャンネル独立制御
 2. **360度ベクトル力覚**: 位相差と極性反転による全方向力覚提示
 3. **Web UI統合**: リアルタイム波形表示とパラメータ制御
 4. **ローカル実行**: localhost完結型のシステム設計
 
-### 9.2 技術的特徴
+### 10.2 技術的特徴
 1. **低レイテンシアーキテクチャ**: PyAudio + Numbaによる10ms以下の応答
 2. **高品質波形生成**: BLITアルゴリズムによるアンチエイリアス
 3. **リアルタイム可視化**: Observable Plot + D3.jsによる60fps描画
@@ -1757,10 +1782,18 @@ Web UIの操作:
 5. **適応制御システム**: 2kHzフィードバックループ
 6. **安全機能**: 自動共振検出と保護
 
-### 9.3 使用技術スタック
+### 10.3 使用技術スタック
 - **バックエンド**: Python 3.11+, FastAPI, PyAudio, Numba, uv
 - **フロントエンド**: React 18+, Vite, TypeScript, TailwindCSS
 - **可視化**: Observable Plot, D3.js
 - **通信**: HTTP/REST API
 
-これらの設計により、要件定義書で定められた全ての機能要件と性能要件を満たし、直感的な操作性を備えたシステムの実装が可能となります。
+### 10.4 高度な触覚フィードバック機能（新規追加）
+1. **ゆらぎ付き円運動**: 0.2-0.6Hzの低周波回転で自然な力覚ベクトル生成
+2. **1/f風ゆらぎ**: ローパスフィルタによる自然なノイズパターン
+3. **マッサージモード**: 振幅変調と方向ゆらぎによる心地よい触感
+4. **複数プリセット**: gentle, strong, slowなど用途別の振動パターン
+5. **リアルタイム制御**: WebSocket経由での動的パラメータ更新
+6. **機械共振活用**: 180Hz共振特性を考慮した加速度応答
+
+これらの設計により、要件定義書で定められた全ての機能要件と性能要件を満たし、さらに高度なマッサージ機能を備えた直感的な操作性のシステムの実装が可能となります。
