@@ -2,7 +2,6 @@
 Haptic channel management module
 """
 
-
 import numpy as np
 
 from .waveform import SawtoothWaveform, resonator

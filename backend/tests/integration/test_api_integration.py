@@ -2,7 +2,6 @@
 FastAPI統合テスト
 """
 
-
 import pytest
 from fastapi.testclient import TestClient
 

@@ -2,7 +2,6 @@
 Haptic device management module
 """
 
-
 import numpy as np
 
 from .channel import HapticChannel
