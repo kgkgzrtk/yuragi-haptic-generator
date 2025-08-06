@@ -425,7 +425,7 @@ async def get_waveform_data(request: WaveformRequest):
     
     # Add zero data for remaining channels if in single device mode
     for ch_id in range(num_channels, 4):
-        channels_data.append({"channel_id": ch_id, "data": [0.0] * num_samples})
+        channels_data.append({"channelId": ch_id, "data": [0.0] * num_samples})
 
     return {
         "timestamp": "2024-08-04T00:00:00Z",  # 実際にはdatetimeを使用

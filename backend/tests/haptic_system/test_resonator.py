@@ -5,7 +5,7 @@ Tests the 2nd order IIR filter with Tustin transformation.
 
 import pytest
 import numpy as np
-from src.haptic_system.waveform import resonator
+from haptic_system.waveform import resonator
 
 
 class TestResonator:

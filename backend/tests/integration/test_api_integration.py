@@ -4,7 +4,7 @@ FastAPI統合テスト
 import pytest
 from fastapi.testclient import TestClient
 import json
-from src.main import app
+from main import app
 
 
 @pytest.fixture
@@ -163,7 +163,7 @@ class TestWaveformAPI:
         
         # 各チャンネルのデータを確認
         for i, channel in enumerate(data["channels"]):
-            assert channel["channel_id"] == i
+            assert channel["channelId"] == i
             assert "data" in channel
             assert isinstance(channel["data"], list)
     

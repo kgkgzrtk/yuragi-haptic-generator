@@ -5,8 +5,8 @@ Tests the flow: sawtooth -> X/Y distribution -> resonator -> output
 
 import pytest
 import numpy as np
-from src.haptic_system.waveform import SawtoothWaveform, resonator
-from src.haptic_system.channel import HapticChannel
+from haptic_system.waveform import SawtoothWaveform, resonator
+from haptic_system.channel import HapticChannel
 
 
 class TestSignalPipeline:
