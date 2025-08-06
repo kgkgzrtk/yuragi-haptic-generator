@@ -126,3 +126,8 @@ docs/.doctrees/
 
 # Git worktrees
 /.worktrees/
+
+# Claude and MCP related
+.claude/
+.mcp.json
+.serena/
