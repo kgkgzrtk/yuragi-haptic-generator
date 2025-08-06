@@ -375,4 +375,3 @@ class NoiseGenerator:
             pink_noise = pink_noise / std_dev
 
         return pink_noise.astype(np.float64)
-

@@ -8,7 +8,6 @@ Tests for:
 - DirectionalFluctuationGenerator: multi-component directional modulation
 """
 
-
 import numpy as np
 import pytest
 
