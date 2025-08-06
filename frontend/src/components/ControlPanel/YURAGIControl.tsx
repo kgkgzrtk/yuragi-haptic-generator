@@ -21,8 +21,8 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const timerRef = useRef<number | null>(null)
+  const progressIntervalRef = useRef<number | null>(null)
 
   const currentStatus = yuragi[`device${deviceId}`] as IYURAGIStatus | null
   const isActive = currentStatus?.enabled && !!currentStatus?.startTime

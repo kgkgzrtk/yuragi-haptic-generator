@@ -57,6 +57,8 @@ export interface PresetParameters {
  */
 class SeededRNG {
   private seed: number
+  private hasSpare: boolean = false
+  private spare: number = 0
 
   constructor(seed: number) {
     this.seed = seed % 2147483647
@@ -70,19 +72,16 @@ class SeededRNG {
 
   randn(): number {
     // Box-Muller transform for normal distribution
-    static let hasSpare = false
-    static let spare = 0
-
-    if (hasSpare) {
-      hasSpare = false
-      return spare
+    if (this.hasSpare) {
+      this.hasSpare = false
+      return this.spare
     }
 
-    hasSpare = true
+    this.hasSpare = true
     const u = this.next()
     const v = this.next()
     const mag = Math.sqrt(-2.0 * Math.log(u))
-    spare = mag * Math.cos(2.0 * Math.PI * v)
+    this.spare = mag * Math.cos(2.0 * Math.PI * v)
     return mag * Math.sin(2.0 * Math.PI * v)
   }
 }
@@ -239,7 +238,7 @@ function ifft(spectrum: number[]): number[] {
 /**
  * Generate 1/f noise for modulation (simplified version of backend _generate_1f_noise)
  */
-function generate1fNoise(n: number, fC: number, seed?: number): number[] {
+function generate1fNoise(n: number, seed?: number): number[] {
   if (n === 0) return []
   
   const rng = seed !== undefined ? new SeededRNG(seed) : new SeededRNG(Date.now())
@@ -275,7 +274,6 @@ export function generateCircularMotion(
   rotationFreq: number,
   phase: number,
   fluctuationAmplitude: number = 10.0,
-  fluctuationBandwidth: number = 0.5,
   fmDepth: number = 0.05,
   duration: number,
   sampleRate: number,
@@ -297,12 +295,12 @@ export function generateCircularMotion(
   const baseTheta = t.map(time => 2 * Math.PI * rotationFreq * time + (phase * Math.PI / 180))
   
   // Generate 1/f noise for directional fluctuations
-  const nTheta = generate1fNoise(numSamples, fluctuationBandwidth, seed)
+  const nTheta = generate1fNoise(numSamples, seed)
   const deltaTheta = fluctuationAmplitude * Math.PI / 180 // Convert to radians
   const dTheta = nTheta.map(n => deltaTheta * n)
   
   // Generate FM modulation for angular velocity variation
-  const fmNoise = generate1fNoise(numSamples, 0.2, seed ? seed + 1 : undefined)
+  const fmNoise = generate1fNoise(numSamples, seed ? seed + 1 : undefined)
   const omegaInst = fmNoise.map(n => 2 * Math.PI * rotationFreq * (1 + fmDepth * n))
   
   // Combine base rotation with fluctuations
@@ -324,7 +322,6 @@ export function generateAmplitudeModulation(
   envelopeFreq: number = 0.4,
   envelopeDepth: number = 0.25,
   noiseLevel: number = 0.1,
-  noiseBandwidth: number = 0.7,
   duration: number,
   sampleRate: number,
   seed?: number
@@ -345,7 +342,7 @@ export function generateAmplitudeModulation(
   )
   
   // Generate amplitude noise using 1/f characteristics
-  const nA = generate1fNoise(numSamples, noiseBandwidth, seed)
+  const nA = generate1fNoise(numSamples, seed)
   const noise = nA.map(n => noiseLevel * n)
   
   // Combine base amplitude, envelope, and noise
@@ -445,7 +442,6 @@ export function generateYuragiWaveform(params: YuragiParameters): {
     params.rotationFreq,
     params.phase,
     params.fluctuationAmplitude,
-    params.fluctuationBandwidth,
     params.fmDepth,
     params.duration,
     params.sampleRate,
@@ -458,7 +454,6 @@ export function generateYuragiWaveform(params: YuragiParameters): {
     params.envelopeFreq,
     params.envelopeDepth,
     params.noiseLevel,
-    params.noiseBandwidth,
     params.duration,
     params.sampleRate,
     params.seed
