@@ -2,6 +2,7 @@
 SawtoothWaveformクラスのユニットテスト
 TDDサイクル1: 基本的な波形生成
 """
+
 import pytest
 import numpy as np
 from haptic_system.waveform import SawtoothWaveform

@@ -2,6 +2,7 @@
 HapticControllerクラスのユニットテスト
 Updated: Streaming機能削除後のテスト
 """
+
 import pytest
 import numpy as np
 import time

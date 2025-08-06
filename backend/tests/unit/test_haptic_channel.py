@@ -2,6 +2,7 @@
 HapticChannelクラスのユニットテスト
 TDDサイクル2: 単一チャンネル管理
 """
+
 import pytest
 import numpy as np
 from haptic_system.channel import HapticChannel

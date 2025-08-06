@@ -2,6 +2,7 @@
 HapticDeviceクラスのユニットテスト
 TDDサイクル3: 4チャンネル統合管理
 """
+
 import pytest
 import numpy as np
 from haptic_system.device import HapticDevice
