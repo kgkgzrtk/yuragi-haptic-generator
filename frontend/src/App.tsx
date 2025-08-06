@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { Button } from '@/components/Common/Button'
 import { NotificationContainer } from '@/components/Common/NotificationContainer'
 import { DeviceWarningDialog } from '@/components/Common/DeviceWarningDialog'
 import { HapticControlPanel } from '@/components/ControlPanel/HapticControlPanel'
@@ -9,13 +8,11 @@ import { WaveformChartContainer } from '@/components/Visualization/WaveformChart
 import { AccelerationTrajectoryContainer } from '@/components/Visualization/AccelerationTrajectoryContainer'
 import { useSystemStatusQuery } from '@/hooks/queries/useHealthQuery'
 import { useParametersQuery } from '@/hooks/queries/useParametersQuery'
-import { useStreamingStateManager } from '@/hooks/queries/useStreamingQuery'
 import { useDeviceInfoQuery } from '@/hooks/queries/useDeviceQuery'
 import { useQueryStoreIntegration } from '@/hooks/useQueryStoreIntegration'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { queryClient, startBackgroundSync } from '@/lib/queryClient'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
-import { useHapticStore } from '@/contexts/hapticStore'
 import './App.css'
 
 function HapticApp() {
@@ -28,7 +25,6 @@ function HapticApp() {
   // Use React Query hooks for data management
   const parametersQuery = useParametersQuery()
   const systemStatusQuery = useSystemStatusQuery()
-  const streamingManager = useStreamingStateManager()
   const deviceQuery = useDeviceInfoQuery()
 
   // Initialize WebSocket connection
@@ -38,38 +34,10 @@ function HapticApp() {
     maxReconnectAttempts: 5,
   })
 
-  // Handle streaming toggle using React Query
-  const toggleStreaming = streamingManager.toggleStreaming
-
   // Initialize background sync
   useEffect(() => {
     const cleanup = startBackgroundSync()
     return cleanup
-  }, [])
-
-
-  // Handle connection restoration
-  useEffect(() => {
-    if (systemStatusQuery.isConnected) {
-      streamingManager.handleConnectionRestore()
-    }
-  }, [systemStatusQuery.isConnected, streamingManager])
-
-  // Sync streaming status from backend on mount
-  useEffect(() => {
-    const syncStreamingStatus = async () => {
-      try {
-        const response = await fetch('/api/streaming/status')
-        const data = await response.json()
-        if (data.is_streaming !== streamingManager.isStreaming) {
-          useHapticStore.getState().setStreaming(data.is_streaming)
-        }
-      } catch (error) {
-        console.error('Failed to sync streaming status:', error)
-      }
-    }
-    
-    syncStreamingStatus()
   }, [])
 
   // Check device availability on mount and when device info changes
@@ -95,13 +63,6 @@ function HapticApp() {
           >
             {systemStatusQuery.isConnected ? 'Connected' : 'Disconnected'}
           </span>
-          <Button
-            onClick={toggleStreaming}
-            variant={streamingManager.isStreaming ? 'danger' : 'primary'}
-            loading={streamingManager.isToggling}
-          >
-            {streamingManager.isStreaming ? 'Stop Streaming' : 'Start Streaming'}
-          </Button>
         </div>
       </header>
 

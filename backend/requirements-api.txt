@@ -1,0 +1,11 @@
+# Core dependencies
+numpy>=1.24.0
+sounddevice>=0.4.6
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# API dependencies
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+uvloop>=0.17.0 ; sys_platform != 'win32'
+httptools>=0.6.0

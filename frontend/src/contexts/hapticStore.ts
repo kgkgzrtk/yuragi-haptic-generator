@@ -13,7 +13,6 @@ interface HapticStore extends IHapticSystemState, QuerySyncActions {
   // Actions
   setChannels: (channels: IChannelParameters[]) => void
   updateChannel: (channelId: number, params: Partial<IChannelParameters>) => void
-  setStreaming: (isStreaming: boolean) => void
   setStatus: (status: IStatusResponse | null) => void
   setVectorForce: (deviceId: 1 | 2, force: IVectorForce | null) => void
   setConnection: (isConnected: boolean, error?: string | null) => void
@@ -28,7 +27,6 @@ const initialState: IHapticSystemState = {
     { channelId: CHANNEL_IDS.DEVICE2_X, frequency: 60, amplitude: 0.5, phase: 90, polarity: true },
     { channelId: CHANNEL_IDS.DEVICE2_Y, frequency: 60, amplitude: 0.5, phase: 90, polarity: true },
   ],
-  isStreaming: false,
   status: null,
   vectorForce: {
     device1: null,
@@ -60,8 +58,6 @@ export const useHapticStore = create<HapticStore>()(
             ch.channelId === channelId ? { ...ch, ...params } : ch
           ),
         })),
-
-      setStreaming: isStreaming => set({ isStreaming }),
 
       setStatus: status => set({ status }),
 

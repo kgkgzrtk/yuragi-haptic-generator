@@ -4,6 +4,5 @@
 
 export * from './useHealthQuery'
 export * from './useParametersQuery'
-export * from './useStreamingQuery'
 export * from './useVectorForceQuery'
 export * from './useWaveformQuery'

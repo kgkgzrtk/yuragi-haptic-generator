@@ -15,7 +15,6 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
 }) => {
   // Get channel parameters from store
   const channel = useHapticStore(state => state.channels.find(ch => ch.channelId === channelId))
-  const isStreaming = useHapticStore(state => state.isStreaming)
   
   // State for waveform data
   const [waveformData, setWaveformData] = useState<IWaveformData | null>(null)
@@ -27,7 +26,7 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
   
   // Generate waveform function
   const generateWaveform = useCallback(() => {
-    if (!channel || !isStreaming) {
+    if (!channel) {
       return null
     }
     
@@ -60,7 +59,7 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
         }
       ]
     }
-  }, [channel, isStreaming])
+  }, [channel])
   
   // Animation loop
   const animate = useCallback(() => {
@@ -69,42 +68,24 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
       setWaveformData(data)
     }
     
-    if (isStreaming) {
-      animationFrameRef.current = requestAnimationFrame(animate)
-    }
-  }, [generateWaveform, isStreaming])
+    animationFrameRef.current = requestAnimationFrame(animate)
+  }, [generateWaveform])
   
-  // Start/stop animation based on streaming state
+  // Always show animated waveform
   useEffect(() => {
-    if (isStreaming) {
-      // Reset time tracking
-      startTimeRef.current = 0
-      lastFrameTimeRef.current = performance.now()
-      
-      // Start animation
-      animationFrameRef.current = requestAnimationFrame(animate)
-    } else {
-      // Stop animation
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
-      setWaveformData(null)
-    }
+    // Reset time tracking
+    startTimeRef.current = 0
+    lastFrameTimeRef.current = performance.now()
+    
+    // Start animation
+    animationFrameRef.current = requestAnimationFrame(animate)
     
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [isStreaming, animate])
-
-  if (!isStreaming) {
-    return (
-      <div className='waveform-chart-loading' style={{ height }}>
-        <p>Start streaming to see waveform</p>
-      </div>
-    )
-  }
+  }, [animate])
 
   if (!channel) {
     return (

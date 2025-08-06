@@ -294,19 +294,6 @@ export const useHapticErrorHandler = () => {
     [handleError]
   )
 
-  const handleStreamingError = useCallback(
-    (error: any) => {
-      const result = handleError(error, 'Streaming Control')
-
-      if (result.category === 'network') {
-        // On network errors, stop streaming locally
-        useHapticStore.getState().setStreaming(false)
-      }
-
-      return result
-    },
-    [handleError]
-  )
 
   const handleWaveformError = useCallback(
     (error: any) => {
@@ -333,7 +320,6 @@ export const useHapticErrorHandler = () => {
 
   return {
     handleParameterError,
-    handleStreamingError,
     handleWaveformError,
     handleVectorForceError,
     createRetryFunction,

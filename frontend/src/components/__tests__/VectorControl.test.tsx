@@ -54,7 +54,6 @@ describe('VectorControl', () => {
     vi.mocked(useHapticErrorHandler).mockReturnValue({
       handleParameterError: vi.fn(),
       handleVectorForceError: vi.fn(),
-      handleStreamingError: vi.fn(),
       handleConnectionError: vi.fn(),
     })
   })

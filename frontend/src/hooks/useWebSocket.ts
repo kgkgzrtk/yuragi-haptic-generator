@@ -34,9 +34,6 @@ export const useWebSocket = ({
           case WSMessageType.STATUS_UPDATE:
             setStatus(message.data as any)
             break
-          case WSMessageType.WAVEFORM_DATA:
-            // Waveform data is handled by React Query hooks
-            break
           case WSMessageType.ERROR:
             logger.logWebSocket('error', { error: message.data })
             break

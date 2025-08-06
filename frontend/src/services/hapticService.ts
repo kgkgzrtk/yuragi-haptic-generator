@@ -53,21 +53,6 @@ export class HapticService {
     return response.data
   }
 
-  // Streaming control
-  static async startStreaming(): Promise<{ status: string; isStreaming: boolean }> {
-    const response = await api.post('/streaming/start')
-    return response.data
-  }
-
-  static async stopStreaming(): Promise<{ status: string; isStreaming: boolean }> {
-    const response = await api.post('/streaming/stop')
-    return response.data
-  }
-
-  static async getStreamingStatus(): Promise<IStatusResponse> {
-    const response = await api.get('/streaming/status')
-    return response.data
-  }
 
   // Vector force control
   static async setVectorForce(params: IVectorForce): Promise<{ status: string }> {

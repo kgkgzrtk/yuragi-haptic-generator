@@ -69,7 +69,7 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
     return (
       <div className='acceleration-trajectory-empty'>
         <p>No acceleration data available</p>
-        <small>Start streaming to see trajectory visualization</small>
+        <small>Configure channel parameters to see trajectory visualization</small>
       </div>
     )
   }

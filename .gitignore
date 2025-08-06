@@ -123,3 +123,6 @@ docs/.doctrees/
 *.h5
 *.model
 *.pth
+
+# Git worktrees
+/.worktrees/
