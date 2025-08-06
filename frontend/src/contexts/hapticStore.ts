@@ -61,12 +61,59 @@ export const useHapticStore = create<HapticStore>()(
       setStatus: status => set({ status }),
 
       setVectorForce: (deviceId, force) =>
-        set(state => ({
-          vectorForce: {
+        set(state => {
+          // Update vector force
+          const newVectorForce = {
             ...state.vectorForce,
             [`device${deviceId}`]: force,
-          },
-        })),
+          }
+
+          // If force is null or magnitude is 0, just clear the vector force
+          if (!force || force.magnitude === 0) {
+            return { vectorForce: newVectorForce }
+          }
+
+          // Calculate X and Y amplitudes from vector force
+          const angleRad = (force.angle * Math.PI) / 180
+          const xComponent = force.magnitude * Math.cos(angleRad)
+          const yComponent = force.magnitude * Math.sin(angleRad)
+          
+          // Amplitude is always positive, polarity indicates direction
+          const xAmplitude = Math.abs(xComponent)
+          const yAmplitude = Math.abs(yComponent)
+          const xPolarity = xComponent >= 0
+          const yPolarity = yComponent >= 0
+
+          // Determine channel IDs based on device
+          const xChannelId = deviceId === 1 ? CHANNEL_IDS.DEVICE1_X : CHANNEL_IDS.DEVICE2_X
+          const yChannelId = deviceId === 1 ? CHANNEL_IDS.DEVICE1_Y : CHANNEL_IDS.DEVICE2_Y
+
+          // Update channels with new amplitudes and frequency
+          const newChannels = state.channels.map(ch => {
+            if (ch.channelId === xChannelId) {
+              return {
+                ...ch,
+                amplitude: xAmplitude,
+                frequency: force.frequency,
+                polarity: xPolarity,
+              }
+            }
+            if (ch.channelId === yChannelId) {
+              return {
+                ...ch,
+                amplitude: yAmplitude,
+                frequency: force.frequency,
+                polarity: yPolarity,
+              }
+            }
+            return ch
+          })
+
+          return {
+            vectorForce: newVectorForce,
+            channels: newChannels,
+          }
+        }),
 
       setConnection: (isConnected, error = null) =>
         set({

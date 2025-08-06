@@ -25,7 +25,9 @@ export interface IWaveformData {
   sampleRate: number
   channels: Array<{
     channelId: number
-    data: number[]
+    data: number[]  // Voltage data (backward compatibility)
+    current?: number[]  // Current data
+    acceleration?: number[]  // Acceleration data
   }>
 }
 

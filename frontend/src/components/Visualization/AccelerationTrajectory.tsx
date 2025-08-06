@@ -37,10 +37,9 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
       const y = yData[i]
 
       if (typeof x === 'number' && typeof y === 'number' && !isNaN(x) && !isNaN(y)) {
-        // Clamp values to prevent overflow
         points.push({
-          x: Math.max(-2, Math.min(2, x)),
-          y: Math.max(-2, Math.min(2, y))
+          x: x,
+          y: y
         })
       }
     }
@@ -160,10 +159,10 @@ export const AccelerationTrajectory: React.FC<AccelerationTrajectoryProps> = ({
     ctx.fillStyle = '#999'
     ctx.font = '10px sans-serif'
 
-    ctx.fillText('1.0', centerX + scale + 5, centerY + 15)
-    ctx.fillText('-1.0', centerX - scale - 20, centerY + 15)
-    ctx.fillText('1.0', centerX - 25, centerY - scale)
-    ctx.fillText('-1.0', centerX - 25, centerY + scale)
+    ctx.fillText('1', centerX + scale + 5, centerY + 15)
+    ctx.fillText('-1', centerX - scale - 20, centerY + 15)
+    ctx.fillText('1', centerX - 25, centerY - scale)
+    ctx.fillText('-1', centerX - 25, centerY + scale)
 
     } catch (error) {
       logger.error('Error rendering acceleration trajectory', { deviceId, error: error instanceof Error ? error.message : error })

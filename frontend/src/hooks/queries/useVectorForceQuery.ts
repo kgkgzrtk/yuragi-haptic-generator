@@ -1,7 +1,7 @@
 /**
  * React Query hooks for vector force control with optimistic updates
  */
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { useHapticStore } from '@/contexts/hapticStore'
 import { queryKeys, queryDefaults } from '@/lib/queryClient'
@@ -18,7 +18,52 @@ export const useSetVectorForceMutation = () => {
 
   return useMutation({
     mutationFn: async (params: IVectorForce) => {
-      return await HapticService.setVectorForce(params)
+      // Set vector force
+      const result = await HapticService.setVectorForce(params)
+      
+      // Calculate X and Y amplitudes from vector force
+      const angleRad = (params.angle * Math.PI) / 180
+      const xComponent = params.magnitude * Math.cos(angleRad)
+      const yComponent = params.magnitude * Math.sin(angleRad)
+      
+      // Amplitude is always positive, polarity indicates direction
+      const xAmplitude = Math.abs(xComponent)
+      const yAmplitude = Math.abs(yComponent)
+      const xPolarity = xComponent >= 0
+      const yPolarity = yComponent >= 0
+      
+      // Determine channel IDs based on device
+      const xChannelId = params.deviceId === 1 ? 0 : 2
+      const yChannelId = params.deviceId === 1 ? 1 : 3
+      
+      // Update channels with calculated amplitudes
+      const currentParams = await HapticService.getParameters()
+      const updatedChannels = currentParams.channels.map(ch => {
+        if (ch.channelId === xChannelId) {
+          return { 
+            channelId: ch.channelId,
+            frequency: params.frequency,
+            amplitude: xAmplitude,
+            phase: ch.phase,
+            polarity: xPolarity
+          }
+        }
+        if (ch.channelId === yChannelId) {
+          return { 
+            channelId: ch.channelId,
+            frequency: params.frequency,
+            amplitude: yAmplitude,
+            phase: ch.phase,
+            polarity: yPolarity
+          }
+        }
+        return ch
+      })
+      
+      // Send updated parameters to backend
+      await HapticService.updateParameters(updatedChannels)
+      
+      return result
     },
 
     // Optimistic update
@@ -64,6 +109,11 @@ export const useSetVectorForceMutation = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.vectorForceByDevice(variables.deviceId),
       })
+      
+      // Also invalidate parameters query to update channels
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.parameters(),
+      })
     },
   })
 }
@@ -85,7 +135,25 @@ export const useClearVectorForceMutation = () => {
         frequency: 60, // Default frequency
       }
 
-      return await HapticService.setVectorForce(clearForce)
+      const result = await HapticService.setVectorForce(clearForce)
+      
+      // Clear the corresponding channels
+      const xChannelId = deviceId === 1 ? 0 : 2
+      const yChannelId = deviceId === 1 ? 1 : 3
+      
+      // Update channels to zero amplitude
+      const currentParams = await HapticService.getParameters()
+      const updatedChannels = currentParams.channels.map(ch => {
+        if (ch.channelId === xChannelId || ch.channelId === yChannelId) {
+          return { ...ch, amplitude: 0 }
+        }
+        return ch
+      })
+      
+      // Send updated parameters to backend
+      await HapticService.updateParameters(updatedChannels)
+      
+      return result
     },
 
     // Optimistic update
@@ -127,6 +195,11 @@ export const useClearVectorForceMutation = () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.vectorForceByDevice(deviceId),
       })
+      
+      // Also invalidate parameters query to update channels
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.parameters(),
+      })
     },
   })
 }
@@ -156,6 +229,108 @@ export const useVectorForceQuery = (deviceId: 1 | 2) => {
     enabled: true,
 
   })
+}
+
+/**
+ * Hook for batch vector force updates with debouncing
+ */
+export const useBatchVectorForceUpdates = (deviceId: 1 | 2, debounceMs: number = 300) => {
+  const setVectorForceMutation = useSetVectorForceMutation()
+  const setVectorForce = useHapticStore(state => state.setVectorForce)
+  
+  // Use refs to persist values across renders
+  const pendingUpdateRef = useRef<Partial<Omit<IVectorForce, 'deviceId'>> | null>(null)
+  const currentValuesRef = useRef<Omit<IVectorForce, 'deviceId'>>({
+    angle: 0,
+    magnitude: 0,
+    frequency: 60,
+  })
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [hasPendingUpdates, setHasPendingUpdates] = useState(false)
+
+  const flushUpdates = useCallback(() => {
+    if (pendingUpdateRef.current && Object.keys(pendingUpdateRef.current).length > 0) {
+      // Merge pending updates with current values
+      const mergedValues = { ...currentValuesRef.current, ...pendingUpdateRef.current }
+      
+      // Execute the mutation
+      setVectorForceMutation.mutate({
+        deviceId,
+        ...mergedValues,
+      })
+
+      // Update current values
+      currentValuesRef.current = mergedValues
+      
+      // Clear pending
+      pendingUpdateRef.current = null
+      setHasPendingUpdates(false)
+    }
+
+    // Clear timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = null
+    }
+  }, [deviceId, setVectorForceMutation])
+
+  const batchUpdate = useCallback(
+    (updates: Partial<Omit<IVectorForce, 'deviceId'>>) => {
+      // Merge with existing pending updates
+      pendingUpdateRef.current = { ...pendingUpdateRef.current, ...updates }
+      setHasPendingUpdates(true)
+
+      // Apply optimistic update immediately
+      const optimisticValues = { ...currentValuesRef.current, ...pendingUpdateRef.current }
+      setVectorForce(deviceId, { deviceId, ...optimisticValues })
+
+      // Clear existing timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+
+      // Set new timer
+      debounceTimerRef.current = setTimeout(() => {
+        flushUpdates()
+      }, debounceMs)
+    },
+    [deviceId, debounceMs, flushUpdates, setVectorForce]
+  )
+
+  const updateValues = useCallback(
+    (values: Omit<IVectorForce, 'deviceId'>) => {
+      currentValuesRef.current = values
+    },
+    []
+  )
+
+  const clearPending = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = null
+    }
+    pendingUpdateRef.current = null
+    setHasPendingUpdates(false)
+  }, [])
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+  }, [])
+
+  return {
+    batchUpdate,
+    updateValues,
+    hasPendingUpdates,
+    clearPending,
+    flushUpdates,
+    isUpdating: setVectorForceMutation.isPending,
+    error: setVectorForceMutation.error,
+  }
 }
 
 /**

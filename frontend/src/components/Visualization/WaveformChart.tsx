@@ -27,7 +27,7 @@ interface WaveformChartProps {
 export const WaveformChart: React.FC<WaveformChartProps> = ({
   channelId,
   waveformData,
-  height = 200,
+  height = 400,
 }) => {
   const chartRef = useRef<ChartJS<'line'> | null>(null)
 
@@ -45,7 +45,14 @@ export const WaveformChart: React.FC<WaveformChartProps> = ({
       // Return empty data structure
       return createWaveformData(channelId, [], 44100)
     }
-    return createWaveformData(channelId, channelData.data, waveformData.sampleRate)
+    
+    return createWaveformData(
+      channelId, 
+      channelData.data, 
+      waveformData.sampleRate,
+      channelData.current,
+      channelData.acceleration
+    )
   }, [channelData, channelId, waveformData])
 
   // Chart options
@@ -55,7 +62,8 @@ export const WaveformChart: React.FC<WaveformChartProps> = ({
   useEffect(() => {
     if (chartRef.current && channelData) {
       const chart = chartRef.current
-      chart.data = chartData
+      // Force update all datasets
+      chart.data.datasets = chartData.datasets
       chart.update('none') // Skip animation for performance
     }
   }, [chartData, channelData])

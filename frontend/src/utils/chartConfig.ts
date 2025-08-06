@@ -9,6 +9,13 @@ export const CHANNEL_COLORS = {
   [CHANNEL_IDS.DEVICE2_Y]: '#4BC0C0', // Teal
 } as const
 
+// Colors for different signal types
+export const SIGNAL_COLORS = {
+  voltage: '#2563EB',      // Blue - more saturated
+  current: '#10B98180',    // Green - with transparency (50% opacity)
+  acceleration: '#DC2626', // Red - more contrast
+} as const
+
 // Base chart options for waveform visualization
 export const getWaveformChartOptions = (channelId: number): ChartOptions<'line'> => ({
   responsive: true,
@@ -33,17 +40,28 @@ export const getWaveformChartOptions = (channelId: number): ChartOptions<'line'>
         display: true,
         text: 'Amplitude',
       },
-      min: -1.1,
-      max: 1.1,
+      min: -1.2,
+      max: 1.2,
     },
   },
   plugins: {
     legend: {
-      display: false,
+      display: true,
+      position: 'top',
+      labels: {
+        usePointStyle: true,
+        padding: 10,
+      },
     },
     title: {
       display: true,
-      text: `Channel ${channelId} Waveform`,
+      text: `Channel ${channelId} Waveforms`,
+      padding: {
+        bottom: 5,
+      },
+      font: {
+        size: 14,
+      },
     },
   },
   elements: {
@@ -59,28 +77,63 @@ export const getWaveformChartOptions = (channelId: number): ChartOptions<'line'>
 
 // Create chart data structure
 export const createWaveformData = (
-  channelId: number,
+  _channelId: number,  // Keep for API compatibility
   data: number[],
-  sampleRate: number
+  sampleRate: number,
+  current?: number[],
+  acceleration?: number[]
 ): ChartData<'line'> => {
-  // Create {x, y} data points for Chart.js
-  const dataPoints = data.map((value, index) => ({
-    x: (index / sampleRate) * 1000, // Time in ms
-    y: value
-  }))
+  // Create time points
+  const createDataPoints = (values: number[]) => 
+    values.map((value, index) => ({
+      x: (index / sampleRate) * 1000, // Time in ms
+      y: value
+    }))
+
+  const datasets = []
+
+  // Voltage dataset
+  datasets.push({
+    label: 'Voltage',
+    data: createDataPoints(data),
+    borderColor: SIGNAL_COLORS.voltage,
+    backgroundColor: 'transparent',
+    borderWidth: 2.5,
+    pointRadius: 0,
+    tension: 0,
+    order: 3,
+  })
+
+  // Current dataset
+  if (current && current.length > 0) {
+    datasets.push({
+      label: 'Current',
+      data: createDataPoints(current),
+      borderColor: SIGNAL_COLORS.current,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      pointRadius: 0,
+      tension: 0,
+      order: 2,
+    })
+  }
+
+  // Acceleration dataset
+  if (acceleration && acceleration.length > 0) {
+    datasets.push({
+      label: 'Acceleration',
+      data: createDataPoints(acceleration),
+      borderColor: SIGNAL_COLORS.acceleration,
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      tension: 0,
+      order: 1,
+    })
+  }
 
   return {
-    datasets: [
-      {
-        label: `Channel ${channelId}`,
-        data: dataPoints,
-        borderColor: CHANNEL_COLORS[channelId as keyof typeof CHANNEL_COLORS],
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        pointRadius: 0,
-        tension: 0,
-      },
-    ],
+    datasets,
   }
 }
 

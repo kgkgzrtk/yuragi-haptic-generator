@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react'
-import { useChannelWaveformQuery } from '@/hooks/queries/useWaveformQuery'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { useHapticStore } from '@/contexts/hapticStore'
+import { generatePhysicalWaveforms } from '@/utils/waveformGenerator'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 import { AccelerationTrajectory } from './AccelerationTrajectory'
 
@@ -13,72 +14,109 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
   // Get the X and Y channel IDs for the device
   const xChannelId = deviceId === 1 ? CHANNEL_IDS.DEVICE1_X : CHANNEL_IDS.DEVICE2_X
   const yChannelId = deviceId === 1 ? CHANNEL_IDS.DEVICE1_Y : CHANNEL_IDS.DEVICE2_Y
+  
+  // Get channel parameters from store
+  const xChannel = useHapticStore(state => state.channels.find(ch => ch.channelId === xChannelId))
+  const yChannel = useHapticStore(state => state.channels.find(ch => ch.channelId === yChannelId))
+  
+  // State for acceleration data
+  const [xAcceleration, setXAcceleration] = useState<number[]>([])
+  const [yAcceleration, setYAcceleration] = useState<number[]>([])
+  
+  // Time tracking for phase continuity
+  const startTimeRef = useRef(0)
+  const lastFrameTimeRef = useRef(performance.now())
+  const animationFrameRef = useRef<number | null>(null)
+  
+  // Generate acceleration data
+  const generateAccelerationData = useCallback(() => {
+    if (!xChannel || !yChannel) return null
+    
+    // Update time tracking
+    const currentTime = performance.now()
+    const deltaTime = (currentTime - lastFrameTimeRef.current) / 1000 // Convert to seconds
+    lastFrameTimeRef.current = currentTime
+    startTimeRef.current += deltaTime
+    
+    // Generate waveform for a short window
+    const duration = 0.05 // 50ms of data
+    const sampleRate = 44100
 
-  // Fetch waveform data for X and Y channels
-  const xChannelQuery = useChannelWaveformQuery(xChannelId, {
-    realTime: true,
-    duration: 0.1,
-    sampleRate: 44100,
-  })
+    // Generate X acceleration
+    const xWaveforms = generatePhysicalWaveforms({
+      frequency: xChannel.frequency,
+      amplitude: xChannel.amplitude,
+      phase: xChannel.phase,
+      polarity: xChannel.polarity,
+      duration,
+      sampleRate,
+      startTime: startTimeRef.current
+    })
 
-  const yChannelQuery = useChannelWaveformQuery(yChannelId, {
-    realTime: true,
-    duration: 0.1,
-    sampleRate: 44100,
-  })
+    // Generate Y acceleration (with inverted polarity for correct trajectory)
+    const yWaveforms = generatePhysicalWaveforms({
+      frequency: yChannel.frequency,
+      amplitude: yChannel.amplitude,
+      phase: yChannel.phase,
+      polarity: !yChannel.polarity,  // Invert polarity for Y axis
+      duration,
+      sampleRate,
+      startTime: startTimeRef.current
+    })
+    
+    // Take every 100th sample for trajectory (reduce data points)
+    const downsampleFactor = 100
+    const xAccel = xWaveforms.acceleration.filter((_, i) => i % downsampleFactor === 0)
+    const yAccel = yWaveforms.acceleration.filter((_, i) => i % downsampleFactor === 0)
 
-  // Extract acceleration data from waveform data
-  const xData = useMemo(() => {
-    if (!xChannelQuery.channelData?.data) {return []}
-    // Normalize the data to -1 to 1 range for visualization
-    const rawData = xChannelQuery.channelData.data
-    const maxValue = Math.max(...rawData.map(Math.abs))
-    return maxValue > 0 ? rawData.map(v => v / maxValue) : rawData
-  }, [xChannelQuery.channelData])
+    return { xAccel, yAccel }
+  }, [xChannel, yChannel])
 
-  const yData = useMemo(() => {
-    if (!yChannelQuery.channelData?.data) {return []}
-    // Normalize the data to -1 to 1 range for visualization
-    const rawData = yChannelQuery.channelData.data
-    const maxValue = Math.max(...rawData.map(Math.abs))
-    return maxValue > 0 ? rawData.map(v => v / maxValue) : rawData
-  }, [yChannelQuery.channelData])
+  // Animation loop
+  const animate = useCallback(() => {
+    const data = generateAccelerationData()
+    if (data) {
+      // Append new data to existing, keep last 200 points
+      setXAcceleration(prev => [...prev, ...data.xAccel].slice(-200))
+      setYAcceleration(prev => [...prev, ...data.yAccel].slice(-200))
+    }
+    
+    animationFrameRef.current = requestAnimationFrame(animate)
+  }, [generateAccelerationData])
+  
+  // Start/stop animation based on component lifecycle
+  useEffect(() => {
+    // Reset time tracking
+    startTimeRef.current = 0
+    lastFrameTimeRef.current = performance.now()
+    
+    // Clear existing data
+    setXAcceleration([])
+    setYAcceleration([])
+    
+    // Start animation
+    animationFrameRef.current = requestAnimationFrame(animate)
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [animate])
 
-  // Show loading state
-  if (xChannelQuery.isLoading || yChannelQuery.isLoading) {
-    return (
-      <div className='acceleration-trajectory-loading'>
-        <p>Loading acceleration data...</p>
-      </div>
-    )
-  }
-
-  // Show error state with more details
-  if (xChannelQuery.isError || yChannelQuery.isError) {
-    const errorMessage = xChannelQuery.error?.message || yChannelQuery.error?.message || 'Unknown error'
+  if (!xChannel || !yChannel) {
     return (
       <div className='acceleration-trajectory-error'>
-        <p>Error loading acceleration data</p>
-        <small>{errorMessage}</small>
-      </div>
-    )
-  }
-
-  // Show empty state when no data is available
-  if (!xData.length && !yData.length) {
-    return (
-      <div className='acceleration-trajectory-empty'>
-        <p>No acceleration data available</p>
-        <small>Configure channel parameters to see trajectory visualization</small>
+        <p>Channels not found</p>
       </div>
     )
   }
 
   return (
-    <AccelerationTrajectory
+    <AccelerationTrajectory 
       deviceId={deviceId}
-      xData={xData}
-      yData={yData}
+      xData={xAcceleration}
+      yData={yAcceleration}
       maxPoints={200}
     />
   )

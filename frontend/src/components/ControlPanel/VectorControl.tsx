@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect } from 'react'
 import { Button } from '@/components/Common/Button'
 import { Slider } from '@/components/Common/Slider'
-import { useVectorForceManagement } from '@/hooks/queries/useVectorForceQuery'
+import { useVectorForceManagement, useBatchVectorForceUpdates } from '@/hooks/queries/useVectorForceQuery'
 import { useHapticErrorHandler } from '@/hooks/useErrorHandler'
 import { CONSTRAINTS } from '@/types/hapticTypes'
 import type { IVectorForce } from '@/types/hapticTypes'
@@ -13,13 +13,14 @@ interface VectorControlProps {
 export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
   const {
     vectorForce,
-    isUpdating,
     updateError,
-    setVectorForce,
     clearVectorForce,
     validateVectorForce,
     isApplyingPreset,
   } = useVectorForceManagement(deviceId)
+
+  const { batchUpdate, updateValues, hasPendingUpdates, clearPending, isUpdating, error: batchError } = 
+    useBatchVectorForceUpdates(deviceId, 300) // 300ms debounce
 
   const { handleVectorForceError } = useHapticErrorHandler()
 
@@ -34,51 +35,59 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
       setAngle(vectorForce.angle)
       setMagnitude(vectorForce.magnitude)
       setFrequency(vectorForce.frequency)
+      // Update the batch update ref values
+      updateValues({ angle: vectorForce.angle, magnitude: vectorForce.magnitude, frequency: vectorForce.frequency })
     }
-  }, [vectorForce])
+  }, [vectorForce, updateValues])
 
   // Handle errors from mutations
   useEffect(() => {
-    if (updateError) {
-      handleVectorForceError(updateError, deviceId)
+    const error = updateError || batchError
+    if (error) {
+      handleVectorForceError(error, deviceId)
     }
-  }, [updateError, handleVectorForceError, deviceId])
+  }, [updateError, batchError, handleVectorForceError, deviceId])
 
-  // Validate on mount and when values change
+  // Cleanup pending updates on unmount
   useEffect(() => {
-    const { errors: validationErrors } = validateVectorForce({
-      angle,
-      magnitude,
-      frequency,
-    })
-    setErrors(validationErrors)
-  }, [angle, magnitude, frequency, validateVectorForce])
-
-  // Validate input
-  const validate = useCallback((): boolean => {
-    const { isValid, errors: validationErrors } = validateVectorForce({
-      angle,
-      magnitude,
-      frequency,
-    })
-
-    setErrors(validationErrors)
-    return isValid
-  }, [angle, magnitude, frequency, validateVectorForce])
-
-  // Apply vector force with optimistic updates
-  const handleApply = useCallback(async () => {
-    if (!validate()) {
-      return
+    return () => {
+      clearPending()
     }
+  }, [clearPending])
 
-    try {
-      await setVectorForce({ angle, magnitude, frequency })
-    } catch (error) {
-      // Error handling is done in the hook
-      console.info('Failed to apply vector force:', error)
-    }
-  }, [angle, magnitude, frequency, validate, setVectorForce])
+  // Handle field change with optimistic updates and batching
+  const handleFieldChange = useCallback(
+    (field: keyof Omit<IVectorForce, 'deviceId'>, value: number) => {
+      // Update local state immediately
+      switch (field) {
+        case 'angle':
+          setAngle(value)
+          break
+        case 'magnitude':
+          setMagnitude(value)
+          break
+        case 'frequency':
+          setFrequency(value)
+          break
+      }
+
+      // Validate
+      const newValues = {
+        angle: field === 'angle' ? value : angle,
+        magnitude: field === 'magnitude' ? value : magnitude,
+        frequency: field === 'frequency' ? value : frequency,
+      }
+      
+      const { errors: validationErrors } = validateVectorForce(newValues)
+      setErrors(validationErrors)
+
+      if (Object.keys(validationErrors).length === 0) {
+        // Use batch updates for better performance
+        batchUpdate({ [field]: value })
+      }
+    },
+    [angle, magnitude, frequency, validateVectorForce, batchUpdate]
+  )
 
   // Clear vector force with optimistic updates
   const handleClear = useCallback(async () => {
@@ -87,11 +96,12 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
       setAngle(0)
       setMagnitude(0)
       setFrequency(60)
+      clearPending()
     } catch (error) {
       // Error handling is done in the hook
       console.info('Failed to clear vector force:', error)
     }
-  }, [clearVectorForce])
+  }, [clearVectorForce, clearPending])
 
   // Visualize vector
   const vectorX = Math.cos((angle * Math.PI) / 180) * magnitude * 50
@@ -147,43 +157,46 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
         <Slider
           label='Angle'
           value={angle}
-          onChange={setAngle}
+          onChange={value => handleFieldChange('angle', value)}
           min={0}
           max={360}
           step={1}
           unit='°'
           error={errors.angle}
-          disabled={isUpdating || isApplyingPreset}
+          disabled={isUpdating || isApplyingPreset || hasPendingUpdates}
         />
 
         <Slider
           label='Magnitude'
           value={magnitude}
-          onChange={setMagnitude}
+          onChange={value => handleFieldChange('magnitude', value)}
           min={0}
           max={1}
           step={0.01}
           error={errors.magnitude}
-          disabled={isUpdating || isApplyingPreset}
+          disabled={isUpdating || isApplyingPreset || hasPendingUpdates}
         />
 
         <Slider
           label='Frequency'
           value={frequency}
-          onChange={setFrequency}
+          onChange={value => handleFieldChange('frequency', value)}
           min={CONSTRAINTS.VECTOR_FREQUENCY.MIN}
           max={CONSTRAINTS.VECTOR_FREQUENCY.MAX}
           step={1}
           unit='Hz'
           error={errors.frequency}
-          disabled={isUpdating || isApplyingPreset}
+          disabled={isUpdating || isApplyingPreset || hasPendingUpdates}
         />
       </div>
 
+      {(isUpdating || hasPendingUpdates) && (
+        <div className='vector-control-status'>
+          {hasPendingUpdates ? 'Pending updates...' : 'Updating...'}
+        </div>
+      )}
+
       <div className='vector-control-actions'>
-        <Button onClick={handleApply} loading={isUpdating || isApplyingPreset} variant='primary'>
-          Apply
-        </Button>
         <Button onClick={handleClear} loading={isUpdating || isApplyingPreset} variant='secondary'>
           Clear
         </Button>

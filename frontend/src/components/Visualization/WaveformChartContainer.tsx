@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useHapticStore } from '@/contexts/hapticStore'
 import type { IWaveformData } from '@/types/hapticTypes'
-import { generateSawtoothWave } from '@/utils/waveformGenerator'
+import { generatePhysicalWaveforms } from '@/utils/waveformGenerator'
 import { WaveformChart } from './WaveformChart'
 
 interface WaveformChartContainerProps {
@@ -11,7 +11,7 @@ interface WaveformChartContainerProps {
 
 export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
   channelId,
-  height = 150,
+  height = 400,
 }) => {
   // Get channel parameters from store
   const channel = useHapticStore(state => state.channels.find(ch => ch.channelId === channelId))
@@ -39,7 +39,7 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
     const duration = 0.1 // 100ms of data
     const sampleRate = 44100
 
-    const waveform = generateSawtoothWave({
+    const waveforms = generatePhysicalWaveforms({
       frequency: channel.frequency,
       amplitude: channel.amplitude,
       phase: channel.phase,
@@ -55,7 +55,9 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
       channels: [
         {
           channelId: channel.channelId,
-          data: waveform
+          data: waveforms.voltage,
+          current: waveforms.current,
+          acceleration: waveforms.acceleration
         }
       ]
     }
