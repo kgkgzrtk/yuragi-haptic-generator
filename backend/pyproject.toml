@@ -62,7 +62,7 @@ select = [
     "N",  # pep8-naming
     "UP", # pyupgrade
 ]
-ignore = ["E501", "N805", "W293"]  # line too long, cls in validators, blank line whitespace
+ignore = ["E501", "N805", "N806", "W293"]  # line too long, cls in validators, uppercase vars in functions, blank line whitespace
 
 [tool.black]
 line-length = 88

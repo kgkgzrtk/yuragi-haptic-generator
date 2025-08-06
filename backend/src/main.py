@@ -6,8 +6,8 @@ import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -188,12 +188,12 @@ class ParametersUpdate(BaseModel):
 class ChannelUpdate(BaseModel):
     """単一チャンネル更新リクエスト"""
 
-    frequency: Optional[float] = Field(
+    frequency: float | None = Field(
         None, ge=settings.min_frequency, le=settings.max_frequency
     )
-    amplitude: Optional[float] = Field(None, ge=0.0, le=1.0)
-    phase: Optional[float] = Field(None, ge=0.0, le=360.0)
-    polarity: Optional[bool] = None
+    amplitude: float | None = Field(None, ge=0.0, le=1.0)
+    phase: float | None = Field(None, ge=0.0, le=360.0)
+    polarity: bool | None = None
 
 
 class WaveformRequest(BaseModel):
@@ -491,7 +491,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     "sampleRate": controller.sample_rate,
                     "blockSize": controller.block_size,
                 },
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
             await manager.send_personal_message(initial_status, websocket)
 
@@ -509,7 +509,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     }
                     for i, ch in enumerate(params.get("channels", [{}] * 4))
                 ],
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
             await manager.send_personal_message(parameters_msg, websocket)
 
@@ -530,7 +530,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     error_msg = {
                         "type": WSMessageType.ERROR,
                         "data": {"message": "Invalid JSON format"},
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                     await manager.send_personal_message(error_msg, websocket)
 
@@ -541,7 +541,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 error_msg = {
                     "type": WSMessageType.ERROR,
                     "data": {"message": str(e)},
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 }
                 await manager.send_personal_message(error_msg, websocket)
                 break
@@ -558,7 +558,7 @@ async def broadcast_parameters_update(channels_data: list[dict[str, Any]]):
     message = {
         "type": WSMessageType.PARAMETERS_UPDATE,
         "data": channels_data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     await manager.broadcast(message)
 
@@ -568,7 +568,7 @@ async def broadcast_status_update(status_data: dict[str, Any]):
     message = {
         "type": WSMessageType.STATUS_UPDATE,
         "data": status_data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     await manager.broadcast(message)
 

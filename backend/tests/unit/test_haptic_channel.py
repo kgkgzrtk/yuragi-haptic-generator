@@ -3,8 +3,9 @@ HapticChannelクラスのユニットテスト
 TDDサイクル2: 単一チャンネル管理
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from haptic_system.channel import HapticChannel
 
 
@@ -17,7 +18,7 @@ class TestHapticChannelBasics:
         channel = HapticChannel(channel_id=0, sample_rate=44100)
 
         # Assert
-        assert channel.is_active == False
+        assert not channel.is_active
         assert channel.current_frequency == 0
         assert channel.current_amplitude == 0
 
@@ -31,7 +32,7 @@ class TestHapticChannelBasics:
         channel.activate()
 
         # Assert
-        assert channel.is_active == True
+        assert channel.is_active
         assert channel.current_frequency == 60
         assert channel.current_amplitude == 0.5
 
@@ -87,7 +88,7 @@ class TestHapticChannelParameterUpdate:
         chunk = channel.get_next_chunk(512)
 
         # Assert
-        assert channel.is_active == False
+        assert not channel.is_active
         assert np.all(chunk == 0)  # 無音を出力
 
     def test_validates_channel_id(self):

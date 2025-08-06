@@ -5,8 +5,9 @@ Haptic controller module for API integration
 import threading
 from typing import Any
 
-from .device import HapticDevice
 from config.logging import get_logger
+
+from .device import HapticDevice
 
 try:
     import sounddevice as sd

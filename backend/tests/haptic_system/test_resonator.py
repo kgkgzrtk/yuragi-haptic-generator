@@ -3,8 +3,9 @@ Test module for resonator filter implementation.
 Tests the 2nd order IIR filter with Tustin transformation.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from haptic_system.waveform import resonator
 
 
@@ -164,12 +165,11 @@ class TestResonator:
         w_n = 2 * np.pi * f_n
         dt = 1 / fs
 
-        expected_a0 = 4 + 4 * zeta * w_n * dt + (w_n * dt) ** 2
+        4 + 4 * zeta * w_n * dt + (w_n * dt) ** 2
         expected_b0 = (w_n * dt) ** 2
-        expected_b1 = 2 * expected_b0
-        expected_b2 = expected_b0
-        expected_a1 = 2 * ((w_n * dt) ** 2 - 4)
-        expected_a2 = 4 - 4 * zeta * w_n * dt + (w_n * dt) ** 2
+        2 * expected_b0
+        2 * ((w_n * dt) ** 2 - 4)
+        4 - 4 * zeta * w_n * dt + (w_n * dt) ** 2
 
         # These coefficient tests will help verify the implementation
         # They will be used when we implement the actual function

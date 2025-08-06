@@ -2,7 +2,6 @@
 Haptic channel management module
 """
 
-from typing import Optional
 
 import numpy as np
 
@@ -64,10 +63,10 @@ class HapticChannel:
 
     def set_parameters(
         self,
-        frequency: Optional[float] = None,
-        amplitude: Optional[float] = None,
-        phase: Optional[float] = None,
-        polarity: Optional[bool] = None,
+        frequency: float | None = None,
+        amplitude: float | None = None,
+        phase: float | None = None,
+        polarity: bool | None = None,
     ) -> None:
         """
         パラメータを設定
@@ -162,7 +161,7 @@ class HapticChannel:
         """Disable resonator filter for this channel."""
         self.resonator_enabled = False
 
-    def enable_noise(self, level: float = 0.03, seed: Optional[int] = None) -> None:
+    def enable_noise(self, level: float = 0.03, seed: int | None = None) -> None:
         """
         Enable noise simulation for this channel.
 

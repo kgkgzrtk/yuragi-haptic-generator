@@ -2,7 +2,6 @@
 Haptic device management module
 """
 
-from typing import Optional
 
 import numpy as np
 
@@ -38,10 +37,10 @@ class HapticDevice:
     def set_channel_parameters(
         self,
         channel_id: int,
-        frequency: Optional[float] = None,
-        amplitude: Optional[float] = None,
-        phase: Optional[float] = None,
-        polarity: Optional[bool] = None,
+        frequency: float | None = None,
+        amplitude: float | None = None,
+        phase: float | None = None,
+        polarity: bool | None = None,
     ) -> None:
         """
         特定チャンネルのパラメータを設定

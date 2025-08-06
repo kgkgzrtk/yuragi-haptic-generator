@@ -3,10 +3,11 @@ Integration tests for complete signal processing pipeline.
 Tests the flow: sawtooth -> X/Y distribution -> resonator -> output
 """
 
-import pytest
 import numpy as np
-from haptic_system.waveform import SawtoothWaveform, resonator
+import pytest
+
 from haptic_system.channel import HapticChannel
+from haptic_system.waveform import SawtoothWaveform, resonator
 
 
 class TestSignalPipeline:
@@ -31,7 +32,7 @@ class TestSignalPipeline:
 
         # 1. Generate sawtooth wave
         waveform = SawtoothWaveform(sample_rate=fs)
-        t = np.arange(0, duration, 1 / fs)
+        np.arange(0, duration, 1 / fs)
         saw = waveform.generate(f_saw, duration)
 
         # 2. Apply angle-based X/Y distribution (45 degrees example)

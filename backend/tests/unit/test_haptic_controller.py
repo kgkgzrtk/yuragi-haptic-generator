@@ -3,11 +3,8 @@ HapticControllerクラスのユニットテスト
 Updated: Streaming機能削除後のテスト
 """
 
-import pytest
-import numpy as np
-import time
 import threading
-from unittest.mock import Mock, patch, MagicMock
+
 from haptic_system.controller import HapticController
 
 
@@ -124,5 +121,5 @@ class TestHapticControllerThreadSafety:
         # Assert
         params = controller.get_current_parameters()
         # デバイス1のチャンネル（0,1）が更新されていることを確認
-        assert params["channels"][0]["is_active"] == True
-        assert params["channels"][1]["is_active"] == True
+        assert params["channels"][0]["is_active"]
+        assert params["channels"][1]["is_active"]

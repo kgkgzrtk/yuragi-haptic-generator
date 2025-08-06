@@ -3,8 +3,9 @@ Test module for noise simulation functionality.
 Tests the 3% Gaussian noise addition as in reference implementation.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from haptic_system.channel import HapticChannel
 
 
@@ -23,14 +24,14 @@ class TestNoiseSimulation:
         assert hasattr(
             channel, "noise_enabled"
         ), "Channel should have noise_enabled property"
-        assert channel.noise_enabled == False, "Noise should be disabled by default"
+        assert not channel.noise_enabled, "Noise should be disabled by default"
 
     def test_enable_noise_with_level(self):
         """Test enabling noise with specific level."""
         channel = HapticChannel(channel_id=0, sample_rate=44100)
         channel.enable_noise(level=0.03)  # 3% as in reference
 
-        assert channel.noise_enabled == True
+        assert channel.noise_enabled
         assert channel.noise_level == 0.03
 
     def test_noise_affects_output(self):

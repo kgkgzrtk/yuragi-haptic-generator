@@ -3,8 +3,9 @@ Test module for 16-direction verification mode.
 Tests discrete 22.5° step control as in reference implementation.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from haptic_system.device import HapticDevice
 
 
@@ -31,7 +32,7 @@ class Test16DirectionMode:
             device, "discrete_mode_enabled"
         ), "Device should have discrete_mode_enabled property"
         assert (
-            device.discrete_mode_enabled == False
+            not device.discrete_mode_enabled
         ), "Discrete mode should be disabled by default"
 
     def test_enable_16_direction_mode(self):
@@ -39,7 +40,7 @@ class Test16DirectionMode:
         device = HapticDevice(sample_rate=44100)
         device.enable_16_direction_mode()
 
-        assert device.discrete_mode_enabled == True
+        assert device.discrete_mode_enabled
         assert device.num_directions == 16
         assert device.direction_step == 22.5  # degrees
 
@@ -88,11 +89,11 @@ class Test16DirectionMode:
 
         # Enable discrete mode
         device.enable_16_direction_mode()
-        assert device.discrete_mode_enabled == True
+        assert device.discrete_mode_enabled
 
         # Disable and go back to continuous
         device.disable_16_direction_mode()
-        assert device.discrete_mode_enabled == False
+        assert not device.discrete_mode_enabled
 
         # Should accept any angle now
         device.set_vector_force(

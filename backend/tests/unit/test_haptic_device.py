@@ -3,8 +3,9 @@ HapticDeviceクラスのユニットテスト
 TDDサイクル3: 4チャンネル統合管理
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from haptic_system.device import HapticDevice
 
 
@@ -28,7 +29,7 @@ class TestHapticDeviceInitialization:
 
         # Assert
         for channel in device.channels:
-            assert channel.is_active == False
+            assert not channel.is_active
 
 
 class TestHapticDeviceOperation:
@@ -172,7 +173,7 @@ class TestHapticDeviceActivation:
 
         # Assert
         for channel in device.channels:
-            assert channel.is_active == True
+            assert channel.is_active
 
     def test_deactivate_all_channels(self):
         """全チャンネルを無効化"""
@@ -186,5 +187,5 @@ class TestHapticDeviceActivation:
 
         # Assert
         for channel in device.channels:
-            assert channel.is_active == False
+            assert not channel.is_active
         assert np.all(output == 0)  # 全チャンネル無音
