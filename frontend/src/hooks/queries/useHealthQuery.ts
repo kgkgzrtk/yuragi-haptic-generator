@@ -75,17 +75,17 @@ export const useStreamingStatusQuery = () => {
     refetchInterval: data => {
       // With WebSocket connection, we don't need frequent polling
       const connectionState = useHapticStore.getState().connection
-      
+
       // If WebSocket is connected, reduce polling frequency
       if (connectionState.isConnected) {
         return 30000 // 30 seconds - just for health check
       }
-      
+
       // If streaming is active but no WebSocket, check more frequently
       if (data?.isStreaming) {
         return 3000 // 3 seconds when streaming without WebSocket
       }
-      
+
       // Default idle interval
       return 10000 // 10 seconds when idle
     },

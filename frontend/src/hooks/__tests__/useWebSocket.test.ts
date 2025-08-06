@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import { MockWebSocket, setupWebSocketMock, websocketTestHelpers } from '@/test/mocks'
 import { renderHook, act, waitFor } from '@/test/test-utils'
-import { useWebSocket } from '../useWebSocket'
 
 // Mock the store
 const mockStoreActions = {

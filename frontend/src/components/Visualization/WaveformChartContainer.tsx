@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { WaveformChart } from './WaveformChart'
 import { useHapticStore } from '@/contexts/hapticStore'
-import { generateSawtoothWave } from '@/utils/waveformGenerator'
 import type { IWaveformData } from '@/types/hapticTypes'
+import { generateSawtoothWave } from '@/utils/waveformGenerator'
+import { WaveformChart } from './WaveformChart'
 
 interface WaveformChartContainerProps {
   channelId: number
@@ -16,30 +16,30 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
   // Get channel parameters from store
   const channel = useHapticStore(state => state.channels.find(ch => ch.channelId === channelId))
   const isStreaming = useHapticStore(state => state.isStreaming)
-  
+
   // State for waveform data
   const [waveformData, setWaveformData] = useState<IWaveformData | null>(null)
-  
+
   // Time tracking for phase continuity
   const startTimeRef = useRef(0)
   const animationFrameRef = useRef<number>()
   const lastFrameTimeRef = useRef(0)
-  
+
   // Generate waveform function
   const generateWaveform = useCallback(() => {
     if (!channel || !isStreaming) {
       return null
     }
-    
+
     const now = performance.now()
     const elapsed = lastFrameTimeRef.current ? (now - lastFrameTimeRef.current) / 1000 : 0
     startTimeRef.current += elapsed
     lastFrameTimeRef.current = now
-    
+
     // Generate waveform
     const duration = 0.1 // 100ms of data
     const sampleRate = 44100
-    
+
     const waveform = generateSawtoothWave({
       frequency: channel.frequency,
       amplitude: channel.amplitude,
@@ -49,7 +49,7 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
       sampleRate,
       startTime: startTimeRef.current
     })
-    
+
     return {
       timestamp: new Date().toISOString(),
       sampleRate,
@@ -61,26 +61,26 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
       ]
     }
   }, [channel, isStreaming])
-  
+
   // Animation loop
   const animate = useCallback(() => {
     const data = generateWaveform()
     if (data) {
       setWaveformData(data)
     }
-    
+
     if (isStreaming) {
       animationFrameRef.current = requestAnimationFrame(animate)
     }
   }, [generateWaveform, isStreaming])
-  
+
   // Start/stop animation based on streaming state
   useEffect(() => {
     if (isStreaming) {
       // Reset time tracking
       startTimeRef.current = 0
       lastFrameTimeRef.current = performance.now()
-      
+
       // Start animation
       animationFrameRef.current = requestAnimationFrame(animate)
     } else {
@@ -90,7 +90,7 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
       }
       setWaveformData(null)
     }
-    
+
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)

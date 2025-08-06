@@ -1,11 +1,11 @@
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { VectorControl } from '@/components/ControlPanel/VectorControl'
 import { useVectorForceManagement } from '@/hooks/queries/useVectorForceQuery'
 import { useHapticErrorHandler } from '@/hooks/useErrorHandler'
 import { render, screen, waitFor } from '@/test/test-utils'
 import { CONSTRAINTS } from '@/types/hapticTypes'
 import type { IVectorForce } from '@/types/hapticTypes'
-import { VectorControl } from '../ControlPanel/VectorControl'
 
 // Mock the hooks
 vi.mock('@/hooks/queries/useVectorForceQuery')

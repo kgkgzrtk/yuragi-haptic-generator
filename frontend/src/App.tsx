@@ -2,20 +2,20 @@ import { useEffect, useState } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Button } from '@/components/Common/Button'
-import { NotificationContainer } from '@/components/Common/NotificationContainer'
 import { DeviceWarningDialog } from '@/components/Common/DeviceWarningDialog'
+import { NotificationContainer } from '@/components/Common/NotificationContainer'
 import { HapticControlPanel } from '@/components/ControlPanel/HapticControlPanel'
-import { WaveformChartContainer } from '@/components/Visualization/WaveformChartContainer'
 import { AccelerationTrajectoryContainer } from '@/components/Visualization/AccelerationTrajectoryContainer'
+import { WaveformChartContainer } from '@/components/Visualization/WaveformChartContainer'
+import { useHapticStore } from '@/contexts/hapticStore'
+import { useDeviceInfoQuery } from '@/hooks/queries/useDeviceQuery'
 import { useSystemStatusQuery } from '@/hooks/queries/useHealthQuery'
 import { useParametersQuery } from '@/hooks/queries/useParametersQuery'
 import { useStreamingStateManager } from '@/hooks/queries/useStreamingQuery'
-import { useDeviceInfoQuery } from '@/hooks/queries/useDeviceQuery'
 import { useQueryStoreIntegration } from '@/hooks/useQueryStoreIntegration'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { queryClient, startBackgroundSync } from '@/lib/queryClient'
 import { CHANNEL_IDS } from '@/types/hapticTypes'
-import { useHapticStore } from '@/contexts/hapticStore'
 import './App.css'
 
 function HapticApp() {
@@ -47,7 +47,6 @@ function HapticApp() {
     return cleanup
   }, [])
 
-
   // Handle connection restoration
   useEffect(() => {
     if (systemStatusQuery.isConnected) {
@@ -68,7 +67,7 @@ function HapticApp() {
         console.error('Failed to sync streaming status:', error)
       }
     }
-    
+
     syncStreamingStatus()
   }, [])
 
@@ -120,7 +119,7 @@ function HapticApp() {
 
         <section className='visualization-section'>
           <h2>Visualization</h2>
-          
+
           <div className='visualization-subsection'>
             <h3>Waveforms</h3>
             <div className={`waveform-grid ${isSingleDeviceMode ? 'single-device' : ''}`}>

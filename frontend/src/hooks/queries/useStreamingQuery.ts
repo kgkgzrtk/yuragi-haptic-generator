@@ -4,10 +4,10 @@
 import { useCallback, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useHapticStore } from '@/contexts/hapticStore'
+import { notificationManager } from '@/hooks/useErrorHandler'
 import { queryKeys, invalidateHapticQueries } from '@/lib/queryClient'
 import { HapticService } from '@/services/hapticService'
 import { logger } from '@/utils/logger'
-import { notificationManager } from '@/hooks/useErrorHandler'
 
 /**
  * Hook for starting streaming with optimistic updates
@@ -47,10 +47,10 @@ export const useStartStreamingMutation = () => {
       }
 
       logger.error('Failed to start streaming', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
-      
+
       // Show user-friendly error notification
       let errorMessage = 'Failed to start streaming'
-      
+
       if (error?.response?.data?.detail) {
         const detail = error.response.data.detail
         if (detail.includes('Invalid number of channels')) {
@@ -61,7 +61,7 @@ export const useStartStreamingMutation = () => {
       } else if (error?.message) {
         errorMessage = error.message
       }
-      
+
       notificationManager.addNotification({
         title: 'Streaming Error',
         message: errorMessage,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import clsx from 'clsx'
 import './DeviceWarningDialog.css'
 
 interface DeviceWarningDialogProps {
@@ -19,7 +20,7 @@ export function DeviceWarningDialog({ isOpen, deviceInfo, onClose }: DeviceWarni
     setIsVisible(isOpen)
   }, [isOpen])
 
-  if (!isVisible) return null
+  if (!isVisible) {return null}
 
   const getWarningMessage = () => {
     if (!deviceInfo.available) {
@@ -29,7 +30,7 @@ export function DeviceWarningDialog({ isOpen, deviceInfo, onClose }: DeviceWarni
         severity: 'error' as const
       }
     }
-    
+
     if (deviceInfo.channels === 2) {
       return {
         title: '2-Channel Device Detected',
@@ -37,16 +38,16 @@ export function DeviceWarningDialog({ isOpen, deviceInfo, onClose }: DeviceWarni
         severity: 'warning' as const
       }
     }
-    
+
     return null
   }
 
   const warning = getWarningMessage()
-  if (!warning) return null
+  if (!warning) {return null}
 
   return (
     <div className="device-warning-overlay">
-      <div className={`device-warning-dialog ${warning.severity}`}>
+      <div className={clsx('device-warning-dialog', warning.severity)}>
         <div className="device-warning-header">
           <h2>{warning.title}</h2>
           <button className="close-button" onClick={onClose} aria-label="Close">

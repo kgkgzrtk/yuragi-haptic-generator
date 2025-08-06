@@ -4,6 +4,7 @@
  */
 import { QueryClient } from '@tanstack/react-query'
 import { StateCreator } from 'zustand'
+import type { HapticError } from '@/types/errors'
 import type {
   IChannelParameters,
   IStatusResponse,
@@ -20,9 +21,9 @@ export interface QuerySyncActions {
   syncStreamingFromQuery: (queryClient: QueryClient) => void
 
   // Mutation helpers
-  onParameterMutationSuccess: (queryClient: QueryClient, data: any) => void
-  onStreamingMutationSuccess: (queryClient: QueryClient, data: any) => void
-  onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: any) => void
+  onParameterMutationSuccess: (queryClient: QueryClient, data: IParametersResponse) => void
+  onStreamingMutationSuccess: (queryClient: QueryClient, data: IStatusResponse) => void
+  onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: IVectorForce) => void
 }
 
 /**
@@ -64,7 +65,7 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
           }
         },
 
-        onParameterMutationSuccess: (queryClient: QueryClient, data: any) => {
+        onParameterMutationSuccess: (queryClient: QueryClient, data: IParametersResponse) => {
           // Sync with query cache
           queryClient.setQueryData(
             queryKeys.parameters(),
@@ -77,7 +78,7 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
           )
         },
 
-        onStreamingMutationSuccess: (queryClient: QueryClient, data: any) => {
+        onStreamingMutationSuccess: (queryClient: QueryClient, data: IStatusResponse) => {
           // Sync streaming state
           queryClient.setQueryData(queryKeys.streaming(), (old: IStatusResponse | undefined) => {
             if (!old) {
@@ -87,7 +88,7 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
           })
         },
 
-        onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: any) => {
+        onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: IVectorForce) => {
           // Sync vector force state
           queryClient.setQueryData(queryKeys.vectorForceByDevice(deviceId), data)
         },
@@ -106,7 +107,7 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
  */
 export const useQueryStoreSync = (
   queryClient: QueryClient,
-  store: any // The Zustand store
+  store: unknown // The Zustand store
 ) => {
   // Set up query cache subscribers to sync with Zustand
   const setupQuerySubscriptions = () => {
@@ -218,9 +219,9 @@ export const createOptimisticUpdateHelpers = (queryClient: QueryClient) => {
 /**
  * Enhanced error handling that syncs with both systems
  */
-export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) => {
+export const createSyncedErrorHandler = (queryClient: QueryClient, store: unknown) => {
   return {
-    handleParameterError: (error: any, _channelId?: number) => {
+    handleParameterError: (error: HapticError | Error, _channelId?: number) => {
       // Set error state in both systems
       logger.error('Parameter error', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
 
@@ -228,16 +229,16 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
       queryClient.invalidateQueries({ queryKey: queryKeys.parameters() })
 
       // Update store error state if available
-      if (store.getState().setConnection && error.code === 'NETWORK_ERROR') {
+      if (store.getState().setConnection && 'code' in error && error.code === 'NETWORK_ERROR') {
         store.getState().setConnection(false, 'Network error during parameter update')
       }
     },
 
-    handleStreamingError: (error: any) => {
+    handleStreamingError: (error: HapticError | Error) => {
       console.error('Streaming error:', error)
 
       // Force local streaming state to false on critical errors
-      if (error.code === 'NETWORK_ERROR') {
+      if ('code' in error && error.code === 'NETWORK_ERROR') {
         queryClient.setQueryData(queryKeys.streaming(), (old: any) =>
           old ? { ...old, isStreaming: false } : { isStreaming: false }
         )
@@ -248,7 +249,7 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
       }
     },
 
-    handleConnectionError: (error: any) => {
+    handleConnectionError: (error: HapticError | Error) => {
       console.error('Connection error:', error)
 
       // Update connection state in store
