@@ -160,21 +160,21 @@ describe('WaveformChart', () => {
       )
 
       // Should call createWaveformData with empty data when channel not found
-      expect(chartConfig.createWaveformData).toHaveBeenCalledWith(CHANNEL_IDS.DEVICE1_X, [], 44100)
+      expect(chartConfig.createWaveformData).toHaveBeenCalledWith(CHANNEL_IDS.DEVICE1_X, [], 44100, undefined, undefined, expect.objectContaining({voltage: expect.any(String), current: expect.any(String), acceleration: expect.any(String)}))
     })
 
     it('handles null waveform data', () => {
       render(<WaveformChart channelId={CHANNEL_IDS.DEVICE1_X} waveformData={null} />)
 
       // Should call createWaveformData with empty data and default sample rate
-      expect(chartConfig.createWaveformData).toHaveBeenCalledWith(CHANNEL_IDS.DEVICE1_X, [], 44100)
+      expect(chartConfig.createWaveformData).toHaveBeenCalledWith(CHANNEL_IDS.DEVICE1_X, [], 44100, undefined, undefined, expect.objectContaining({voltage: expect.any(String), current: expect.any(String), acceleration: expect.any(String)}))
     })
 
     it('handles undefined waveform data', () => {
       render(<WaveformChart channelId={CHANNEL_IDS.DEVICE1_X} waveformData={undefined} />)
 
       // Should call createWaveformData with empty data and default sample rate
-      expect(chartConfig.createWaveformData).toHaveBeenCalledWith(CHANNEL_IDS.DEVICE1_X, [], 44100)
+      expect(chartConfig.createWaveformData).toHaveBeenCalledWith(CHANNEL_IDS.DEVICE1_X, [], 44100, undefined, undefined, expect.objectContaining({voltage: expect.any(String), current: expect.any(String), acceleration: expect.any(String)}))
     })
   })
 
@@ -335,7 +335,8 @@ describe('WaveformChart', () => {
         [0.1, 0.2, 0.3],
         44100,
         undefined,
-        undefined
+        undefined,
+        expect.objectContaining({voltage: expect.any(String), current: expect.any(String), acceleration: expect.any(String)})
       )
     })
   })

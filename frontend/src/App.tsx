@@ -7,6 +7,7 @@ import { HapticControlPanel } from '@/components/ControlPanel/HapticControlPanel
 import { YURAGIControl } from '@/components/ControlPanel/YURAGIControl'
 import { AccelerationTrajectoryContainer } from '@/components/Visualization/AccelerationTrajectoryContainer'
 import { WaveformChartContainer } from '@/components/Visualization/WaveformChartContainer'
+import { WaveformColorCustomizer } from '@/components/Visualization/WaveformColorCustomizer'
 import { useDeviceInfoQuery } from '@/hooks/queries/useDeviceQuery'
 import { useSystemStatusQuery } from '@/hooks/queries/useHealthQuery'
 import { useParametersQuery } from '@/hooks/queries/useParametersQuery'
@@ -82,6 +83,7 @@ function HapticApp() {
 
           <div className='visualization-subsection'>
             <h3>Waveforms</h3>
+            <WaveformColorCustomizer />
             <div className={`waveform-grid ${isSingleDeviceMode ? 'single-device' : ''}`}>
               <div className='waveform-container'>
                 <WaveformChartContainer channelId={CHANNEL_IDS.DEVICE1_X} />

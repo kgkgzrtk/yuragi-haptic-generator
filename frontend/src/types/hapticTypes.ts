@@ -54,6 +54,7 @@ export interface IHapticSystemState {
     isConnected: boolean
     error: string | null
   }
+  waveformColors: IWaveformColors
 }
 
 // Channel ID constants
@@ -86,6 +87,23 @@ export interface IYURAGIState {
   device1: IYURAGIStatus | null
   device2: IYURAGIStatus | null
   isActive: boolean
+}
+
+// Waveform color customization
+export interface IWaveformColors {
+  [CHANNEL_IDS.DEVICE1_X]: string
+  [CHANNEL_IDS.DEVICE1_Y]: string
+  [CHANNEL_IDS.DEVICE2_X]: string
+  [CHANNEL_IDS.DEVICE2_Y]: string
+  [channelId: number]: string // Allow number indexing
+}
+
+// Default waveform colors (modern green theme)
+export const DEFAULT_WAVEFORM_COLORS: IWaveformColors = {
+  [CHANNEL_IDS.DEVICE1_X]: '#13ae4b', // Primary green
+  [CHANNEL_IDS.DEVICE1_Y]: '#0bdc84', // Bright accent green
+  [CHANNEL_IDS.DEVICE2_X]: '#039555', // Success green
+  [CHANNEL_IDS.DEVICE2_Y]: '#c4dc34', // Yellow-green
 }
 
 // Parameter constraints

@@ -83,7 +83,7 @@ export function generateSawtoothWave(params: GenerateSawtoothParams): number[] {
 /**
  * 2nd order resonator filter using bilinear transform (Tustin method).
  * Implements transfer function: G(s) = ωn²/(s² + 2ζωn*s + ωn²)
- * 
+ *
  * This creates a strong resonance effect at the natural frequency,
  * similar to the backend implementation.
  */
@@ -91,7 +91,7 @@ function resonator(u: number[], fs: number, f_n: number = RESONANT_FREQUENCY, ze
   // Convert to angular frequency
   const w_n = 2 * Math.PI * f_n
   const dt = 1 / fs
-  
+
   // Bilinear transform coefficients
   const a0 = 4 + 4 * zeta * w_n * dt + Math.pow(w_n * dt, 2)
   const b0 = Math.pow(w_n * dt, 2)
@@ -99,15 +99,15 @@ function resonator(u: number[], fs: number, f_n: number = RESONANT_FREQUENCY, ze
   const b2 = b0
   const a1 = 2 * (Math.pow(w_n * dt, 2) - 4)
   const a2 = 4 - 4 * zeta * w_n * dt + Math.pow(w_n * dt, 2)
-  
+
   // Initialize output array
   const y = new Array(u.length).fill(0)
-  
+
   // Apply IIR filter (Direct Form II)
   for (let n = 2; n < u.length; n++) {
     y[n] = (b0 * u[n] + b1 * u[n - 1] + b2 * u[n - 2] - a1 * y[n - 1] - a2 * y[n - 2]) / a0
   }
-  
+
   return y
 }
 
@@ -128,7 +128,7 @@ function addNoise(signal: number[], noiseLevel: number = NOISE_LEVEL): number[] 
  * - Force (and thus acceleration) depends on current
  * - Velocity is integral of acceleration
  */
-function solveElectromechanicalSystem(
+export function solveElectromechanicalSystem(
   voltage: number[],
   sampleRate: number
 ): {
@@ -193,7 +193,7 @@ export function generatePhysicalWaveforms(params: GenerateSawtoothParams): {
   // Then apply resonator to get acceleration (mass-spring-damper system)
   const force = voltage // Since we're using normalized values
   const accelerationRaw = resonator(force, params.sampleRate)
-  
+
   // Scale and add noise to acceleration
   const accelerationScaled = accelerationRaw.map(a => a * ACCELERATION_SCALE)
   const acceleration = addNoise(accelerationScaled)

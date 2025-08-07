@@ -80,12 +80,12 @@ export const massageTestScenarios = {
       },
 
       simulateProgress: (elapsedTime: number, totalTime: number) => {
-        const progress = Math.min(elapsedTime / totalTime, 1)
+        const _progress = Math.min(elapsedTime / totalTime, 1)
         // webSocketMock.broadcastMessage({
-        //   type: 'pattern_progress',
-        //   data: { elapsedTime, totalTime, progress },
+        //   type: 'pattern__progress',
+        //   data: { elapsedTime, totalTime, _progress },
         // })
-        // WebSocket deprecated - progress simulation disabled
+        // WebSocket deprecated - _progress simulation disabled
       },
     }
   },
@@ -104,7 +104,7 @@ export const massageTestScenarios = {
       // WebSocket deprecated - trajectory stream simulation disabled
 
       angle += frequency * 0.1 // Increment based on frequency
-      if (angle >= 2 * Math.PI) angle = 0
+      if (angle >= 2 * Math.PI) {angle = 0}
     }, 16) // ~60fps
   },
 }
