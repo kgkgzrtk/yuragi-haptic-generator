@@ -21,13 +21,19 @@ export interface QuerySyncActions {
 
   // Mutation helpers
   onParameterMutationSuccess: (queryClient: QueryClient, data: IParametersResponse) => void
-  onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: IVectorForce) => void
+  onVectorForceMutationSuccess: (
+    queryClient: QueryClient,
+    deviceId: number,
+    data: IVectorForce
+  ) => void
 }
 
 /**
  * Zustand middleware for React Query synchronization
  */
-export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClient: QueryClient) => {
+export const createQuerySyncMiddleware = <T extends QuerySyncActions>(
+  _queryClient: QueryClient
+) => {
   return (config: StateCreator<T, [], [], T>): StateCreator<T, [], [], T> => {
     return (set, get, api) => {
       const store = config(set, get, api)
@@ -52,7 +58,6 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
           }
         },
 
-
         onParameterMutationSuccess: (queryClient: QueryClient, data: IParametersResponse) => {
           // Sync with query cache
           queryClient.setQueryData(
@@ -66,8 +71,11 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(_queryClie
           )
         },
 
-
-        onVectorForceMutationSuccess: (queryClient: QueryClient, deviceId: number, data: IVectorForce) => {
+        onVectorForceMutationSuccess: (
+          queryClient: QueryClient,
+          deviceId: number,
+          data: IVectorForce
+        ) => {
           // Sync vector force state
           queryClient.setQueryData(queryKeys.vectorForceByDevice(deviceId), data)
         },
@@ -99,7 +107,6 @@ export const useQueryStoreSync = (
         }
       }
     })
-
 
     // Subscribe to health/connection changes
     const healthUnsubscribe = queryClient.getQueryCache().subscribe(event => {
@@ -154,7 +161,6 @@ export const createOptimisticUpdateHelpers = (queryClient: QueryClient) => {
       })
     },
 
-
     // Optimistic vector force update
     updateVectorForceOptimistically: (deviceId: number, vectorForce: IVectorForce | null) => {
       queryClient.setQueryData(queryKeys.vectorForceByDevice(deviceId), vectorForce)
@@ -164,7 +170,6 @@ export const createOptimisticUpdateHelpers = (queryClient: QueryClient) => {
     rollbackParameter: (_channelId: number, previousData: IParametersResponse) => {
       queryClient.setQueryData(queryKeys.parameters(), previousData)
     },
-
 
     rollbackVectorForce: (deviceId: number, previousData: IVectorForce | null) => {
       queryClient.setQueryData(queryKeys.vectorForceByDevice(deviceId), previousData)
@@ -179,7 +184,11 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
   return {
     handleParameterError: (error: HapticError | Error, _channelId?: number) => {
       // Set error state in both systems
-      logger.error('Parameter error', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
+      logger.error(
+        'Parameter error',
+        { error: error instanceof Error ? error.message : error },
+        error instanceof Error ? error : undefined
+      )
 
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: queryKeys.parameters() })
@@ -192,7 +201,6 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
 
     handleStreamingError: (error: HapticError | Error) => {
       logger.error('Streaming error', { error: error instanceof Error ? error.message : error })
-
     },
 
     handleConnectionError: (error: HapticError | Error) => {

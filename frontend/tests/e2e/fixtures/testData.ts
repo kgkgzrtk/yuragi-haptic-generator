@@ -262,11 +262,7 @@ export const testErrorScenarios = {
 export const testParameterSets = {
   channelUpdates: {
     basic: { frequency: 75, amplitude: 0.6, phase: 45 },
-    rapid: [
-      { frequency: 50 },
-      { amplitude: 0.7 },
-      { phase: 90 },
-    ],
+    rapid: [{ frequency: 50 }, { amplitude: 0.7 }, { phase: 90 }],
     concurrent: {
       channel0: { frequency: 60, amplitude: 0.5, phase: 0 },
       channel1: { frequency: 80, amplitude: 0.7, phase: 90 },

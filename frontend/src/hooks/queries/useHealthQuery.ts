@@ -42,7 +42,6 @@ export const useHealthQuery = () => {
   })
 }
 
-
 /**
  * Hook for general system status
  * Monitors system health and connection status

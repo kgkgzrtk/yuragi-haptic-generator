@@ -1142,9 +1142,643 @@ export const XYTrajectory: React.FC = () => {
 };
 ```
 
-## 4. Web UI 統合設計
+## 4. 高度な触覚フィードバック機能（ゆらぎ付き円運動系）
 
-### 4.1 メインアプリケーション (frontend/App.tsx)
+詳細な設計については、[マッサージ機能設計書](massage_feature_design.md)を参照してください。
+
+### 4.1 概要
+
+基本的なノコギリ波生成に加えて、より自然で心地よい触覚フィードバックを実現する「ゆらぎ付き円運動系の力覚ベクトル」機能を提供します。
+
+### 4.2 主要機能
+
+- **円運動生成**: 0.2-0.6Hzの低周波回転で自然な力覚ベクトル
+- **1/f風ゆらぎ**: ローパスフィルタによる自然なノイズパターン
+- **マッサージモード**: 振幅変調と方向ゆらぎによる心地よい触感
+- **複数プリセット**: gentle, strong, slowなど用途別の振動パターン
+
+### 4.3 実装モジュール
+
+- `modulation.py`: 各種変調器（CircularMotionGenerator, AmplitudeModulator等）
+- `massage_controller.py`: マッサージ波形制御
+- `force_generator.py`: 力覚生成インターフェース
+
+### 4.4 WebSocket API 統合
+
+#### 4.4.1 WebSocketエンドポイント拡張
+
+```python
+# backend/main.py への追加
+from fastapi import WebSocket, WebSocketDisconnect
+import asyncio
+import json
+import time
+
+@app.websocket("/ws/massage")
+async def websocket_massage_endpoint(websocket: WebSocket):
+    """マッサージ機能専用WebSocketエンドポイント"""
+    await websocket.accept()
+    
+    # クライアント管理に追加
+    massage_ws_manager.add_connection(websocket)
+    
+    try:
+        # ハートビート開始
+        asyncio.create_task(start_massage_heartbeat(websocket))
+        
+        # メッセージループ
+        while True:
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            
+            # バージョンチェック
+            if message.get("version") != "1.0":
+                await websocket.send_json({
+                    "version": "1.0",
+                    "type": "error",
+                    "timestamp": int(time.time() * 1000),
+                    "data": {
+                        "error_code": "VERSION_MISMATCH",
+                        "message": f"Unsupported version: {message.get('version')}"
+                    }
+                })
+                continue
+                
+            # メッセージ処理
+            await handle_massage_websocket_message(websocket, message)
+            
+    except WebSocketDisconnect:
+        massage_ws_manager.remove_connection(websocket)
+
+async def handle_massage_websocket_message(websocket: WebSocket, message: dict):
+    """マッサージWebSocketメッセージの処理"""
+    msg_type = message.get("type")
+    data = message.get("data", {})
+    
+    try:
+        if msg_type == "apply_pattern":
+            # パターン適用
+            result = await massage_controller.apply_pattern(
+                preset=data.get("preset"),
+                device_ids=data.get("device_ids", [1, 2]),
+                duration=data.get("duration"),
+                fade_in=data.get("fade_in", 0.5)
+            )
+            
+            # 全クライアントに通知
+            await massage_ws_manager.broadcast({
+                "version": "1.0",
+                "type": "status_update",
+                "timestamp": int(time.time() * 1000),
+                "data": {
+                    "massage_mode": True,
+                    "current_preset": data.get("preset"),
+                    "active_devices": data.get("device_ids", [1, 2])
+                }
+            })
+            
+        elif msg_type == "update_circular_motion":
+            # 円運動パラメータ更新
+            await massage_controller.update_circular_motion(data)
+            
+            # パラメータ更新を通知
+            await massage_ws_manager.broadcast({
+                "version": "1.0",
+                "type": "parameter_update",
+                "timestamp": int(time.time() * 1000),
+                "data": data
+            })
+            
+        elif msg_type == "preview_pattern":
+            # パターンプレビュー
+            await massage_controller.preview_pattern(
+                preset=data.get("preset"),
+                device_ids=data.get("deviceIds", [1]),
+                duration=data.get("duration", 3.0)
+            )
+            
+    except Exception as e:
+        await websocket.send_json({
+            "version": "1.0",
+            "type": "error",
+            "timestamp": int(time.time() * 1000),
+            "data": {
+                "error_code": "PROCESSING_ERROR",
+                "message": str(e)
+            }
+        })
+
+async def start_massage_heartbeat(websocket: WebSocket):
+    """マッサージWebSocketハートビート"""
+    while True:
+        try:
+            await websocket.send_json({
+                "version": "1.0",
+                "type": "heartbeat",
+                "timestamp": int(time.time() * 1000),
+                "data": {
+                    "interval": 5000,
+                    "server_time": int(time.time() * 1000)
+                }
+            })
+            await asyncio.sleep(5)
+        except:
+            break
+```
+
+#### 4.4.2 WebSocket接続管理
+
+```python
+# backend/api/websocket_manager.py
+class MassageWebSocketManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        
+    def add_connection(self, websocket: WebSocket):
+        self.active_connections.append(websocket)
+        
+    def remove_connection(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+            
+    async def broadcast(self, message: dict):
+        """全接続クライアントにメッセージブロードキャスト"""
+        if self.active_connections:
+            await asyncio.gather(
+                *[conn.send_json(message) for conn in self.active_connections],
+                return_exceptions=True
+            )
+
+# グローバルインスタンス
+massage_ws_manager = MassageWebSocketManager()
+```
+
+### 4.5 REST API エンドポイント拡張
+
+#### 4.5.1 新規エンドポイント
+
+```python
+# backend/api/routes.py への追加
+from .massage_routes import router as massage_router
+
+# マッサージ関連APIルート追加
+app.include_router(massage_router)
+
+@app.post("/api/circular-motion")
+async def set_circular_motion_legacy(
+    device_id: int,
+    rotation_freq: float = 0.33,
+    fluctuation_amplitude: float = 10.0,
+    enable_fm: bool = True
+):
+    """円運動パラメータ設定（簡易版）"""
+    try:
+        await massage_controller.set_circular_motion(
+            device_id=device_id,
+            rotation_freq=rotation_freq,
+            fluctuation_amplitude=fluctuation_amplitude,
+            enable_fm=enable_fm
+        )
+        
+        # WebSocketで通知
+        await massage_ws_manager.broadcast({
+            "version": "1.0",
+            "type": "parameter_update",
+            "timestamp": int(time.time() * 1000),
+            "data": {
+                "device_id": device_id,
+                "rotation_freq": rotation_freq,
+                "fluctuation_amplitude": fluctuation_amplitude,
+                "enable_fm": enable_fm
+            }
+        })
+        
+        return {
+            "status": "success",
+            "device_id": device_id,
+            "parameters": {
+                "rotation_freq": rotation_freq,
+                "fluctuation_amplitude": fluctuation_amplitude,
+                "enable_fm": enable_fm
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+```
+
+## 5. フロントエンド拡張設計
+
+### 5.1 CircularTrajectory コンポーネント統合
+
+```typescript
+// frontend/components/Visualization/CircularTrajectory.tsx への統合
+import { CircularTrajectory } from './CircularTrajectory';
+import { MassagePatternSelector } from '../Control/MassagePatternSelector';
+
+// メインアプリケーションに統合
+const App: React.FC = () => {
+    const { massageEnabled } = useMassageStore();
+    
+    return (
+        <div className="app-container">
+            {/* 既存のUI */}
+            <div className="left-panel">
+                <ControlPanel />
+                
+                {/* マッサージ機能追加 */}
+                {massageEnabled && (
+                    <MassagePatternSelector 
+                        deviceIds={[1, 2]}
+                        onPatternChange={(preset, params) => {
+                            console.log(`Applied pattern: ${preset}`, params);
+                        }}
+                    />
+                )}
+            </div>
+            
+            <div className="right-panel">
+                <WaveformDisplay />
+                
+                {/* 円運動軌跡表示追加 */}
+                {massageEnabled ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <CircularTrajectory deviceId={1} />
+                        <CircularTrajectory deviceId={2} />
+                    </div>
+                ) : (
+                    <XYTrajectory />
+                )}
+            </div>
+        </div>
+    );
+};
+```
+
+### 5.2 WebSocketService統合
+
+```typescript
+// frontend/hooks/useMassageWebSocket.ts
+import { useEffect, useRef } from 'react';
+import { useMassageStore } from '../stores/massageStore';
+import { MassageWebSocketService } from '../services/WebSocketService';
+
+export const useMassageWebSocket = () => {
+    const { connect, disconnect, connected, wsService } = useMassageStore();
+    const connectionAttempted = useRef(false);
+    
+    useEffect(() => {
+        if (!connectionAttempted.current) {
+            connectionAttempted.current = true;
+            connect().catch(error => {
+                console.error('Failed to establish WebSocket connection:', error);
+            });
+        }
+        
+        return () => {
+            if (connected) {
+                disconnect();
+            }
+        };
+    }, []);
+    
+    const applyPattern = async (request: any) => {
+        await wsService.applyPattern(request);
+    };
+    
+    const previewPattern = async (preset: string, deviceIds: number[], duration: number) => {
+        await wsService.previewPattern(preset, deviceIds, duration);
+    };
+    
+    const stopPreview = async () => {
+        await wsService.send('stop_preview', {});
+    };
+    
+    return {
+        connected,
+        applyPattern,
+        previewPattern,
+        stopPreview
+    };
+};
+```
+
+### 5.3 状態管理拡張
+
+```typescript
+// frontend/stores/hapticStore.ts への拡張
+interface HapticState {
+    // 既存の状態...
+    
+    // マッサージ機能追加
+    massageEnabled: boolean;
+    massageParameters: {
+        device1: MassageParams;
+        device2: MassageParams;
+    };
+    
+    // アクション追加
+    toggleMassageMode: (enabled: boolean) => void;
+    updateMassageParameters: (deviceId: number, params: MassageParams) => void;
+}
+
+// Zustand store拡張
+export const useHapticStore = create<HapticState>((set, get) => ({
+    // 既存の状態...
+    
+    massageEnabled: false,
+    massageParameters: {
+        device1: {
+            rotation_freq: 0.33,
+            fluctuation_amplitude: 10.0,
+            envelope_depth: 0.25,
+            base_amplitude: 1.0
+        },
+        device2: {
+            rotation_freq: 0.33,
+            fluctuation_amplitude: 10.0,
+            envelope_depth: 0.25,
+            base_amplitude: 1.0
+        }
+    },
+    
+    toggleMassageMode: (enabled: boolean) => {
+        set({ massageEnabled: enabled });
+        
+        // WebSocket経由で通知
+        if (enabled) {
+            // マッサージモードに切り替え
+        } else {
+            // 基本モードに戻す
+        }
+    },
+    
+    updateMassageParameters: (deviceId: number, params: MassageParams) => {
+        set(state => ({
+            massageParameters: {
+                ...state.massageParameters,
+                [`device${deviceId}`]: { ...state.massageParameters[`device${deviceId}` as keyof typeof state.massageParameters], ...params }
+            }
+        }));
+    }
+}));
+```
+
+### 5.4 パフォーマンス最適化コンポーネント
+
+```typescript
+// frontend/components/Performance/PerformanceIndicator.tsx
+import React from 'react';
+import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor';
+
+export const PerformanceIndicator: React.FC = () => {
+    const { metrics, alerts } = usePerformanceMonitor();
+    
+    const getLatencyColor = (latency: number) => {
+        if (latency < 5) return 'text-green-500';
+        if (latency < 10) return 'text-yellow-500';
+        return 'text-red-500';
+    };
+    
+    return (
+        <div className="performance-indicator p-3 bg-gray-800 text-white rounded-lg">
+            <h4 className="text-sm font-semibold mb-2">Performance</h4>
+            
+            <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                    <span>WebSocket RTT:</span>
+                    <span className={getLatencyColor(metrics.websocket_rtt)}>
+                        {metrics.websocket_rtt?.toFixed(1)}ms
+                    </span>
+                </div>
+                
+                <div className="flex justify-between">
+                    <span>Waveform Gen:</span>
+                    <span className={getLatencyColor(metrics.waveform_generation)}>
+                        {metrics.waveform_generation?.toFixed(1)}ms
+                    </span>
+                </div>
+                
+                <div className="flex justify-between">
+                    <span>UI FPS:</span>
+                    <span className={metrics.ui_fps > 50 ? 'text-green-500' : 'text-yellow-500'}>
+                        {Math.round(metrics.ui_fps)}
+                    </span>
+                </div>
+            </div>
+            
+            {alerts.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-600">
+                    <div className="text-red-400 text-xs">
+                        {alerts.map((alert, idx) => (
+                            <div key={idx}>⚠️ {alert}</div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+```
+
+## 6. システムパフォーマンス要件
+
+### 6.1 レイテンシ仕様
+
+| コンポーネント | 目標値 | 許容値 | 測定方法 |
+|---------------|--------|--------|----------|
+| **WebSocket通信** | <3ms平均 | <5ms (99%ile) | クライアント-サーバーRTT |
+| **波形生成処理** | <8ms平均 | <10ms (99%ile) | 生成開始-完了時間 |
+| **UI描画更新** | >60fps目標 | >30fps最小 | requestAnimationFrame |
+| **パラメータ変更反映** | <50ms | <100ms | 操作-反映時間 |
+
+### 6.2 スループット仕様
+
+| 項目 | 要求値 | 備考 |
+|------|--------|------|
+| WebSocketメッセージ処理 | >100 msg/sec | バーストトラフィック対応 |
+| 同時WebSocket接続 | >10 connections | マルチクライアント対応 |
+| パラメータ更新頻度 | >20 Hz | リアルタイム制御 |
+| 波形データポイント | >20K samples/sec | 高品質音声出力 |
+
+### 6.3 リソース使用量制限
+
+| リソース | 制限値 | モニタリング方法 |
+|----------|--------|-----------------|
+| CPU使用率 | <25%平均 | システムプロファイラ |
+| メモリ使用量 | <500MB | プロセスメモリ監視 |
+| WebGLメモリ | <100MB | WebGL context情報 |
+| ネットワーク帯域 | <10Mbps | パケット統計 |
+
+### 6.4 パフォーマンス監視実装
+
+```python
+# backend/monitoring/performance_monitor.py
+import time
+import psutil
+from typing import Dict, Any
+import asyncio
+from collections import deque
+
+class PerformanceMonitor:
+    def __init__(self, window_size: int = 1000):
+        self.metrics = {
+            'waveform_generation': deque(maxlen=window_size),
+            'websocket_rtt': deque(maxlen=window_size),
+            'cpu_usage': deque(maxlen=window_size),
+            'memory_usage': deque(maxlen=window_size)
+        }
+        self.thresholds = {
+            'waveform_generation': 10.0,  # ms
+            'websocket_rtt': 5.0,  # ms
+            'cpu_usage': 25.0,  # %
+            'memory_usage': 500.0  # MB
+        }
+    
+    def record_waveform_generation(self, duration_ms: float):
+        self.metrics['waveform_generation'].append(duration_ms)
+    
+    def record_websocket_rtt(self, rtt_ms: float):
+        self.metrics['websocket_rtt'].append(rtt_ms)
+    
+    def update_system_metrics(self):
+        """システムメトリクスを更新"""
+        cpu_percent = psutil.cpu_percent(interval=None)
+        memory_info = psutil.virtual_memory()
+        memory_mb = memory_info.used / (1024 * 1024)
+        
+        self.metrics['cpu_usage'].append(cpu_percent)
+        self.metrics['memory_usage'].append(memory_mb)
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """パフォーマンス統計を取得"""
+        stats = {}
+        for metric_name, values in self.metrics.items():
+            if values:
+                values_list = list(values)
+                sorted_values = sorted(values_list)
+                stats[metric_name] = {
+                    'avg': sum(values_list) / len(values_list),
+                    'min': sorted_values[0],
+                    'max': sorted_values[-1],
+                    'p95': sorted_values[int(len(sorted_values) * 0.95)],
+                    'p99': sorted_values[int(len(sorted_values) * 0.99)],
+                    'current': values_list[-1]
+                }
+        return stats
+    
+    def check_thresholds(self) -> list[str]:
+        """閾値チェックとアラート生成"""
+        alerts = []
+        stats = self.get_statistics()
+        
+        for metric, threshold in self.thresholds.items():
+            if metric in stats:
+                current = stats[metric]['current']
+                if current > threshold:
+                    alerts.append(f"{metric} exceeds threshold: {current:.2f} > {threshold}")
+        
+        return alerts
+
+# グローバルモニターインスタンス
+perf_monitor = PerformanceMonitor()
+
+# 定期的なシステムメトリクス更新
+async def update_system_metrics_periodically():
+    while True:
+        perf_monitor.update_system_metrics()
+        await asyncio.sleep(1)
+
+# FastAPIアプリケーション起動時に開始
+@app.on_event("startup")
+async def start_performance_monitoring():
+    asyncio.create_task(update_system_metrics_periodically())
+
+# パフォーマンス統計API
+@app.get("/api/performance")
+async def get_performance_stats():
+    stats = perf_monitor.get_statistics()
+    alerts = perf_monitor.check_thresholds()
+    return {
+        "statistics": stats,
+        "alerts": alerts,
+        "timestamp": time.time()
+    }
+```
+
+### 6.5 パフォーマンステスト自動化
+
+```python
+# tests/performance/test_performance.py
+import pytest
+import asyncio
+import time
+from ..massage_controller import MassageWaveformController
+
+class TestPerformanceRequirements:
+    
+    @pytest.mark.asyncio
+    async def test_waveform_generation_latency(self):
+        """波形生成レイテンシテスト"""
+        controller = MassageWaveformController()
+        
+        # 100回の生成時間を測定
+        latencies = []
+        for _ in range(100):
+            start = time.perf_counter()
+            await controller.generate_massage_waveforms(
+                duration=0.1,
+                preset="default"
+            )
+            end = time.perf_counter()
+            latencies.append((end - start) * 1000)
+        
+        # 統計計算
+        avg_latency = sum(latencies) / len(latencies)
+        p99_latency = sorted(latencies)[int(len(latencies) * 0.99)]
+        
+        # 要件チェック
+        assert avg_latency < 8.0, f"Average latency {avg_latency:.2f}ms exceeds 8ms"
+        assert p99_latency < 10.0, f"99th percentile {p99_latency:.2f}ms exceeds 10ms"
+    
+    @pytest.mark.asyncio  
+    async def test_websocket_throughput(self):
+        """WebSocketスループットテスト"""
+        # 100 msg/secの送信テスト
+        message_count = 100
+        start_time = time.time()
+        
+        # メッセージ送信シミュレーション
+        for i in range(message_count):
+            # WebSocketメッセージ送信
+            await massage_ws_manager.broadcast({
+                "type": "parameter_update",
+                "data": {"test": i}
+            })
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        throughput = message_count / duration
+        
+        assert throughput >= 100, f"Throughput {throughput:.1f} msg/sec below requirement"
+    
+    def test_memory_usage(self):
+        """メモリ使用量テスト"""
+        initial_memory = psutil.Process().memory_info().rss / (1024 * 1024)
+        
+        # 大量の波形生成
+        controller = MassageWaveformController()
+        for _ in range(10):
+            controller.generate_massage_waveforms(duration=1.0)
+        
+        final_memory = psutil.Process().memory_info().rss / (1024 * 1024)
+        memory_increase = final_memory - initial_memory
+        
+        assert memory_increase < 100, f"Memory increase {memory_increase:.1f}MB too high"
+```
+
+## 7. Web UI 統合設計
+
+### 7.1 メインアプリケーション (frontend/App.tsx)
 
 ```typescript
 import React, { useEffect } from 'react';
@@ -1191,7 +1825,7 @@ function App() {
 export default App;
 ```
 
-### 4.2 API Client Hook (frontend/hooks/useAPIClient.ts)
+### 5.2 API Client Hook (frontend/hooks/useAPIClient.ts)
 
 ```typescript
 import { useCallback, useRef, useEffect } from 'react';
@@ -1256,9 +1890,9 @@ export const useAPIClient = () => {
 };
 ```
 
-## 5. パフォーマンス最適化
+## 6. パフォーマンス最適化
 
-### 5.1 Numba JIT最適化
+### 6.1 Numba JIT最適化
 
 重要な処理ループはNumbaでコンパイル：
 
@@ -1290,7 +1924,7 @@ def process_multichannel_sawtooth(
     return output
 ```
 
-### 5.2 メモリ管理
+### 6.2 メモリ管理
 
 ```python
 class BufferPool:
@@ -1314,7 +1948,7 @@ class BufferPool:
         return np.zeros(self.buffer_size, dtype=np.float32)
 ```
 
-### 5.3 ロックフリーリングバッファ
+### 6.3 ロックフリーリングバッファ
 
 ```python
 class LockFreeRingBuffer:
@@ -1337,9 +1971,9 @@ class LockFreeRingBuffer:
         pass
 ```
 
-## 6. テスト戦略
+## 7. テスト戦略
 
-### 6.1 単体テスト
+### 7.1 単体テスト
 
 ```python
 # tests/unit/test_sawtooth_generator.py
@@ -1394,7 +2028,7 @@ class TestSawtoothGenerator:
         assert aliasing_power / total_power < 0.01  # 1%以下
 ```
 
-### 6.2 統合テスト
+### 7.2 統合テスト
 
 ```python
 # tests/integration/test_vector_control.py
@@ -1420,7 +2054,7 @@ class TestVectorControl:
             # （実機でのセンサー測定が必要）
 ```
 
-### 6.3 パフォーマンステスト
+### 7.3 パフォーマンステスト
 
 ```python
 # benchmarks/latency_test.py
@@ -1456,9 +2090,13 @@ def benchmark_callback_latency():
     assert np.percentile(latencies_array, 99) < 10.0  # 99%が10ms以下
 ```
 
-## 7. 設定ファイル
+### 7.4 マッサージ機能テスト
 
-### 7.1 pyproject.toml
+マッサージ機能の詳細なテスト戦略については、[テスト戦略設計書](test_strategy.md#4-マッサージ機能テスト)を参照してください。
+
+## 8. 設定ファイル
+
+### 8.1 pyproject.toml
 
 ```toml
 [project]
@@ -1557,7 +2195,7 @@ include = [
 packages = ["src/sawtooth_haptic"]
 ```
 
-### 7.2 package.json
+### 8.2 package.json
 
 ```json
 {
@@ -1591,7 +2229,7 @@ packages = ["src/sawtooth_haptic"]
 }
 ```
 
-### 7.3 開発サーバー起動スクリプト
+### 8.3 開発サーバー起動スクリプト
 
 ```python
 # scripts/start_dev.py
@@ -1649,9 +2287,9 @@ if __name__ == "__main__":
     main()
 ```
 
-## 8. 使用例
+## 9. 使用例
 
-### 8.1 基本的な使用例
+### 9.1 基本的な使用例
 
 ```python
 # examples/basic_sawtooth.py
@@ -1688,7 +2326,7 @@ input("Press Enter to stop...")
 actuator.stop()
 ```
 
-### 8.2 ベクトル力覚の例
+### 9.2 ベクトル力覚の例
 
 ```python
 # examples/vector_force_demo.py
@@ -1715,7 +2353,7 @@ for t in range(360):
 actuator.stop()
 ```
 
-### 8.3 Web UIの使用例
+### 9.3 Web UIの使用例
 
 ```bash
 # 開発環境の起動
@@ -1739,17 +2377,17 @@ Web UIの操作:
    - ベクトル力覚の方向を可視化
    - グラデーション付き軌跡表示
 
-## 9. まとめ
+## 10. まとめ
 
 本設計書では、ノコギリ波出力デバイスのソフトウェア実装について、以下の要素を定義しました：
 
-### 9.1 主要機能の実現
+### 10.1 主要機能の実現
 1. **周波数可変制御**: 40-120Hzの範囲で各チャンネル独立制御
 2. **360度ベクトル力覚**: 位相差と極性反転による全方向力覚提示
 3. **Web UI統合**: リアルタイム波形表示とパラメータ制御
 4. **ローカル実行**: localhost完結型のシステム設計
 
-### 9.2 技術的特徴
+### 10.2 技術的特徴
 1. **低レイテンシアーキテクチャ**: PyAudio + Numbaによる10ms以下の応答
 2. **高品質波形生成**: BLITアルゴリズムによるアンチエイリアス
 3. **リアルタイム可視化**: Observable Plot + D3.jsによる60fps描画
@@ -1757,10 +2395,18 @@ Web UIの操作:
 5. **適応制御システム**: 2kHzフィードバックループ
 6. **安全機能**: 自動共振検出と保護
 
-### 9.3 使用技術スタック
+### 10.3 使用技術スタック
 - **バックエンド**: Python 3.11+, FastAPI, PyAudio, Numba, uv
 - **フロントエンド**: React 18+, Vite, TypeScript, TailwindCSS
 - **可視化**: Observable Plot, D3.js
 - **通信**: HTTP/REST API
 
-これらの設計により、要件定義書で定められた全ての機能要件と性能要件を満たし、直感的な操作性を備えたシステムの実装が可能となります。
+### 10.4 高度な触覚フィードバック機能（新規追加）
+1. **ゆらぎ付き円運動**: 0.2-0.6Hzの低周波回転で自然な力覚ベクトル生成
+2. **1/f風ゆらぎ**: ローパスフィルタによる自然なノイズパターン
+3. **マッサージモード**: 振幅変調と方向ゆらぎによる心地よい触感
+4. **複数プリセット**: gentle, strong, slowなど用途別の振動パターン
+5. **リアルタイム制御**: WebSocket経由での動的パラメータ更新
+6. **機械共振活用**: 180Hz共振特性を考慮した加速度応答
+
+これらの設計により、要件定義書で定められた全ての機能要件と性能要件を満たし、さらに高度なマッサージ機能を備えた直感的な操作性のシステムの実装が可能となります。

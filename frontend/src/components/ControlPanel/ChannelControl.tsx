@@ -56,7 +56,7 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
   const validateField = useCallback(
     (field: keyof IChannelParameters, value: unknown): string | null => {
       const numValue = typeof value === 'string' ? parseFloat(value) : (value as number)
-      
+
       // Handle NaN values (from empty inputs)
       if (typeof numValue === 'number' && isNaN(numValue)) {
         return null // Don't show error for empty inputs

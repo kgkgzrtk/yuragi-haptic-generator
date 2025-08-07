@@ -25,9 +25,9 @@ export interface IWaveformData {
   sampleRate: number
   channels: Array<{
     channelId: number
-    data: number[]  // Voltage data (backward compatibility)
-    current?: number[]  // Current data
-    acceleration?: number[]  // Acceleration data
+    data: number[] // Voltage data (backward compatibility)
+    current?: number[] // Current data
+    acceleration?: number[] // Acceleration data
   }>
 }
 
@@ -49,6 +49,7 @@ export interface IHapticSystemState {
     device1: IVectorForce | null
     device2: IVectorForce | null
   }
+  yuragi: IYURAGIState
   connection: {
     isConnected: boolean
     error: string | null
@@ -63,10 +64,35 @@ export const CHANNEL_IDS = {
   DEVICE2_Y: 3,
 } as const
 
+// YURAGI massage control types
+export interface IYURAGIRequest {
+  deviceId: 1 | 2
+  preset: 'gentle' | 'moderate' | 'intense' | 'therapeutic'
+  duration: number // in seconds, 30-300
+  enabled: boolean
+}
+
+export interface IYURAGIStatus {
+  enabled: boolean
+  preset: string
+  deviceId: 1 | 2
+  duration?: number
+  startTime?: string
+  progress?: number // 0-100
+}
+
+// YURAGI store state
+export interface IYURAGIState {
+  device1: IYURAGIStatus | null
+  device2: IYURAGIStatus | null
+  isActive: boolean
+}
+
 // Parameter constraints
 export const CONSTRAINTS = {
   FREQUENCY: { MIN: 0, MAX: 120 },
   AMPLITUDE: { MIN: 0, MAX: 1 },
   PHASE: { MIN: 0, MAX: 360 },
   VECTOR_FREQUENCY: { MIN: 40, MAX: 120 },
+  YURAGI_DURATION: { MIN: 30, MAX: 300 },
 } as const

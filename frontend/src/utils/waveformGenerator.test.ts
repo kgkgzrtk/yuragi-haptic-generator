@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   generateSawtoothWave,
   generateMultiChannelWaveform,
-  type WaveformParameters
+  type WaveformParameters,
 } from './waveformGenerator'
 
 describe('waveformGenerator', () => {
@@ -135,7 +135,7 @@ describe('waveformGenerator', () => {
         polarity: true,
         duration: 0.05, // Half period
         sampleRate: 100,
-        startTime: 0
+        startTime: 0,
       }
 
       const wave1 = generateSawtoothWave(params)
@@ -143,7 +143,7 @@ describe('waveformGenerator', () => {
       // Continue from where we left off
       const wave2 = generateSawtoothWave({
         ...params,
-        startTime: 0.05
+        startTime: 0.05,
       })
 
       // Last sample of wave1 should be close to first sample of wave2

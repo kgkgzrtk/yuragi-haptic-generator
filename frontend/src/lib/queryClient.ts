@@ -2,8 +2,8 @@
  * React Query client configuration optimized for haptic system requirements
  */
 import { QueryClient } from '@tanstack/react-query'
-import type { HapticError } from '@/types/errors'
 import { notificationManager } from '@/hooks/useErrorHandler'
+import type { HapticError } from '@/types/errors'
 import { logger } from '@/utils/logger'
 
 // Query key factory for consistent cache key management
@@ -96,7 +96,7 @@ export const queryClient = new QueryClient({
       // Global error handling for mutations
       onError: (error: HapticError | Error) => {
         logger.error('Mutation error', { error: error.message })
-        
+
         // Integrate with toast notification system
         notificationManager.addNotification({
           title: 'Operation Failed',

@@ -69,9 +69,12 @@ export const useUpdateParametersMutation = () => {
         setChannels(context.previousParameters.channels)
       }
 
-      logger.error('Failed to update parameters', { error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
+      logger.error(
+        'Failed to update parameters',
+        { error: error instanceof Error ? error.message : error },
+        error instanceof Error ? error : undefined
+      )
     },
-
 
     onSettled: () => {
       // Always refetch after mutation
@@ -141,9 +144,12 @@ export const useUpdateChannelMutation = () => {
         }
       }
 
-      logger.error('Failed to update channel parameters', { channelId: variables.channelId, error: error instanceof Error ? error.message : error }, error instanceof Error ? error : undefined)
+      logger.error(
+        'Failed to update channel parameters',
+        { channelId: variables.channelId, error: error instanceof Error ? error.message : error },
+        error instanceof Error ? error : undefined
+      )
     },
-
 
     onSettled: (_data, error, _variables) => {
       // Only refetch if there was an error or after a delay
@@ -180,7 +186,6 @@ export const useChannelParametersQuery = (channelId: number) => {
 
     // Enable this query only if channelId is valid
     enabled: channelId >= 0,
-
   })
 }
 

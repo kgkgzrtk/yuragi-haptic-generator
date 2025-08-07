@@ -11,8 +11,8 @@ export const CHANNEL_COLORS = {
 
 // Colors for different signal types
 export const SIGNAL_COLORS = {
-  voltage: '#2563EB',      // Blue - more saturated
-  current: '#10B98180',    // Green - with transparency (50% opacity)
+  voltage: '#2563EB', // Blue - more saturated
+  current: '#10B98180', // Green - with transparency (50% opacity)
   acceleration: '#DC2626', // Red - more contrast
 } as const
 
@@ -77,17 +77,17 @@ export const getWaveformChartOptions = (channelId: number): ChartOptions<'line'>
 
 // Create chart data structure
 export const createWaveformData = (
-  _channelId: number,  // Keep for API compatibility
+  _channelId: number, // Keep for API compatibility
   data: number[],
   sampleRate: number,
   current?: number[],
   acceleration?: number[]
 ): ChartData<'line'> => {
   // Create time points
-  const createDataPoints = (values: number[]) => 
+  const createDataPoints = (values: number[]) =>
     values.map((value, index) => ({
       x: (index / sampleRate) * 1000, // Time in ms
-      y: value
+      y: value,
     }))
 
   const datasets = []

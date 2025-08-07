@@ -155,7 +155,6 @@ describe('hapticStore', () => {
     })
   })
 
-
   describe('Status Management', () => {
     const mockStatus: IStatusResponse = {
       sampleRate: 44100,

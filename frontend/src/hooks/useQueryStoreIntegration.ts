@@ -46,7 +46,9 @@ export const useManualSync = () => {
   const store = useHapticStore
 
   const syncParametersToStore = () => {
-    const parametersData = queryClient.getQueryData(['haptic', 'parameters']) as { channels?: IChannelParameters[] }
+    const parametersData = queryClient.getQueryData(['haptic', 'parameters']) as {
+      channels?: IChannelParameters[]
+    }
 
     if (parametersData?.channels) {
       store.getState().setChannels(parametersData.channels)
@@ -97,24 +99,26 @@ export const useOptimisticUpdates = () => {
   return {
     updateParameterOptimistically: (channelId: number, updates: Partial<IChannelParameters>) => {
       // Update both query cache and store
-      queryClient.setQueryData(['haptic', 'parameters'], (old: { channels: IChannelParameters[] } | undefined) => {
-        if (!old) {
-          return old
+      queryClient.setQueryData(
+        ['haptic', 'parameters'],
+        (old: { channels: IChannelParameters[] } | undefined) => {
+          if (!old) {
+            return old
+          }
+
+          const newData = {
+            channels: old.channels.map((channel: IChannelParameters) =>
+              channel.channelId === channelId ? { ...channel, ...updates } : channel
+            ),
+          }
+
+          // Sync to store
+          store.getState().setChannels(newData.channels)
+
+          return newData
         }
-
-        const newData = {
-          channels: old.channels.map((channel: IChannelParameters) =>
-            channel.channelId === channelId ? { ...channel, ...updates } : channel
-          ),
-        }
-
-        // Sync to store
-        store.getState().setChannels(newData.channels)
-
-        return newData
-      })
+      )
     },
-
 
     updateVectorForceOptimistically: (deviceId: number, vectorForce: IVectorForce | null) => {
       // Update both query cache and store

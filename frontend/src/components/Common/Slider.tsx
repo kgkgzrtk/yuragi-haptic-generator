@@ -31,7 +31,9 @@ export const Slider: React.FC<SliderProps> = ({
   const percentage = ((value - min) / (max - min)) * 100
 
   return (
-    <div className={`slider-container ${error ? 'slider-error' : ''} ${disabled ? 'slider-disabled' : ''}`}>
+    <div
+      className={`slider-container ${error ? 'slider-error' : ''} ${disabled ? 'slider-disabled' : ''}`}
+    >
       <div className='slider-header'>
         <label className='slider-label'>{label}</label>
         {showValue && (

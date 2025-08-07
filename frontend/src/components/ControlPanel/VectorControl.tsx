@@ -1,7 +1,10 @@
 import React, { useCallback, useState, useEffect } from 'react'
 import { Button } from '@/components/Common/Button'
 import { Slider } from '@/components/Common/Slider'
-import { useVectorForceManagement, useBatchVectorForceUpdates } from '@/hooks/queries/useVectorForceQuery'
+import {
+  useVectorForceManagement,
+  useBatchVectorForceUpdates,
+} from '@/hooks/queries/useVectorForceQuery'
 import { useHapticErrorHandler } from '@/hooks/useErrorHandler'
 import { CONSTRAINTS } from '@/types/hapticTypes'
 import type { IVectorForce } from '@/types/hapticTypes'
@@ -11,16 +14,17 @@ interface VectorControlProps {
 }
 
 export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
-  const {
-    vectorForce,
-    updateError,
-    clearVectorForce,
-    validateVectorForce,
-    isApplyingPreset,
-  } = useVectorForceManagement(deviceId)
+  const { vectorForce, updateError, clearVectorForce, validateVectorForce, isApplyingPreset } =
+    useVectorForceManagement(deviceId)
 
-  const { batchUpdate, updateValues, hasPendingUpdates, clearPending, isUpdating, error: batchError } = 
-    useBatchVectorForceUpdates(deviceId, 300) // 300ms debounce
+  const {
+    batchUpdate,
+    updateValues,
+    hasPendingUpdates,
+    clearPending,
+    isUpdating,
+    error: batchError,
+  } = useBatchVectorForceUpdates(deviceId, 300) // 300ms debounce
 
   const { handleVectorForceError } = useHapticErrorHandler()
 
@@ -36,7 +40,11 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
       setMagnitude(vectorForce.magnitude)
       setFrequency(vectorForce.frequency)
       // Update the batch update ref values
-      updateValues({ angle: vectorForce.angle, magnitude: vectorForce.magnitude, frequency: vectorForce.frequency })
+      updateValues({
+        angle: vectorForce.angle,
+        magnitude: vectorForce.magnitude,
+        frequency: vectorForce.frequency,
+      })
     }
   }, [vectorForce, updateValues])
 
@@ -77,7 +85,7 @@ export const VectorControl: React.FC<VectorControlProps> = ({ deviceId }) => {
         magnitude: field === 'magnitude' ? value : magnitude,
         frequency: field === 'frequency' ? value : frequency,
       }
-      
+
       const { errors: validationErrors } = validateVectorForce(newValues)
       setErrors(validationErrors)
 

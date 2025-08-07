@@ -204,7 +204,7 @@ describe('useUpdateParametersMutation', () => {
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('ERROR: Failed to update parameters'),
       expect.objectContaining({
-        error: error.message
+        error: error.message,
       }),
       expect.any(String)
     )
@@ -270,7 +270,7 @@ describe('useUpdateChannelMutation', () => {
       expect.stringContaining('ERROR: Failed to update channel parameters'),
       expect.objectContaining({
         channelId: testChannelId,
-        error: error.message
+        error: error.message,
       }),
       expect.any(String)
     )

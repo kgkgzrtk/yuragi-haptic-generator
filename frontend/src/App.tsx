@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { NotificationContainer } from '@/components/Common/NotificationContainer'
 import { DeviceWarningDialog } from '@/components/Common/DeviceWarningDialog'
+import { NotificationContainer } from '@/components/Common/NotificationContainer'
 import { HapticControlPanel } from '@/components/ControlPanel/HapticControlPanel'
+import { YURAGIControl } from '@/components/ControlPanel/YURAGIControl'
 import { AccelerationTrajectoryContainer } from '@/components/Visualization/AccelerationTrajectoryContainer'
 import { WaveformChartContainer } from '@/components/Visualization/WaveformChartContainer'
 import { useDeviceInfoQuery } from '@/hooks/queries/useDeviceQuery'
@@ -25,7 +26,6 @@ function HapticApp() {
   const parametersQuery = useParametersQuery()
   const systemStatusQuery = useSystemStatusQuery()
   const deviceQuery = useDeviceInfoQuery()
-
 
   // Initialize background sync
   useEffect(() => {
@@ -68,7 +68,12 @@ function HapticApp() {
               Failed to load parameters. Please check your connection.
             </div>
           ) : (
-            <HapticControlPanel isSingleDeviceMode={isSingleDeviceMode} />
+            <>
+              <HapticControlPanel isSingleDeviceMode={isSingleDeviceMode} />
+              <div style={{ marginTop: '20px' }}>
+                <YURAGIControl deviceId={1} />
+              </div>
+            </>
           )}
         </section>
 
@@ -101,9 +106,7 @@ function HapticApp() {
             <h3>Acceleration Trajectory</h3>
             <div className={`trajectory-grid ${isSingleDeviceMode ? 'single-device' : ''}`}>
               <AccelerationTrajectoryContainer deviceId={1} />
-              {!isSingleDeviceMode && (
-                <AccelerationTrajectoryContainer deviceId={2} />
-              )}
+              {!isSingleDeviceMode && <AccelerationTrajectoryContainer deviceId={2} />}
             </div>
           </div>
         </section>

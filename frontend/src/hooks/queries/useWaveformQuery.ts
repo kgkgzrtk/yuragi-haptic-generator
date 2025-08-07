@@ -25,7 +25,6 @@ export const useWaveformQuery = ({
   enabled = true,
   realTime = false,
 }: WaveformQueryParams = {}) => {
-
   return useQuery({
     queryKey: queryKeys.waveformData(duration, sampleRate),
     queryFn: async (): Promise<IWaveformData> => {
@@ -46,7 +45,6 @@ export const useWaveformQuery = ({
 
     // Don't show loading state for subsequent fetches (streaming data)
     notifyOnChangeProps: ['data', 'error'],
-
 
     // Structure query for efficient updates
     structuralSharing: false, // Disable for better performance with high-frequency updates
@@ -79,7 +77,6 @@ export const useInfiniteWaveformQuery = ({
     // Less frequent updates for historical data
     staleTime: 5000,
     gcTime: 30000,
-
   })
 }
 

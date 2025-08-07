@@ -1,5 +1,5 @@
-import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { ChannelControl } from '@/components/ControlPanel/ChannelControl'
 import {
   useParameterManagement,
@@ -126,8 +126,6 @@ describe('ChannelControl', () => {
   })
 
   describe('User Interactions', () => {
-    const user = userEvent.setup()
-
     it('handles frequency input changes', async () => {
       render(<ChannelControl {...defaultProps} />, {
         initialHapticState: {
@@ -189,6 +187,8 @@ describe('ChannelControl', () => {
     })
 
     it('handles polarity checkbox changes', async () => {
+      const user = userEvent.setup()
+      
       render(<ChannelControl {...defaultProps} />, {
         initialHapticState: {
           channels: [mockChannel],
@@ -212,7 +212,6 @@ describe('ChannelControl', () => {
       // SKIP REASON: Range inputs automatically clamp values to min/max,
       // so setting value="150" on a max="120" input will result in value="120"
       // The validation error will never be triggered with range inputs.
-      const user = userEvent.setup()
 
       render(<ChannelControl {...defaultProps} />, {
         initialHapticState: {
@@ -233,7 +232,6 @@ describe('ChannelControl', () => {
 
     it.skip('shows validation error for amplitude out of range', async () => {
       // SKIP REASON: Range inputs automatically clamp values to min/max
-      const user = userEvent.setup()
 
       render(<ChannelControl {...defaultProps} />, {
         initialHapticState: {
@@ -254,7 +252,6 @@ describe('ChannelControl', () => {
 
     it.skip('shows validation error for phase out of range', async () => {
       // SKIP REASON: Range inputs automatically clamp values to min/max
-      const user = userEvent.setup()
 
       render(<ChannelControl {...defaultProps} />, {
         initialHapticState: {
@@ -274,8 +271,6 @@ describe('ChannelControl', () => {
     })
 
     it('clamps values to valid range for range inputs', async () => {
-      const user = userEvent.setup()
-
       render(<ChannelControl {...defaultProps} />, {
         initialHapticState: {
           channels: [mockChannel],
@@ -290,7 +285,7 @@ describe('ChannelControl', () => {
 
       // Input should be clamped to max value (120)
       expect(frequencyInput).toHaveValue('120')
-      
+
       // batchUpdate should be called with the clamped value
       await waitFor(() => {
         expect(mockBatchUpdate).toHaveBeenCalledWith(CHANNEL_IDS.DEVICE1_X, {
@@ -440,7 +435,6 @@ describe('ChannelControl', () => {
 
     it.skip('has proper ARIA attributes for error states', async () => {
       // SKIP REASON: Range inputs automatically clamp values, so aria-invalid won't be set
-      const user = userEvent.setup()
 
       render(<ChannelControl {...defaultProps} />, {
         initialHapticState: {
