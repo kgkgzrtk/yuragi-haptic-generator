@@ -4,7 +4,7 @@
  * Based on electromechanical model of Linear Resonant Actuators (LRAs):
  * - Electrical: V(t) = R·I(t) + L·dI/dt + k_e·v(t)
  * - Mechanical: F = k_m·I, with mass-spring-damper dynamics
- * - 30Hz sawtooth input contains 6th harmonic at 180Hz (resonance)
+ * - 60Hz base frequency with 6th harmonic at 360Hz (resonance)
  *
  * References: IEEE papers on voice coil actuator modeling
  */
@@ -19,7 +19,7 @@ export interface WaveformParameters {
 }
 
 // Physical model parameters based on typical LRA characteristics
-const RESONANT_FREQUENCY = 180 // Hz (typical LRA resonance)
+const RESONANT_FREQUENCY = 360 // Hz (6x base frequency for strong resonance)
 const DAMPING_RATIO = 0.35 // ζ (zeta) - moderate damping for controlled resonance
 const NOISE_LEVEL = 0.008 // 0.8% sensor noise
 // Electrical parameters
@@ -34,8 +34,7 @@ const SPRING_CONSTANT = Math.pow(2 * Math.PI * RESONANT_FREQUENCY, 2) * MOVING_M
 // Calculate damping coefficient from damping ratio
 const DAMPING_COEFFICIENT = 2 * DAMPING_RATIO * Math.sqrt(SPRING_CONSTANT * MOVING_MASS)
 // Scaling factors for visualization
-const CURRENT_SCALE = 1.5 // Further reduced to emphasize current is smaller than voltage
-const ACCELERATION_SCALE = 0.05 // Reduced to keep acceleration well within [-1, 1]
+const ACCELERATION_SCALE = 0.2 // Adjusted for proper visualization scale
 
 interface GenerateSawtoothParams {
   frequency: number
@@ -81,10 +80,36 @@ export function generateSawtoothWave(params: GenerateSawtoothParams): number[] {
   return waveform
 }
 
-// Former resonator function - now integrated into solveElectromechanicalSystem
-// The mechanical dynamics (mass-spring-damper) are now solved as part of the
-// coupled electromechanical system, which provides more accurate modeling
-// of the interaction between electrical and mechanical subsystems.
+/**
+ * 2nd order resonator filter using bilinear transform (Tustin method).
+ * Implements transfer function: G(s) = ωn²/(s² + 2ζωn*s + ωn²)
+ * 
+ * This creates a strong resonance effect at the natural frequency,
+ * similar to the backend implementation.
+ */
+function resonator(u: number[], fs: number, f_n: number = RESONANT_FREQUENCY, zeta: number = 0.08): number[] {
+  // Convert to angular frequency
+  const w_n = 2 * Math.PI * f_n
+  const dt = 1 / fs
+  
+  // Bilinear transform coefficients
+  const a0 = 4 + 4 * zeta * w_n * dt + Math.pow(w_n * dt, 2)
+  const b0 = Math.pow(w_n * dt, 2)
+  const b1 = 2 * b0
+  const b2 = b0
+  const a1 = 2 * (Math.pow(w_n * dt, 2) - 4)
+  const a2 = 4 - 4 * zeta * w_n * dt + Math.pow(w_n * dt, 2)
+  
+  // Initialize output array
+  const y = new Array(u.length).fill(0)
+  
+  // Apply IIR filter (Direct Form II)
+  for (let n = 2; n < u.length; n++) {
+    y[n] = (b0 * u[n] + b1 * u[n - 1] + b2 * u[n - 2] - a1 * y[n - 1] - a2 * y[n - 2]) / a0
+  }
+  
+  return y
+}
 
 /**
  * Add noise to signal
@@ -148,6 +173,10 @@ function solveElectromechanicalSystem(
 
 /**
  * Generate voltage, current, and acceleration waveforms
+ * Based on the physical model where:
+ * - Voltage drives current (V = R*I for simple case)
+ * - Current drives force (F = k_m * I)
+ * - Force through resonator gives acceleration
  */
 export function generatePhysicalWaveforms(params: GenerateSawtoothParams): {
   voltage: number[]
@@ -157,15 +186,17 @@ export function generatePhysicalWaveforms(params: GenerateSawtoothParams): {
   // Generate voltage (sawtooth wave)
   const voltage = generateSawtoothWave(params)
 
-  // Solve the coupled electromechanical system
-  const system = solveElectromechanicalSystem(voltage, params.sampleRate)
+  // Ohm's law: Current = Voltage / R
+  const current = voltage.map(v => v / COIL_RESISTANCE)
 
-  // Scale current for visibility
-  const current = system.current.map(i => i * CURRENT_SCALE)
-
-  // Apply scaling to acceleration
-  const accelScaled = system.acceleration.map(a => a * ACCELERATION_SCALE)
-  const acceleration = addNoise(accelScaled)
+  // Force is proportional to current (F = k_m * I)
+  // Then apply resonator to get acceleration (mass-spring-damper system)
+  const force = voltage // Since we're using normalized values
+  const accelerationRaw = resonator(force, params.sampleRate)
+  
+  // Scale and add noise to acceleration
+  const accelerationScaled = accelerationRaw.map(a => a * ACCELERATION_SCALE)
+  const acceleration = addNoise(accelerationScaled)
 
   return { voltage, current, acceleration }
 }

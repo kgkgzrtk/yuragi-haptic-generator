@@ -155,9 +155,10 @@ class YURAGIPresetRequest(BaseModel):
     """YURAGIプリセットリクエスト"""
 
     device_id: int = Field(..., description="Device ID (1 or 2)")
-    preset: Literal["default", "gentle", "strong", "slow"] = Field(
-        "default", description="Preset name"
+    preset: Literal["gentle", "moderate", "intense", "therapeutic"] = Field(
+        "gentle", description="Preset name"
     )
+    duration: float = Field(60.0, ge=30.0, le=300.0, description="Duration in seconds")
     enabled: bool = Field(True, description="Enable/disable the preset")
 
     @field_validator("device_id")
@@ -397,8 +398,9 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
         return {
             "status": "applied",
             "preset": request.preset,
-            "device_id": request.device_id,
+            "deviceId": request.device_id,  # camelCase for frontend compatibility
             "enabled": True,
+            "duration": request.duration,
             "parameters": {
                 "angle": preset_params["initial_angle"],
                 "magnitude": preset_params["magnitude"],
@@ -418,8 +420,9 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
         return {
             "status": "disabled",
             "preset": request.preset,
-            "device_id": request.device_id,
+            "deviceId": request.device_id,  # camelCase for frontend compatibility
             "enabled": False,
+            "duration": request.duration,
             "parameters": {
                 "angle": 0.0,
                 "magnitude": 0.0,
@@ -432,32 +435,32 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
 def _get_yuragi_preset_params(preset: str) -> dict:
     """YURAGIプリセットのパラメータを取得"""
     presets = {
-        "default": {
-            "initial_angle": 0.0,
-            "magnitude": 0.7,
-            "frequency": 60.0,
-            "rotation_freq": 0.33,  # 約3秒/周
-        },
         "gentle": {
             "initial_angle": 45.0,  # 45度方向
-            "magnitude": 0.4,
+            "magnitude": 0.3,
             "frequency": 40.0,
             "rotation_freq": 0.2,  # 5秒/周
         },
-        "strong": {
+        "moderate": {
+            "initial_angle": 0.0,
+            "magnitude": 0.6,
+            "frequency": 60.0,
+            "rotation_freq": 0.33,  # 約3秒/周
+        },
+        "intense": {
             "initial_angle": 90.0,  # 上方向
-            "magnitude": 1.0,
+            "magnitude": 0.9,
             "frequency": 80.0,
             "rotation_freq": 0.5,  # 2秒/周
         },
-        "slow": {
+        "therapeutic": {
             "initial_angle": 180.0,  # 左方向
-            "magnitude": 0.8,
-            "frequency": 25.0,
-            "rotation_freq": 0.15,  # 6.7秒/周
+            "magnitude": 0.5,
+            "frequency": 50.0,
+            "rotation_freq": 0.25,  # 4秒/周
         },
     }
-    return presets.get(preset, presets["default"]).copy()
+    return presets.get(preset, presets["gentle"]).copy()
 
 
 if __name__ == "__main__":

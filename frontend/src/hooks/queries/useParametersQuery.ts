@@ -37,6 +37,7 @@ export const useUpdateParametersMutation = () => {
   const setChannels = useHapticStore(state => state.setChannels)
 
   return useMutation({
+    mutationKey: ['updateParameters'],
     mutationFn: async (channels: IChannelParameters[]) => {
       return await HapticService.updateParameters(channels)
     },
@@ -91,6 +92,7 @@ export const useUpdateChannelMutation = () => {
   const updateChannel = useHapticStore(state => state.updateChannel)
 
   return useMutation({
+    mutationKey: ['updateChannel'],
     mutationFn: async ({
       channelId,
       params,

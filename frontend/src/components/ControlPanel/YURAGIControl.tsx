@@ -6,27 +6,35 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import HapticService from '@/services/hapticService'
 import { CONSTRAINTS } from '@/types/hapticTypes'
 import type { IYURAGIRequest, IYURAGIStatus } from '@/types/hapticTypes'
+import { getPresetParameters } from '@/utils/yuragiWaveform'
 
 interface YURAGIControlProps {
   deviceId?: 1 | 2
 }
 
 export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) => {
-  const { yuragi, setYuragiStatus, updateYuragiProgress } = useHapticStore()
+  const { yuragi, setYuragiStatus, updateYuragiProgress, setVectorForce } = useHapticStore()
   const { handleError } = useErrorHandler()
 
   const [preset, setPreset] = useState<'gentle' | 'moderate' | 'intense' | 'therapeutic'>('gentle')
   const [duration, setDuration] = useState<number>(60)
-  const [enabled, setEnabled] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
 
   const timerRef = useRef<number | null>(null)
   const progressIntervalRef = useRef<number | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
+  const startTimeRef = useRef<number>(0)
+  const isActiveRef = useRef<boolean>(false)
 
   const currentStatus = yuragi[`device${deviceId}`] as IYURAGIStatus | null
   const isActive = currentStatus?.enabled && !!currentStatus?.startTime
   const progress = currentStatus?.progress || 0
+  
+  // Keep isActiveRef updated
+  useEffect(() => {
+    isActiveRef.current = isActive
+  }, [isActive])
 
   // Define handleStop early since it's used in useEffect
   const handleStopRef = useRef<() => Promise<void>>()
@@ -43,16 +51,75 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
     }
   }, [])
 
+  // YURAGI circular motion animation
+  const animateYuragi = useCallback(async () => {
+    console.log('animateYuragi called:', { isActive: isActiveRef.current, currentStatus })
+    if (!isActiveRef.current || !currentStatus?.preset) {
+      console.log('animateYuragi early return:', { isActive: isActiveRef.current, preset: currentStatus?.preset })
+      return
+    }
+    
+    const presets = getPresetParameters()
+    const presetParams = presets[currentStatus.preset as keyof typeof presets]
+    if (!presetParams) {
+      console.log('No preset params found for:', currentStatus.preset)
+      return
+    }
+    
+    const now = Date.now()
+    const elapsed = (now - startTimeRef.current) / 1000 // seconds
+    
+    // Calculate circular motion position
+    const angle = 2 * Math.PI * presetParams.rotationFreq * elapsed + (presetParams.phase * Math.PI) / 180
+    const magnitude = presetParams.baseAmplitude
+    
+    // Apply amplitude modulation
+    const envelopeModulation = Math.sin(2 * Math.PI * presetParams.envelopeFreq * elapsed) * presetParams.envelopeDepth
+    const modulatedMagnitude = magnitude * (1.0 + envelopeModulation)
+    
+    // Convert to degrees and clamp
+    const angleDegrees = ((angle * 180) / Math.PI) % 360
+    const clampedMagnitude = Math.max(0, Math.min(1, modulatedMagnitude))
+    
+    console.log('Updating vector force:', { angleDegrees, clampedMagnitude })
+    
+    try {
+      // Update vector force
+      const vectorForce = {
+        deviceId,
+        angle: angleDegrees,
+        magnitude: clampedMagnitude,
+        frequency: 60, // Use fixed frequency for now
+      }
+      
+      await HapticService.setVectorForce(vectorForce)
+      
+      // Update store to trigger UI updates
+      setVectorForce(deviceId, vectorForce)
+    } catch (err) {
+      console.error('Failed to update vector force:', err)
+    }
+    
+    // Continue animation
+    if (isActiveRef.current) {
+      animationFrameRef.current = requestAnimationFrame(animateYuragi)
+    }
+  }, [currentStatus?.preset, deviceId, setVectorForce])
+
   // Progress tracking
   useEffect(() => {
+    console.log('Progress tracking effect:', { isActive, currentStatus })
     if (isActive && currentStatus?.startTime && currentStatus?.duration) {
       const startTime = new Date(currentStatus.startTime).getTime()
       const duration = currentStatus.duration * 1000 // convert to ms
+      startTimeRef.current = startTime
+      console.log('Starting progress tracking:', { startTime, duration })
 
       progressIntervalRef.current = setInterval(() => {
         const now = Date.now()
         const elapsed = now - startTime
         const newProgress = Math.min((elapsed / duration) * 100, 100)
+        console.log('Progress update:', { elapsed, newProgress })
 
         updateYuragiProgress(deviceId, newProgress)
 
@@ -62,9 +129,19 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
         }
       }, 100) // Update every 100ms
 
+      // Start YURAGI animation
+      console.log('Starting YURAGI animation')
+      // Use setTimeout to avoid immediate invocation issues
+      setTimeout(() => animateYuragi(), 100)
+
       return () => {
+        console.log('Cleaning up progress tracking')
         if (progressIntervalRef.current) {
           clearInterval(progressIntervalRef.current)
+        }
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current)
+          animationFrameRef.current = null
         }
       }
     }
@@ -74,6 +151,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
     currentStatus?.duration,
     deviceId,
     updateYuragiProgress,
+    animateYuragi,
   ])
 
   const validateDuration = useCallback((value: number): string => {
@@ -124,7 +202,6 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
       }
 
       setYuragiStatus(deviceId, statusWithStartTime)
-      setEnabled(true)
     } catch (err) {
       handleError(err, 'YURAGI Start')
       setError('Failed to start YURAGI massage')
@@ -149,7 +226,6 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
 
       // Clear status from store
       setYuragiStatus(deviceId, null)
-      setEnabled(false)
 
       // Clear timers
       if (timerRef.current) {
@@ -160,13 +236,29 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
         clearInterval(progressIntervalRef.current)
         progressIntervalRef.current = null
       }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
+      }
+      
+      // Clear vector force
+      const clearVectorForce = {
+        deviceId,
+        angle: 0,
+        magnitude: 0,
+        frequency: 60,
+      }
+      await HapticService.setVectorForce(clearVectorForce)
+      
+      // Update store to clear UI
+      setVectorForce(deviceId, null)
     } catch (err) {
       handleError(err, 'YURAGI Stop')
       setError('Failed to stop YURAGI massage')
     } finally {
       setIsLoading(false)
     }
-  }, [deviceId, preset, duration, setYuragiStatus, handleError])
+  }, [deviceId, preset, duration, setYuragiStatus, handleError, setVectorForce])
 
   // Update the ref when handleStop changes
   useEffect(() => {
@@ -232,18 +324,6 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
           id={`yuragi-duration-${deviceId}`}
         />
 
-        <div className='input-group'>
-          <label className='input-label'>
-            <input
-              type='checkbox'
-              checked={enabled}
-              onChange={e => setEnabled(e.target.checked)}
-              disabled={isLoading}
-              style={{ marginRight: '8px' }}
-            />
-            Enable YURAGI Control
-          </label>
-        </div>
       </div>
 
       {isActive && (
@@ -266,7 +346,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
         <Button
           onClick={handleToggle}
           loading={isLoading}
-          disabled={!enabled && !isActive}
+          disabled={isLoading}
           variant={isActive ? 'danger' : 'primary'}
           data-testid={`yuragi-${isActive ? 'stop' : 'start'}-button-${deviceId}`}
         >
