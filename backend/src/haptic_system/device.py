@@ -55,6 +55,9 @@ class HapticDevice:
             self.channels[channel_id].set_parameters(
                 frequency=frequency, amplitude=amplitude, phase=phase, polarity=polarity
             )
+            # 振幅が設定された場合、自動的にチャンネルを有効化
+            if amplitude is not None and amplitude > 0:
+                self.channels[channel_id].activate()
 
     def set_all_parameters(self, params_list: list[dict]) -> None:
         """
