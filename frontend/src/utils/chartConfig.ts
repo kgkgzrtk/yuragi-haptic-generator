@@ -1,19 +1,19 @@
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 import type { ChartOptions, ChartData } from 'chart.js'
 
-// Chart colors for each channel - Modern Green Theme
+// Chart colors for each channel - Relaxing Low-saturation Theme
 export const CHANNEL_COLORS = {
-  [CHANNEL_IDS.DEVICE1_X]: '#13ae4b', // Primary green
-  [CHANNEL_IDS.DEVICE1_Y]: '#0bdc84', // Bright accent green
-  [CHANNEL_IDS.DEVICE2_X]: '#039555', // Success green
-  [CHANNEL_IDS.DEVICE2_Y]: '#c4dc34', // Yellow-green
+  [CHANNEL_IDS.DEVICE1_X]: '#CAA3A8', // Dusty rose - muted rosy tone
+  [CHANNEL_IDS.DEVICE1_Y]: '#94B894', // Sage grey - gentle earthy green-grey
+  [CHANNEL_IDS.DEVICE2_X]: '#D6CCC2', // Warm beige - soft earth tone
+  [CHANNEL_IDS.DEVICE2_Y]: '#BFB3CC', // Soft lavender grey - muted violet-grey
 } as const
 
-// Colors for different signal types - Modern Green Theme
+// Colors for different signal types - Relaxing Low-saturation Theme
 export const SIGNAL_COLORS = {
-  voltage: '#13ae4b', // Primary green
-  current: '#0bdc8480', // Accent green with transparency (50% opacity)
-  acceleration: '#039555', // Success green
+  voltage: '#94B894', // Sage grey - primary signal
+  current: '#D6CCC280', // Warm beige with transparency (50% opacity)
+  acceleration: '#CAA3A8', // Dusty rose - accent signal
 } as const
 
 // Base chart options for waveform visualization

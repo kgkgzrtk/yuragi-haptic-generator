@@ -20,23 +20,23 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Predefined colors - diverse palette for better distinction
+  // Predefined colors - relaxing low-saturation palette
   const presetColors = [
-    // Primary distinguishable colors
-    '#13ae4b', // Primary green
-    '#ff6b6b', // Coral red
-    '#4ecdc4', // Teal cyan
-    '#ffa726', // Orange
-    // Additional contrasting colors
-    '#845ec2', // Purple
-    '#4e78a0', // Blue
-    '#f9ca24', // Yellow
-    '#e91e63', // Pink
-    // Green variations
-    '#0bdc84', // Bright green
-    '#2d6a4f', // Forest green
-    '#52b788', // Medium green
-    '#95d5b2', // Seafoam
+    // Primary palette - muted earth tones
+    '#CAA3A8', // Dusty rose
+    '#94B894', // Sage grey
+    '#D6CCC2', // Warm beige
+    '#BFB3CC', // Soft lavender grey
+    // Additional calming colors
+    '#B8C5D6', // Misty blue
+    '#D4C5B9', // Sand
+    '#C7B299', // Taupe
+    '#E6D7CF', // Pale blush
+    // Subtle variations
+    '#A8B8A8', // Eucalyptus
+    '#D9C6BA', // Nude
+    '#C9B5C4', // Mauve
+    '#B0C4C4', // Seafoam grey
   ]
 
   // Close on outside click
