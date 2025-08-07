@@ -236,7 +236,7 @@ export const useVectorForceQuery = (deviceId: 1 | 2) => {
 
     enabled: true,
   })
-  
+
   // Always return the current store value for reactivity
   return {
     ...query,

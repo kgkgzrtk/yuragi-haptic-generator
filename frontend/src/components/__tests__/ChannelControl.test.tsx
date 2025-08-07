@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ChannelControl } from '@/components/ControlPanel/ChannelControl'
 import {
   useParameterManagement,
@@ -188,7 +188,7 @@ describe('ChannelControl', () => {
 
     it('handles polarity checkbox changes', async () => {
       const user = userEvent.setup()
-      
+
       render(<ChannelControl {...defaultProps} />, {
         initialHapticState: {
           channels: [mockChannel],

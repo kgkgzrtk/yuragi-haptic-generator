@@ -40,6 +40,7 @@ class TestHapticChannelBasics:
         """連続した波形ストリームを生成できる"""
         # Arrange
         channel = HapticChannel(channel_id=0, sample_rate=44100)
+        channel.disable_resonator()  # Disable resonator for continuity test
         channel.set_parameters(frequency=100, amplitude=1.0)
         channel.activate()
 
@@ -114,6 +115,7 @@ class TestHapticChannelWaveformGeneration:
         """SawtoothWaveformジェネレータを使用する"""
         # Arrange
         channel = HapticChannel(channel_id=0, sample_rate=44100)
+        channel.disable_resonator()  # Disable resonator for raw waveform test
         channel.set_parameters(frequency=100, amplitude=1.0, polarity=True)
         channel.activate()
 
