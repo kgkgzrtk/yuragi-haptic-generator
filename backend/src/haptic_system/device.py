@@ -149,6 +149,23 @@ class HapticDevice:
         for channel in self.channels:
             channel.deactivate()
 
+    def get_output_block(self, block_size: int) -> np.ndarray:
+        """
+        4チャンネル出力ブロックを取得
+
+        Args:
+            block_size: ブロックサイズ（サンプル数）
+
+        Returns:
+            4チャンネル波形データ (shape: [block_size, 4])
+        """
+        output = np.zeros((block_size, 4), dtype=np.float32)
+
+        for i, channel in enumerate(self.channels):
+            output[:, i] = channel.get_next_chunk(block_size)
+
+        return output
+
     def enable_16_direction_mode(self) -> None:
         """Enable 16-direction discrete mode for verification."""
         self.discrete_mode_enabled = True

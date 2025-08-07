@@ -377,6 +377,59 @@ async def set_vector_force(request: VectorForceRequest):
     return {"status": "applied"}
 
 
+# ストリーミング制御
+@app.post("/api/streaming/start")
+async def start_streaming():
+    """ストリーミングを開始"""
+    if controller is None:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+
+    if not controller.is_streaming:
+        try:
+            controller.start_streaming()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return {"status": "started", "is_streaming": True}
+
+
+@app.post("/api/streaming/stop")
+async def stop_streaming():
+    """ストリーミングを停止"""
+    if controller is None:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+
+    if controller.is_streaming:
+        controller.stop_streaming()
+
+    return {"status": "stopped", "is_streaming": False}
+
+
+@app.get("/api/streaming/status")
+async def get_streaming_status():
+    """ストリーミング状態を取得"""
+    if controller is None:
+        return {
+            "is_streaming": False,
+            "sample_rate": 44100,
+            "block_size": 512,
+            "latency_ms": 0.0,
+        }
+
+    return {
+        "is_streaming": controller.is_streaming,
+        "sample_rate": controller.sample_rate,
+        "block_size": controller.block_size,
+        "latency_ms": controller.get_latency_ms(),
+        "device_info": {
+            "available": controller.device_info.get('available', False),
+            "channels": controller.available_channels,
+            "name": controller.device_info.get('name', 'Unknown'),
+            "device_mode": "dual" if controller.available_channels == 4 else "single"
+        }
+    }
+
+
 @app.post("/api/yuragi/preset")
 async def set_yuragi_preset(request: YURAGIPresetRequest):
     """YURAGIプリセットを適用"""
