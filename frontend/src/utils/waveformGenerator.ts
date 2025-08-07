@@ -23,6 +23,13 @@ const RESONANT_FREQUENCY = 360 // Hz (6x base frequency for strong resonance)
 const NOISE_LEVEL = 0.008 // 0.8% sensor noise
 // Electrical parameters
 const COIL_RESISTANCE = 8.0 // Ω - typical voice coil resistance
+const COIL_INDUCTANCE = 0.001 // H - typical voice coil inductance
+const BACK_EMF_CONSTANT = 0.1 // V·s/m - back EMF constant
+// Mechanical parameters
+const MOTOR_CONSTANT = 5.0 // N/A - force constant
+const MOVING_MASS = 0.001 // kg - mass of moving parts
+const SPRING_CONSTANT = 1000.0 // N/m - spring stiffness
+const DAMPING_COEFFICIENT = 0.5 // N·s/m - damping
 // Scaling factors for visualization
 const ACCELERATION_SCALE = 0.2 // Adjusted for proper visualization scale
 

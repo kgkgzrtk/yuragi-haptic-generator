@@ -95,8 +95,8 @@ export const massageTestScenarios = {
     let angle = 0
 
     return setInterval(() => {
-      const x = Math.cos(angle) * radius
-      const y = Math.sin(angle) * radius
+      const _x = Math.cos(angle) * radius
+      const _y = Math.sin(angle) * radius
 
       // webSocketMock.broadcastMessage(hapticMessageTypes.circularTrajectoryData([
       //   { x, y, timestamp: Date.now() }

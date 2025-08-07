@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { CHANNEL_IDS, DEFAULT_WAVEFORM_COLORS } from '@/types/hapticTypes'
 import { ColorPicker } from '@/components/Common/ColorPicker'
 import { useHapticStore } from '@/contexts/hapticStore'
+import { CHANNEL_IDS, DEFAULT_WAVEFORM_COLORS } from '@/types/hapticTypes'
 import './WaveformColorCustomizer.css'
 
 interface WaveformColorizerProps {
@@ -13,7 +13,7 @@ export const WaveformColorCustomizer: React.FC<WaveformColorizerProps> = ({
 }) => {
   const { waveformColors, setWaveformColors } = useHapticStore()
   const [isOpen, setIsOpen] = useState(true)
-  
+
   const colors = waveformColors
   const onColorsChange = setWaveformColors
   const onToggle = () => setIsOpen(!isOpen)
