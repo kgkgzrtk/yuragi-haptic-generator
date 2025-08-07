@@ -98,12 +98,12 @@ export interface IWaveformColors {
   [channelId: number]: string // Allow number indexing
 }
 
-// Default waveform colors (modern green theme)
+// Default waveform colors (distinguishable palette with green base)
 export const DEFAULT_WAVEFORM_COLORS: IWaveformColors = {
   [CHANNEL_IDS.DEVICE1_X]: '#13ae4b', // Primary green
-  [CHANNEL_IDS.DEVICE1_Y]: '#0bdc84', // Bright accent green
-  [CHANNEL_IDS.DEVICE2_X]: '#039555', // Success green
-  [CHANNEL_IDS.DEVICE2_Y]: '#c4dc34', // Yellow-green
+  [CHANNEL_IDS.DEVICE1_Y]: '#ff6b6b', // Coral red for contrast
+  [CHANNEL_IDS.DEVICE2_X]: '#4ecdc4', // Teal cyan
+  [CHANNEL_IDS.DEVICE2_Y]: '#ffa726', // Orange for visibility
 }
 
 // Parameter constraints

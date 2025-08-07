@@ -20,20 +20,23 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Predefined green theme colors
+  // Predefined colors - diverse palette for better distinction
   const presetColors = [
+    // Primary distinguishable colors
     '#13ae4b', // Primary green
-    '#0bdc84', // Bright accent green
-    '#039555', // Success green
-    '#c4dc34', // Yellow-green
-    '#16c55b', // Light primary
-    '#0f893b', // Dark primary
-    '#089860', // Dark accent
-    '#2dd4bf', // Teal
-    '#84cc16', // Lime
-    '#65a30d', // Lime-dark
-    '#059669', // Emerald
-    '#047857', // Emerald-dark
+    '#ff6b6b', // Coral red
+    '#4ecdc4', // Teal cyan
+    '#ffa726', // Orange
+    // Additional contrasting colors
+    '#845ec2', // Purple
+    '#4e78a0', // Blue
+    '#f9ca24', // Yellow
+    '#e91e63', // Pink
+    // Green variations
+    '#0bdc84', // Bright green
+    '#2d6a4f', // Forest green
+    '#52b788', // Medium green
+    '#95d5b2', // Seafoam
   ]
 
   // Close on outside click

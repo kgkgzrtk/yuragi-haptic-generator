@@ -1,31 +1,22 @@
-import React from 'react'
-import { CHANNEL_IDS } from '@/types/hapticTypes'
+import React, { useState } from 'react'
+import { CHANNEL_IDS, DEFAULT_WAVEFORM_COLORS } from '@/types/hapticTypes'
 import { ColorPicker } from '@/components/Common/ColorPicker'
+import { useHapticStore } from '@/contexts/hapticStore'
 import './WaveformColorCustomizer.css'
 
-export interface WaveformColors {
-  [CHANNEL_IDS.DEVICE1_X]: string
-  [CHANNEL_IDS.DEVICE1_Y]: string
-  [CHANNEL_IDS.DEVICE2_X]: string
-  [CHANNEL_IDS.DEVICE2_Y]: string
-  [channelId: number]: string // Allow number indexing
-}
-
 interface WaveformColorizerProps {
-  colors: WaveformColors
-  onColorsChange: (colors: WaveformColors) => void
   className?: string
-  isOpen?: boolean
-  onToggle?: () => void
 }
 
 export const WaveformColorCustomizer: React.FC<WaveformColorizerProps> = ({
-  colors,
-  onColorsChange,
   className = '',
-  isOpen = true,
-  onToggle,
 }) => {
+  const { waveformColors, setWaveformColors } = useHapticStore()
+  const [isOpen, setIsOpen] = useState(true)
+  
+  const colors = waveformColors
+  const onColorsChange = setWaveformColors
+  const onToggle = () => setIsOpen(!isOpen)
   const handleColorChange = (channelId: number, color: string) => {
     onColorsChange({
       ...colors,
@@ -34,12 +25,7 @@ export const WaveformColorCustomizer: React.FC<WaveformColorizerProps> = ({
   }
 
   const resetToDefaults = () => {
-    onColorsChange({
-      [CHANNEL_IDS.DEVICE1_X]: '#13ae4b', // Primary green
-      [CHANNEL_IDS.DEVICE1_Y]: '#0bdc84', // Bright accent green
-      [CHANNEL_IDS.DEVICE2_X]: '#039555', // Success green
-      [CHANNEL_IDS.DEVICE2_Y]: '#c4dc34', // Yellow-green
-    })
+    onColorsChange(DEFAULT_WAVEFORM_COLORS)
   }
 
   const channelLabels = {
