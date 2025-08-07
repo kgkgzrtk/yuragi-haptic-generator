@@ -316,6 +316,21 @@ class HapticController:
             elif self.available_channels == 4:
                 # 4chデバイス: 全チャンネル使用
                 outdata[:] = waveform
+                # デバッグ: 各チャンネルの最大値をログ出力（初回のみ）
+                if hasattr(self, '_first_4ch_output'):
+                    pass
+                else:
+                    self._first_4ch_output = True
+                    max_values = [np.max(np.abs(waveform[:, i])) for i in range(4)]
+                    self.logger.info(
+                        "4ch output max values",
+                        extra={
+                            "ch0_max": max_values[0],
+                            "ch1_max": max_values[1],
+                            "ch2_max": max_values[2],
+                            "ch3_max": max_values[3],
+                        }
+                    )
             else:
                 outdata.fill(0)
 
