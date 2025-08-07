@@ -10,10 +10,12 @@ Yuragi Haptic Generatorは、サwtooth波を用いた非対称振動により、
 
 - 🌊 **サwtooth波生成**: 時間比1:8の非対称振動による効果的な力覚提示
 - 🎯 **ベクトル力覚**: X/Y軸協調による360度任意方向の力生成
+- 💆 **YURAGIマッサージ機能**: 円運動と振幅変調によるリラクゼーション効果
 - 🎛️ **4チャンネル独立制御**: 2つの2軸アクチュエータを完全制御
 - ⚡ **低レイテンシ**: 10ms以下の応答性を実現
 - 🔧 **REST API**: FastAPIによる高性能API
 - 📊 **リアルタイム可視化**: React + Chart.jsによる波形表示
+- 🔬 **物理モデル**: 360Hz共振周波数の2次共振器フィルタ実装
 
 ## システム構成
 
@@ -161,6 +163,16 @@ curl -X POST "http://localhost:8000/api/vector-force" \
     "angle": 45,
     "magnitude": 0.8,
     "frequency": 60
+  }'
+
+# YURAGIマッサージプリセット
+curl -X POST "http://localhost:8000/api/yuragi/preset" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "device_id": 1,
+    "preset": "gentle",
+    "duration": 60,
+    "enabled": true
   }'
 ```
 

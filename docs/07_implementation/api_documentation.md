@@ -202,6 +202,46 @@ APIの基本情報を提供するルートエンドポイント
 }
 ```
 
+### YURAGIマッサージ機能
+
+#### POST /api/yuragi/preset
+YURAGIマッサージプリセットの適用と制御
+
+**リクエストボディ:**
+```json
+{
+  "device_id": 1,            // 1 または 2
+  "preset": "gentle",        // プリセット名（下記参照）
+  "duration": 60.0,          // 持続時間（30-300秒）
+  "enabled": true            // 有効/無効の切り替え
+}
+```
+
+**プリセットタイプ:**
+- `"gentle"`: 優しい円運動（0.2Hz、振幅40%）
+- `"moderate"`: 中程度の強さ（0.33Hz、振幅60%）
+- `"strong"`: 強い刺激（0.5Hz、振幅100%）
+- `"intense"`: 最も強い刺激（0.5Hz、振幅90%）
+- `"slow"`: ゆっくりとした動き（0.15Hz、振幅80%）
+- `"therapeutic"`: セラピー用（0.25Hz、振幅50%）
+
+**レスポンス:**
+```json
+{
+  "status": "applied",
+  "preset": "gentle",
+  "device_id": 1,
+  "enabled": true,
+  "duration": 60.0,
+  "parameters": {
+    "angle": 45.0,
+    "magnitude": 0.4,
+    "frequency": 40.0,
+    "rotation_freq": 0.2
+  }
+}
+```
+
 
 ## エラーハンドリング
 
