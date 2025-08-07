@@ -1,0 +1,210 @@
+/* Waveform Color Customizer Styles */
+.waveform-color-customizer {
+  background-color: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  transition: all var(--transition-medium);
+}
+
+.waveform-color-customizer:hover {
+  border-color: var(--color-border-accent);
+  box-shadow: var(--shadow-small);
+}
+
+.waveform-color-customizer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.waveform-color-customizer-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.waveform-color-customizer-toggle {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-surface-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.waveform-color-customizer-toggle:hover {
+  border-color: var(--color-border-accent);
+  background-color: var(--color-hover-surface);
+  transform: translateY(-1px);
+}
+
+.waveform-color-customizer-content {
+  animation: slideDown 300ms ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 600px;
+  }
+}
+
+.waveform-color-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+@media (min-width: 768px) {
+  .waveform-color-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1200px) {
+  .waveform-color-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.waveform-color-picker {
+  margin-bottom: 0;
+}
+
+.waveform-color-customizer-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.waveform-color-preview {
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+}
+
+.waveform-color-preview-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-sm) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.waveform-color-preview-bars {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+@media (min-width: 768px) {
+  .waveform-color-preview-bars {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.waveform-color-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.waveform-color-preview-bar:hover {
+  background-color: var(--color-hover-surface);
+}
+
+.waveform-color-preview-swatch {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-sm);
+  flex-shrink: 0;
+}
+
+.waveform-color-preview-label {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .waveform-color-customizer {
+    padding: var(--spacing-sm);
+  }
+  
+  .waveform-color-customizer-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+  
+  .waveform-color-customizer-actions {
+    justify-content: center;
+  }
+}
+
+/* Collapsible animation */
+.waveform-color-customizer-content[aria-hidden="true"] {
+  animation: slideUp 300ms ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 600px;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+  }
+}
+
+/* Focus styles for accessibility */
+.waveform-color-customizer-toggle:focus {
+  outline: 2px solid var(--color-focus-border);
+  outline-offset: 2px;
+}
+
+/* Dark mode adjustments (if needed in future) */
+@media (prefers-color-scheme: dark) {
+  .waveform-color-preview-swatch {
+    border-color: var(--color-border-accent);
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .waveform-color-customizer {
+    border-width: 2px;
+  }
+  
+  .waveform-color-preview-swatch {
+    border-width: 2px;
+  }
+}

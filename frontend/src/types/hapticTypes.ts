@@ -54,6 +54,7 @@ export interface IHapticSystemState {
     isConnected: boolean
     error: string | null
   }
+  waveformColors: IWaveformColors
 }
 
 // Channel ID constants
@@ -86,6 +87,23 @@ export interface IYURAGIState {
   device1: IYURAGIStatus | null
   device2: IYURAGIStatus | null
   isActive: boolean
+}
+
+// Waveform color customization
+export interface IWaveformColors {
+  [CHANNEL_IDS.DEVICE1_X]: string
+  [CHANNEL_IDS.DEVICE1_Y]: string
+  [CHANNEL_IDS.DEVICE2_X]: string
+  [CHANNEL_IDS.DEVICE2_Y]: string
+  [channelId: number]: string // Allow number indexing
+}
+
+// Default waveform colors (relaxing low-saturation palette)
+export const DEFAULT_WAVEFORM_COLORS: IWaveformColors = {
+  [CHANNEL_IDS.DEVICE1_X]: '#CAA3A8', // Dusty rose - muted rosy tone
+  [CHANNEL_IDS.DEVICE1_Y]: '#94B894', // Sage grey - gentle earthy green-grey
+  [CHANNEL_IDS.DEVICE2_X]: '#D6CCC2', // Warm beige - soft earth tone
+  [CHANNEL_IDS.DEVICE2_Y]: '#BFB3CC', // Soft lavender grey - muted violet-grey
 }
 
 // Parameter constraints

@@ -82,7 +82,6 @@ describe('YURAGIControl', () => {
       const enableCheckbox = screen.queryByLabelText('Enable YURAGI Control')
       expect(enableCheckbox).not.toBeInTheDocument()
     })
-
     it('should render start button initially', () => {
       render(<YURAGIControl deviceId={1} />)
 
@@ -134,11 +133,16 @@ describe('YURAGIControl', () => {
       expect(errorMessages.length).toBeGreaterThan(0)
     })
 
-    it('should have start button always enabled', async () => {
+    it('should handle button click interactions', async () => {
+      const user = userEvent.setup()
       render(<YURAGIControl deviceId={1} />)
 
       const startButton = screen.getByTestId('yuragi-start-button-1')
       expect(startButton).toBeEnabled()
+      expect(startButton).toHaveTextContent('Start YURAGI')
+
+      // Button should be clickable without needing a toggle
+      await user.click(startButton)
     })
   })
 

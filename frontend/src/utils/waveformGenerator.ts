@@ -23,6 +23,13 @@ const RESONANT_FREQUENCY = 360 // Hz (6x base frequency for strong resonance)
 const NOISE_LEVEL = 0.008 // 0.8% sensor noise
 // Electrical parameters
 const COIL_RESISTANCE = 8.0 // Ω - typical voice coil resistance
+const COIL_INDUCTANCE = 0.001 // H - typical voice coil inductance
+const BACK_EMF_CONSTANT = 0.1 // V·s/m - back EMF constant
+// Mechanical parameters
+const MOTOR_CONSTANT = 5.0 // N/A - force constant
+const MOVING_MASS = 0.001 // kg - mass of moving parts
+const SPRING_CONSTANT = 1000.0 // N/m - spring stiffness
+const DAMPING_COEFFICIENT = 0.5 // N·s/m - damping
 // Scaling factors for visualization
 const ACCELERATION_SCALE = 0.2 // Adjusted for proper visualization scale
 
@@ -111,6 +118,59 @@ function resonator(
  */
 function addNoise(signal: number[], noiseLevel: number = NOISE_LEVEL): number[] {
   return signal.map(value => value + noiseLevel * (Math.random() - 0.5) * 2)
+}
+
+/**
+ * Solve coupled electromechanical system
+ * Electrical: V(t) = R*I(t) + L*dI/dt + k_e*v(t)
+ * Mechanical: F = k_m*I = m*a + c*v + k*x
+ *
+ * This creates a coupled system where:
+ * - Current depends on velocity (back-EMF)
+ * - Force (and thus acceleration) depends on current
+ * - Velocity is integral of acceleration
+ */
+export function solveElectromechanicalSystem(
+  voltage: number[],
+  sampleRate: number
+): {
+  current: number[]
+  position: number[]
+  velocity: number[]
+  acceleration: number[]
+} {
+  const dt = 1 / sampleRate
+  const n = voltage.length
+
+  // State variables
+  const current = new Array(n).fill(0)
+  const position = new Array(n).fill(0)
+  const velocity = new Array(n).fill(0)
+  const acceleration = new Array(n).fill(0)
+
+  // Solve coupled system using Euler method
+  for (let i = 1; i < n; i++) {
+    // Calculate force from current
+    const force = MOTOR_CONSTANT * current[i - 1]
+
+    // Mechanical equation: F = m*a + c*v + k*x
+    // Solve for acceleration: a = (F - c*v - k*x) / m
+    acceleration[i] =
+      (force - DAMPING_COEFFICIENT * velocity[i - 1] - SPRING_CONSTANT * position[i - 1]) /
+      MOVING_MASS
+
+    // Update velocity and position
+    velocity[i] = velocity[i - 1] + acceleration[i] * dt
+    position[i] = position[i - 1] + velocity[i] * dt
+
+    // Electrical equation with back-EMF: V = R*I + L*dI/dt + k_e*v
+    // Solve for dI/dt: dI/dt = (V - R*I - k_e*v) / L
+    const backEmf = BACK_EMF_CONSTANT * velocity[i]
+    const dIdt = (voltage[i] - COIL_RESISTANCE * current[i - 1] - backEmf) / COIL_INDUCTANCE
+    current[i] = current[i - 1] + dIdt * dt
+  }
+
+  return { current, position, velocity, acceleration }
 }
 
 /**

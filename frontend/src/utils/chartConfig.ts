@@ -1,19 +1,19 @@
 import { CHANNEL_IDS } from '@/types/hapticTypes'
 import type { ChartOptions, ChartData } from 'chart.js'
 
-// Chart colors for each channel
+// Chart colors for each channel - Relaxing Low-saturation Theme
 export const CHANNEL_COLORS = {
-  [CHANNEL_IDS.DEVICE1_X]: '#FF6384', // Red
-  [CHANNEL_IDS.DEVICE1_Y]: '#36A2EB', // Blue
-  [CHANNEL_IDS.DEVICE2_X]: '#FFCE56', // Yellow
-  [CHANNEL_IDS.DEVICE2_Y]: '#4BC0C0', // Teal
+  [CHANNEL_IDS.DEVICE1_X]: '#CAA3A8', // Dusty rose - muted rosy tone
+  [CHANNEL_IDS.DEVICE1_Y]: '#94B894', // Sage grey - gentle earthy green-grey
+  [CHANNEL_IDS.DEVICE2_X]: '#D6CCC2', // Warm beige - soft earth tone
+  [CHANNEL_IDS.DEVICE2_Y]: '#BFB3CC', // Soft lavender grey - muted violet-grey
 } as const
 
-// Colors for different signal types
+// Colors for different signal types - Relaxing Low-saturation Theme
 export const SIGNAL_COLORS = {
-  voltage: '#2563EB', // Blue - more saturated
-  current: '#10B98180', // Green - with transparency (50% opacity)
-  acceleration: '#DC2626', // Red - more contrast
+  voltage: '#94B894', // Sage grey - primary signal
+  current: '#D6CCC280', // Warm beige with transparency (50% opacity)
+  acceleration: '#CAA3A8', // Dusty rose - accent signal
 } as const
 
 // Base chart options for waveform visualization
@@ -81,7 +81,12 @@ export const createWaveformData = (
   data: number[],
   sampleRate: number,
   current?: number[],
-  acceleration?: number[]
+  acceleration?: number[],
+  customColors?: {
+    voltage?: string
+    current?: string
+    acceleration?: string
+  }
 ): ChartData<'line'> => {
   // Create time points
   const createDataPoints = (values: number[]) =>
@@ -92,11 +97,18 @@ export const createWaveformData = (
 
   const datasets = []
 
+  // Use custom colors or fallback to default signal colors
+  const colors = {
+    voltage: customColors?.voltage || SIGNAL_COLORS.voltage,
+    current: customColors?.current || SIGNAL_COLORS.current,
+    acceleration: customColors?.acceleration || SIGNAL_COLORS.acceleration,
+  }
+
   // Voltage dataset
   datasets.push({
     label: 'Voltage',
     data: createDataPoints(data),
-    borderColor: SIGNAL_COLORS.voltage,
+    borderColor: colors.voltage,
     backgroundColor: 'transparent',
     borderWidth: 2.5,
     pointRadius: 0,
@@ -109,7 +121,7 @@ export const createWaveformData = (
     datasets.push({
       label: 'Current',
       data: createDataPoints(current),
-      borderColor: SIGNAL_COLORS.current,
+      borderColor: colors.current,
       backgroundColor: 'transparent',
       borderWidth: 1,
       pointRadius: 0,
@@ -123,7 +135,7 @@ export const createWaveformData = (
     datasets.push({
       label: 'Acceleration',
       data: createDataPoints(acceleration),
-      borderColor: SIGNAL_COLORS.acceleration,
+      borderColor: colors.acceleration,
       backgroundColor: 'transparent',
       borderWidth: 1.5,
       pointRadius: 0,

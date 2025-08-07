@@ -1,30 +1,44 @@
 .acceleration-trajectory {
-  background-color: var(--color-white);
-  border-radius: var(--border-radius);
+  background-color: var(--color-surface-card);
+  border-radius: var(--border-radius-lg);
   padding: var(--spacing-md);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-primary);
   height: 100%;
   display: flex;
   flex-direction: column;
+  transition: all var(--transition-medium);
+}
+
+.acceleration-trajectory:hover {
+  box-shadow: var(--shadow-medium);
+  border-color: var(--color-border-accent);
 }
 
 .trajectory-title {
   font-size: 1.125rem;
   margin-bottom: var(--spacing-md);
-  color: var(--color-dark);
+  color: var(--color-text-primary);
   text-align: center;
+  font-weight: 600;
 }
 
 .trajectory-canvas-container {
   position: relative;
   width: 100%;
   height: 250px; /* Fixed height to match waveform */
-  background-color: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: var(--border-radius);
+  background-color: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
   overflow: hidden;
   flex: 1;
   min-height: 250px;
+  transition: all var(--transition-medium);
+}
+
+.trajectory-canvas-container:hover {
+  border-color: var(--color-border-accent);
+  background-color: var(--color-hover-surface);
 }
 
 .trajectory-canvas {

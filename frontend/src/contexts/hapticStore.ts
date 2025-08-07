@@ -6,8 +6,9 @@ import type {
   IVectorForce,
   IStatusResponse,
   IYURAGIStatus,
+  IWaveformColors,
 } from '@/types/hapticTypes'
-import { CHANNEL_IDS } from '@/types/hapticTypes'
+import { CHANNEL_IDS, DEFAULT_WAVEFORM_COLORS } from '@/types/hapticTypes'
 
 interface HapticStore extends IHapticSystemState {
   // Actions
@@ -18,6 +19,9 @@ interface HapticStore extends IHapticSystemState {
   setConnection: (isConnected: boolean, error?: string | null) => void
   setYuragiStatus: (deviceId: 1 | 2, status: IYURAGIStatus | null) => void
   updateYuragiProgress: (deviceId: 1 | 2, progress: number) => void
+  setWaveformColors: (colors: IWaveformColors) => void
+  updateWaveformColor: (channelId: number, color: string) => void
+  resetWaveformColors: () => void
   reset: () => void
 }
 
@@ -43,6 +47,7 @@ const initialState: IHapticSystemState = {
     isConnected: false,
     error: null,
   },
+  waveformColors: DEFAULT_WAVEFORM_COLORS,
 }
 
 // Create store with devtools support
@@ -158,6 +163,18 @@ export const useHapticStore = create<HapticStore>()(
             },
           }
         }),
+
+      setWaveformColors: colors => set({ waveformColors: colors }),
+
+      updateWaveformColor: (channelId, color) =>
+        set(state => ({
+          waveformColors: {
+            ...state.waveformColors,
+            [channelId]: color,
+          },
+        })),
+
+      resetWaveformColors: () => set({ waveformColors: DEFAULT_WAVEFORM_COLORS }),
 
       reset: () => set(initialState),
     }),

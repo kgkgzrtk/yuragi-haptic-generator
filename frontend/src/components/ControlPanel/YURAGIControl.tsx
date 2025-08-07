@@ -33,7 +33,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
 
   // Keep isActiveRef updated
   useEffect(() => {
-    isActiveRef.current = isActive
+    isActiveRef.current = isActive ?? false
   }, [isActive])
 
   // Define handleStop early since it's used in useEffect

@@ -36,7 +36,7 @@ interface IMassagePatternState {
   currentPosition: { x: number; y: number }
   elapsedTime: number
   remainingTime: number
-  progress: number // 0-1
+  _progress: number // 0-1
   circularMotion: ICircularMotionState
   customSettings: {
     intensity: number
@@ -52,7 +52,7 @@ interface IMassagePatternState {
 }
 
 // Extended store interface for massage functionality
-interface IHapticStoreWithMassage {
+interface _IHapticStoreWithMassage {
   // Existing store properties...
   massagePattern: IMassagePatternState
 
@@ -219,11 +219,11 @@ describe.skip('HapticStore Massage Extensions', () => {
           result.current.transitionToPattern(mockPatterns[patternId], 1000)
         })
 
-        // Simulate transition progress
-        for (let progress = 0; progress <= 100; progress += 10) {
+        // Simulate transition _progress
+        for (let _progress = 0; _progress <= 100; _progress += 10) {
           currentTime += 10
           act(() => {
-            result.current.updateMassageProgress(progress * 10)
+            result.current.updateMassageProgress(_progress * 10)
           })
         }
 
@@ -420,8 +420,8 @@ describe.skip('HapticStore Massage Extensions', () => {
           result.current.updateMassageProgress(currentTime)
         })
 
-        const progress = i / steps
-        const expectedRadius = 0.2 + (targetRadius - 0.2) * progress
+        const _progress = i / steps
+        const expectedRadius = 0.2 + (targetRadius - 0.2) * _progress
 
         expect(result.current.massagePattern.circularMotion.radius).toBeCloseTo(expectedRadius, 2)
       }
@@ -484,10 +484,10 @@ describe.skip('HapticStore Massage Extensions', () => {
           result.current.updateMassageProgress(t)
         })
 
-        const progress = t / 2000
+        const _progress = t / 2000
 
         // Intensity should transition from 0.3 to 0.8
-        const expectedIntensity = 0.3 + (0.8 - 0.3) * progress
+        const expectedIntensity = 0.3 + (0.8 - 0.3) * _progress
         expect(result.current.massagePattern.customSettings.intensity).toBeCloseTo(
           expectedIntensity,
           2
@@ -577,7 +577,7 @@ describe.skip('HapticStore Massage Extensions', () => {
 
       // Should automatically stop and record completion
       expect(result.current.massagePattern.isPlaying).toBe(false)
-      expect(result.current.massagePattern.progress).toBe(1.0)
+      expect(result.current.massagePattern._progress).toBe(1.0)
       expect(result.current.massagePattern.remainingTime).toBe(0)
 
       // Should record in history with 100% completion
@@ -644,7 +644,7 @@ describe.skip('HapticStore Massage Extensions', () => {
       })
 
       // Simulate resource allocation
-      const initialMemoryUsage = process.memoryUsage?.()?.heapUsed || 0
+      const _initialMemoryUsage = process.memoryUsage?.()?.heapUsed || 0
 
       act(() => {
         result.current.stopMassagePattern()

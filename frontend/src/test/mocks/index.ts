@@ -80,12 +80,12 @@ export const massageTestScenarios = {
       },
 
       simulateProgress: (elapsedTime: number, totalTime: number) => {
-        const progress = Math.min(elapsedTime / totalTime, 1)
+        const _progress = Math.min(elapsedTime / totalTime, 1)
         // webSocketMock.broadcastMessage({
-        //   type: 'pattern_progress',
-        //   data: { elapsedTime, totalTime, progress },
+        //   type: 'pattern__progress',
+        //   data: { elapsedTime, totalTime, _progress },
         // })
-        // WebSocket deprecated - progress simulation disabled
+        // WebSocket deprecated - _progress simulation disabled
       },
     }
   },
@@ -95,8 +95,8 @@ export const massageTestScenarios = {
     let angle = 0
 
     return setInterval(() => {
-      const x = Math.cos(angle) * radius
-      const y = Math.sin(angle) * radius
+      const _x = Math.cos(angle) * radius
+      const _y = Math.sin(angle) * radius
 
       // webSocketMock.broadcastMessage(hapticMessageTypes.circularTrajectoryData([
       //   { x, y, timestamp: Date.now() }
