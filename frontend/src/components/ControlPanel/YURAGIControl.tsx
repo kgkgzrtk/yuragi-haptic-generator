@@ -28,7 +28,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
   const isActiveRef = useRef<boolean>(false)
 
   const currentStatus = yuragi[`device${deviceId}`] as IYURAGIStatus | null
-  const isActive = currentStatus?.enabled && !!currentStatus?.startTime
+  const isActive = !!(currentStatus?.enabled && currentStatus?.startTime)
   const progress = currentStatus?.progress || 0
 
   // Keep isActiveRef updated
@@ -53,13 +53,16 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
 
   // YURAGI circular motion animation
   const animateYuragi = useCallback(async () => {
+    // Debug: animateYuragi called
     if (!isActiveRef.current || !currentStatus?.preset) {
+      // Debug: animateYuragi early return
       return
     }
 
     const presets = getPresetParameters()
     const presetParams = presets[currentStatus.preset as keyof typeof presets]
     if (!presetParams) {
+      // Debug: No preset params found
       return
     }
 
@@ -67,17 +70,20 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
     const elapsed = (now - startTimeRef.current) / 1000 // seconds
 
     // Calculate circular motion position
-    const angle = 2 * Math.PI * presetParams.rotationFreq * elapsed + (presetParams.phase * Math.PI) / 180
+    const angle =
+      2 * Math.PI * presetParams.rotationFreq * elapsed + (presetParams.phase * Math.PI) / 180
     const magnitude = presetParams.baseAmplitude
 
     // Apply amplitude modulation
-    const envelopeModulation = Math.sin(2 * Math.PI * presetParams.envelopeFreq * elapsed) * presetParams.envelopeDepth
+    const envelopeModulation =
+      Math.sin(2 * Math.PI * presetParams.envelopeFreq * elapsed) * presetParams.envelopeDepth
     const modulatedMagnitude = magnitude * (1.0 + envelopeModulation)
 
     // Convert to degrees and clamp
     const angleDegrees = ((angle * 180) / Math.PI) % 360
     const clampedMagnitude = Math.max(0, Math.min(1, modulatedMagnitude))
 
+    // Debug: Updating vector force
 
     try {
       // Update vector force
@@ -104,15 +110,18 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
 
   // Progress tracking
   useEffect(() => {
+    // Debug: Progress tracking effect
     if (isActive && currentStatus?.startTime && currentStatus?.duration) {
       const startTime = new Date(currentStatus.startTime).getTime()
       const duration = currentStatus.duration * 1000 // convert to ms
       startTimeRef.current = startTime
+      // Debug: Starting progress tracking
 
       progressIntervalRef.current = setInterval(() => {
         const now = Date.now()
         const elapsed = now - startTime
         const newProgress = Math.min((elapsed / duration) * 100, 100)
+        // Debug: Progress update
 
         updateYuragiProgress(deviceId, newProgress)
 
@@ -123,10 +132,12 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
       }, 100) // Update every 100ms
 
       // Start YURAGI animation
+      // Debug: Starting YURAGI animation
       // Use setTimeout to avoid immediate invocation issues
       setTimeout(() => animateYuragi(), 100)
 
       return () => {
+        // Debug: Cleaning up progress tracking
         if (progressIntervalRef.current) {
           clearInterval(progressIntervalRef.current)
         }
@@ -314,7 +325,6 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
           disabled={isActive || isLoading}
           id={`yuragi-duration-${deviceId}`}
         />
-
       </div>
 
       {isActive && (

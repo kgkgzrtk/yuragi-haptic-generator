@@ -20,19 +20,9 @@ export interface WaveformParameters {
 
 // Physical model parameters based on typical LRA characteristics
 const RESONANT_FREQUENCY = 360 // Hz (6x base frequency for strong resonance)
-const DAMPING_RATIO = 0.35 // ζ (zeta) - moderate damping for controlled resonance
 const NOISE_LEVEL = 0.008 // 0.8% sensor noise
 // Electrical parameters
 const COIL_RESISTANCE = 8.0 // Ω - typical voice coil resistance
-const COIL_INDUCTANCE = 0.003 // H (3mH) - increased for more filtering effect
-// Mechanical parameters
-const MOTOR_CONSTANT = 0.3 // N/A (k_m) - increased for stronger back-EMF effect
-const BACK_EMF_CONSTANT = 0.3 // V·s/m (k_e) - typically equals k_m
-const MOVING_MASS = 0.004 // kg (4g) - moderate mass for balanced response
-// Calculate spring constant from resonance: k = (2πf)²m
-const SPRING_CONSTANT = Math.pow(2 * Math.PI * RESONANT_FREQUENCY, 2) * MOVING_MASS
-// Calculate damping coefficient from damping ratio
-const DAMPING_COEFFICIENT = 2 * DAMPING_RATIO * Math.sqrt(SPRING_CONSTANT * MOVING_MASS)
 // Scaling factors for visualization
 const ACCELERATION_SCALE = 0.2 // Adjusted for proper visualization scale
 
@@ -87,7 +77,12 @@ export function generateSawtoothWave(params: GenerateSawtoothParams): number[] {
  * This creates a strong resonance effect at the natural frequency,
  * similar to the backend implementation.
  */
-function resonator(u: number[], fs: number, f_n: number = RESONANT_FREQUENCY, zeta: number = 0.08): number[] {
+function resonator(
+  u: number[],
+  fs: number,
+  f_n: number = RESONANT_FREQUENCY,
+  zeta: number = 0.08
+): number[] {
   // Convert to angular frequency
   const w_n = 2 * Math.PI * f_n
   const dt = 1 / fs

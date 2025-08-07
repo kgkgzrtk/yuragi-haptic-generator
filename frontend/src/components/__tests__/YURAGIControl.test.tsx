@@ -76,12 +76,11 @@ describe('YURAGIControl', () => {
       expect(durationInput).toHaveValue(60) // Default value
     })
 
-    it('should render start/stop button that toggles based on state', () => {
+    it('should not render enable/disable toggle (removed from design)', () => {
       render(<YURAGIControl deviceId={1} />)
 
-      const startButton = screen.getByTestId('yuragi-start-button-1')
-      expect(startButton).toBeInTheDocument()
-      expect(startButton).toHaveTextContent('Start YURAGI')
+      const enableCheckbox = screen.queryByLabelText('Enable YURAGI Control')
+      expect(enableCheckbox).not.toBeInTheDocument()
     })
     it('should render start button initially', () => {
       render(<YURAGIControl deviceId={1} />)
@@ -89,7 +88,7 @@ describe('YURAGIControl', () => {
       const startButton = screen.getByTestId('yuragi-start-button-1')
       expect(startButton).toBeInTheDocument()
       expect(startButton).toHaveTextContent('Start YURAGI')
-      expect(startButton).not.toBeDisabled() // Should be enabled by default since no toggle exists
+      expect(startButton).toBeEnabled() // Start button is always enabled
     })
   })
 
@@ -139,7 +138,7 @@ describe('YURAGIControl', () => {
       render(<YURAGIControl deviceId={1} />)
 
       const startButton = screen.getByTestId('yuragi-start-button-1')
-      expect(startButton).not.toBeDisabled()
+      expect(startButton).toBeEnabled()
       expect(startButton).toHaveTextContent('Start YURAGI')
 
       // Button should be clickable without needing a toggle

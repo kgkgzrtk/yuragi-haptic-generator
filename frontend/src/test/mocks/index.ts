@@ -104,7 +104,9 @@ export const massageTestScenarios = {
       // WebSocket deprecated - trajectory stream simulation disabled
 
       angle += frequency * 0.1 // Increment based on frequency
-      if (angle >= 2 * Math.PI) {angle = 0}
+      if (angle >= 2 * Math.PI) {
+        angle = 0
+      }
     }, 16) // ~60fps
   },
 }

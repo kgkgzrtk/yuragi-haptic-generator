@@ -72,10 +72,14 @@ export class MockWebSocket implements WebSocket {
   }
 
   private scheduleConnection(): void {
-    if (this.isDestroyed) {return}
+    if (this.isDestroyed) {
+      return
+    }
 
     this.connectionTimeout = setTimeout(() => {
-      if (this.isDestroyed) {return}
+      if (this.isDestroyed) {
+        return
+      }
 
       if (this.options.simulateErrors && Math.random() < this.options.errorRate!) {
         this.simulateConnectionError()
@@ -86,7 +90,9 @@ export class MockWebSocket implements WebSocket {
   }
 
   private simulateConnectionSuccess(): void {
-    if (this.isDestroyed) {return}
+    if (this.isDestroyed) {
+      return
+    }
 
     this.readyState = WebSocket.OPEN
     const event = new Event('open')
@@ -98,7 +104,9 @@ export class MockWebSocket implements WebSocket {
   }
 
   private simulateConnectionError(): void {
-    if (this.isDestroyed) {return}
+    if (this.isDestroyed) {
+      return
+    }
 
     this.readyState = WebSocket.CLOSED
     const event = new Event('error')
@@ -122,11 +130,15 @@ export class MockWebSocket implements WebSocket {
   }
 
   private sendToClient(message: MockWebSocketMessage): void {
-    if (this.readyState !== WebSocket.OPEN || this.isDestroyed) {return}
+    if (this.readyState !== WebSocket.OPEN || this.isDestroyed) {
+      return
+    }
 
     const delay = this.options.messageDelay || 0
     const sendMessage = () => {
-      if (this.isDestroyed) {return}
+      if (this.isDestroyed) {
+        return
+      }
 
       const event = new MessageEvent('message', {
         data: JSON.stringify(message),
@@ -175,7 +187,9 @@ export class MockWebSocket implements WebSocket {
     this.readyState = WebSocket.CLOSING
 
     setTimeout(() => {
-      if (this.isDestroyed) {return}
+      if (this.isDestroyed) {
+        return
+      }
 
       this.readyState = WebSocket.CLOSED
       const event = new CloseEvent('close', {
