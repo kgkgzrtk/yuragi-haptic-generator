@@ -33,7 +33,15 @@ export class HapticService {
   }
 
   static async updateParameters(channels: IChannelParameters[]): Promise<{ status: string }> {
-    const response = await api.put('/parameters', { channels })
+    // Convert camelCase to snake_case for backend compatibility
+    const convertedChannels = channels.map(ch => ({
+      channel_id: ch.channelId,
+      frequency: ch.frequency,
+      amplitude: ch.amplitude,
+      phase: ch.phase,
+      polarity: ch.polarity,
+    }))
+    const response = await api.put('/parameters', { channels: convertedChannels })
     return response.data
   }
 

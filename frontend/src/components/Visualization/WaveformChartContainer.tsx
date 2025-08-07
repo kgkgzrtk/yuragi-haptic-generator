@@ -36,7 +36,7 @@ export const WaveformChartContainer: React.FC<WaveformChartContainerProps> = ({
     lastFrameTimeRef.current = now
 
     // Generate waveform
-    const duration = 0.1 // 100ms of data
+    const duration = 0.02 // 20ms of data for smoother updates
     const sampleRate = 44100
 
     const waveforms = generatePhysicalWaveforms({

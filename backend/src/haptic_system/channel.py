@@ -51,8 +51,8 @@ class HapticChannel:
         self.cumulative_time = 0.0
 
         # Resonator設定
-        self.resonator_enabled = False
-        self.resonator_f_n = 180.0  # Default resonance frequency
+        self.resonator_enabled = True  # Enable resonator by default
+        self.resonator_f_n = 360.0  # Default resonance frequency (6x base frequency)
         self.resonator_zeta = 0.08  # Default damping ratio
 
         # Noise設定
@@ -144,12 +144,12 @@ class HapticChannel:
 
         return wave.astype(np.float32)
 
-    def enable_resonator(self, f_n: float = 180.0, zeta: float = 0.08) -> None:
+    def enable_resonator(self, f_n: float = 360.0, zeta: float = 0.08) -> None:
         """
         Enable resonator filter for this channel.
 
         Args:
-            f_n: Natural frequency (resonance frequency) in Hz
+            f_n: Natural frequency (resonance frequency) in Hz (default 360Hz = 6x base frequency)
             zeta: Damping ratio (typically 0.08 for Q≈6)
         """
         self.resonator_enabled = True

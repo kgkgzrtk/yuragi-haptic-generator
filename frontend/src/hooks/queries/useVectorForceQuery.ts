@@ -17,6 +17,7 @@ export const useSetVectorForceMutation = () => {
   const setVectorForce = useHapticStore(state => state.setVectorForce)
 
   return useMutation({
+    mutationKey: ['setVectorForce'],
     mutationFn: async (params: IVectorForce) => {
       // Set vector force
       const result = await HapticService.setVectorForce(params)
@@ -129,6 +130,7 @@ export const useClearVectorForceMutation = () => {
   const setVectorForce = useHapticStore(state => state.setVectorForce)
 
   return useMutation({
+    mutationKey: ['clearVectorForce'],
     mutationFn: async (deviceId: 1 | 2) => {
       // Clear by setting magnitude to 0
       const clearForce: IVectorForce = {
@@ -218,7 +220,7 @@ export const useVectorForceQuery = (deviceId: 1 | 2) => {
     state => state.vectorForce[`device${deviceId}` as keyof typeof state.vectorForce]
   )
 
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.vectorForceByDevice(deviceId),
     queryFn: async (): Promise<IVectorForce | null> => {
       // Note: The API doesn't have a GET endpoint for vector force
@@ -234,6 +236,12 @@ export const useVectorForceQuery = (deviceId: 1 | 2) => {
 
     enabled: true,
   })
+  
+  // Always return the current store value for reactivity
+  return {
+    ...query,
+    data: vectorForceFromStore, // Override with current store value
+  }
 }
 
 /**

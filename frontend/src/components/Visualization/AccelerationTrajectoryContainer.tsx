@@ -41,7 +41,7 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
     startTimeRef.current += deltaTime
 
     // Generate waveform for a short window
-    const duration = 0.05 // 50ms of data
+    const duration = 0.02 // 20ms of data for smoother updates
     const sampleRate = 44100
 
     // Generate X acceleration
@@ -66,8 +66,8 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
       startTime: startTimeRef.current,
     })
 
-    // Take every 100th sample for trajectory (reduce data points)
-    const downsampleFactor = 100
+    // Take every 20th sample for trajectory (reduce data points but keep smooth)
+    const downsampleFactor = 20
     const xAccel = xWaveforms.acceleration.filter((_, i) => i % downsampleFactor === 0)
     const yAccel = yWaveforms.acceleration.filter((_, i) => i % downsampleFactor === 0)
 
