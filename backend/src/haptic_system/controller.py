@@ -1,9 +1,12 @@
 """
-Haptic controller module for API integration
+Haptic controller module for streaming and API integration
 """
 
 import threading
+import time
 from typing import Any
+
+import numpy as np
 
 try:
     from src.config.logging import get_logger
@@ -22,7 +25,8 @@ except ImportError:
 class HapticController:
     """触覚システムコントローラークラス
 
-    API統合、スレッドセーフなパラメータ更新を管理します。
+    音声ストリーミング、API統合、スレッドセーフな
+    パラメータ更新を管理します。
     """
 
     def __init__(self, sample_rate: int = 44100, block_size: int = 512):
@@ -38,6 +42,15 @@ class HapticController:
         self.device = HapticDevice(sample_rate)
         self.logger = get_logger(__name__)
         self._lock = threading.Lock()
+        self.is_streaming = False
+
+        # ストリーミング関連
+        self._stream = None
+        self._stop_flag = False
+
+        # レイテンシ測定
+        self._callback_times = []
+        self._max_latency_samples = 100
 
         # デバイス情報
         self.device_info = self._detect_audio_device()
@@ -178,9 +191,11 @@ class HapticController:
             状態辞書
         """
         return {
+            "is_streaming": self.is_streaming,
             "sample_rate": self.sample_rate,
             "block_size": self.block_size,
             "channels": self.get_current_parameters()["channels"],
+            "latency_ms": self.get_latency_ms(),
             "device_info": {
                 "available": self.device_info.get("available", False),
                 "channels": self.available_channels,
@@ -206,19 +221,119 @@ class HapticController:
 
     def get_latency_ms(self) -> float:
         """
-        レイテンシを取得（ストリーミング削除後は固定値）
+        レイテンシを取得
 
         Returns:
             レイテンシ（ミリ秒）
         """
-        # ストリーミング削除後は固定の理論値を返す
-        # block_size / sample_rate * 1000
-        return (self.block_size / self.sample_rate) * 1000
+        if self._callback_times:
+            return np.mean(self._callback_times)
+        else:
+            # コールバックがない場合は理論値を返す
+            return (self.block_size / self.sample_rate) * 1000
+
+    def start_streaming(self) -> None:
+        """ストリーミングを開始"""
+        if self.is_streaming:
+            return
+
+        self._stop_flag = False
+
+        if not self.device_info.get("available", False):
+            # デバイスが利用できない場合はエラーを発生させる
+            raise Exception(
+                f"No audio device available: {self.device_info.get('name', 'Unknown error')}"
+            )
+
+        if sd is not None and self.available_channels > 0:
+            try:
+                # First try with detected device ID
+                try:
+                    self._stream = sd.OutputStream(
+                        device=self.device_info.get("device_id"),
+                        channels=self.available_channels,
+                        samplerate=self.sample_rate,
+                        blocksize=self.block_size,
+                        callback=self._audio_callback,
+                        dtype="float32",
+                    )
+                    self._stream.start()
+                except Exception as e:
+                    # If that fails, try without device ID (use default device)
+                    self.logger.warning(
+                        f"Failed with device_id, trying default device: {e}"
+                    )
+                    self._stream = sd.OutputStream(
+                        channels=self.available_channels,
+                        samplerate=self.sample_rate,
+                        blocksize=self.block_size,
+                        callback=self._audio_callback,
+                        dtype="float32",
+                    )
+                    self._stream.start()
+            except Exception as e:
+                raise Exception(f"Failed to open audio device: {e}")
+
+        self.is_streaming = True
+
+    def stop_streaming(self) -> None:
+        """ストリーミングを停止"""
+        self.is_streaming = False
+        self._stop_flag = True
+
+        if self._stream and sd is not None:
+            self._stream.close()
+            self._stream = None
+
+    def _audio_callback(self, outdata, frames, time_info, status):
+        """
+        オーディオストリーミングのコールバック
+
+        Args:
+            outdata: 出力バッファ
+            frames: フレーム数
+            time_info: タイミング情報
+            status: ステータス
+        """
+        start_time = time.perf_counter()
+
+        if status:
+            self.logger.warning(f"Audio callback status: {status}")
+
+        if self._stop_flag:
+            outdata.fill(0)
+            return
+
+        try:
+            # デバイスから波形データを取得
+            with self._lock:
+                waveform = self.device.get_output_block(frames)
+
+            # チャンネル数に応じて出力
+            if self.available_channels == 2:
+                # 2chデバイス: 最初の2チャンネルのみ使用
+                outdata[:] = waveform[:, :2]
+            elif self.available_channels == 4:
+                # 4chデバイス: 全チャンネル使用
+                outdata[:] = waveform
+            else:
+                outdata.fill(0)
+
+        except Exception as e:
+            self.logger.error(f"Error in audio callback: {e}")
+            outdata.fill(0)
+
+        # レイテンシ測定
+        callback_time = (time.perf_counter() - start_time) * 1000  # ms
+        self._callback_times.append(callback_time)
+        if len(self._callback_times) > self._max_latency_samples:
+            self._callback_times.pop(0)
 
     def __enter__(self):
         """コンテキストマネージャー: 開始"""
+        self.start_streaming()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """コンテキストマネージャー: 終了"""
-        pass
+        self.stop_streaming()
