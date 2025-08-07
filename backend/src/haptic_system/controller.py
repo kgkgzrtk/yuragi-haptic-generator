@@ -239,16 +239,18 @@ class HapticController:
 
         self._stop_flag = False
 
-        if not self.device_info.get('available', False):
+        if not self.device_info.get("available", False):
             # デバイスが利用できない場合はエラーを発生させる
-            raise Exception(f"No audio device available: {self.device_info.get('name', 'Unknown error')}")
+            raise Exception(
+                f"No audio device available: {self.device_info.get('name', 'Unknown error')}"
+            )
 
         if sd is not None and self.available_channels > 0:
             try:
                 # First try with detected device ID
                 try:
                     self._stream = sd.OutputStream(
-                        device=self.device_info.get('device_id'),
+                        device=self.device_info.get("device_id"),
                         channels=self.available_channels,
                         samplerate=self.sample_rate,
                         blocksize=self.block_size,
@@ -258,7 +260,9 @@ class HapticController:
                     self._stream.start()
                 except Exception as e:
                     # If that fails, try without device ID (use default device)
-                    self.logger.warning(f"Failed with device_id, trying default device: {e}")
+                    self.logger.warning(
+                        f"Failed with device_id, trying default device: {e}"
+                    )
                     self._stream = sd.OutputStream(
                         channels=self.available_channels,
                         samplerate=self.sample_rate,
@@ -276,7 +280,7 @@ class HapticController:
         """ストリーミングを停止"""
         self.is_streaming = False
         self._stop_flag = True
-        
+
         if self._stream and sd is not None:
             self._stream.close()
             self._stream = None

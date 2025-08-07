@@ -202,7 +202,9 @@ async def get_device_info():
         "device_mode": (
             "dual"
             if controller.available_channels == 4
-            else "single" if controller.available_channels == 2 else "none"
+            else "single"
+            if controller.available_channels == 2
+            else "none"
         )
     }
 
@@ -422,11 +424,11 @@ async def get_streaming_status():
         "block_size": controller.block_size,
         "latency_ms": controller.get_latency_ms(),
         "device_info": {
-            "available": controller.device_info.get('available', False),
+            "available": controller.device_info.get("available", False),
             "channels": controller.available_channels,
-            "name": controller.device_info.get('name', 'Unknown'),
-            "device_mode": "dual" if controller.available_channels == 4 else "single"
-        }
+            "name": controller.device_info.get("name", "Unknown"),
+            "device_mode": "dual" if controller.available_channels == 4 else "single",
+        },
     }
 
 
