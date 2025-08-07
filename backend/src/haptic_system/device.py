@@ -149,6 +149,11 @@ class HapticDevice:
         for channel in self.channels:
             channel.deactivate()
 
+    def disable_all_resonators(self) -> None:
+        """Disable resonator filters for all channels (mainly for testing)."""
+        for channel in self.channels:
+            channel.disable_resonator()
+
     def enable_16_direction_mode(self) -> None:
         """Enable 16-direction discrete mode for verification."""
         self.discrete_mode_enabled = True

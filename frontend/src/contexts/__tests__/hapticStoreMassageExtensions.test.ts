@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { act, renderHook } from '@/test/test-utils'
 import { useHapticStore } from '@/contexts/hapticStore'
+import { act, renderHook } from '@/test/test-utils'
 
 // Mock massage pattern types
 interface IMassagePattern {

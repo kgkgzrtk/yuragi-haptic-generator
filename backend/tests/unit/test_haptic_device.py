@@ -39,6 +39,7 @@ class TestHapticDeviceOperation:
         """4チャンネル出力を生成できる"""
         # Arrange
         device = HapticDevice(sample_rate=44100)
+        device.disable_all_resonators()  # Disable resonator for raw amplitude test
         device.set_channel_parameters(0, frequency=60, amplitude=1.0)
         device.set_channel_parameters(1, frequency=70, amplitude=0.8)
         device.set_channel_parameters(2, frequency=80, amplitude=0.6)
@@ -103,6 +104,7 @@ class TestHapticDeviceVectorControl:
         """0度（右方向）の力覚生成"""
         # Arrange
         device = HapticDevice(sample_rate=44100)
+        device.disable_all_resonators()  # Disable resonator for raw amplitude test
 
         # Act
         device.set_vector_force(device_id=1, angle=0, magnitude=1.0, frequency=60)
@@ -117,6 +119,7 @@ class TestHapticDeviceVectorControl:
         """90度（上方向）の力覚生成"""
         # Arrange
         device = HapticDevice(sample_rate=44100)
+        device.disable_all_resonators()  # Disable resonator for raw amplitude test
 
         # Act
         device.set_vector_force(device_id=1, angle=90, magnitude=1.0, frequency=60)
@@ -131,6 +134,7 @@ class TestHapticDeviceVectorControl:
         """デバイス2（Ch2,3）でのベクトル力覚生成"""
         # Arrange
         device = HapticDevice(sample_rate=44100)
+        device.disable_all_resonators()  # Disable resonator for raw amplitude test
 
         # Act
         device.set_vector_force(device_id=2, angle=45, magnitude=0.5, frequency=80)
