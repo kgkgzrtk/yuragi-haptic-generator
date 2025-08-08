@@ -14,8 +14,8 @@ from pydantic import BaseModel, Field, field_validator
 
 from src.config.settings import get_settings, setup_logging
 from src.haptic_system.controller import HapticController
-from src.haptic_system.yuragi_animator import YURAGIAnimator
 from src.haptic_system.validators import validate_device_id
+from src.haptic_system.yuragi_animator import YURAGIAnimator
 
 # 設定を取得
 settings = get_settings()
@@ -249,7 +249,9 @@ async def get_device_info():
         "device_mode": (
             "dual"
             if controller.available_channels == 4
-            else "single" if controller.available_channels == 2 else "none"
+            else "single"
+            if controller.available_channels == 2
+            else "none"
         )
     }
 

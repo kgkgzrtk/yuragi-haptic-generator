@@ -7,8 +7,10 @@ consistent haptic output between frontend visualization and actual device output
 
 import asyncio
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any
+
 import numpy as np
 
 try:
@@ -41,7 +43,7 @@ class YURAGIAnimator:
     speed and amplitude modulation for therapeutic effects.
     """
 
-    def __init__(self, update_callback: Callable[[Dict[str, Any]], None]):
+    def __init__(self, update_callback: Callable[[dict[str, Any]], None]):
         """
         Initialize YURAGI animator.
 
@@ -52,13 +54,13 @@ class YURAGIAnimator:
         self.update_callback = update_callback
 
         # Animation state
-        self._active_animations: Dict[int, asyncio.Task] = {}
-        self._animation_configs: Dict[int, YURAGIPresetConfig] = {}
+        self._active_animations: dict[int, asyncio.Task] = {}
+        self._animation_configs: dict[int, YURAGIPresetConfig] = {}
 
         # Preset configurations
         self._presets = self._initialize_presets()
 
-    def _initialize_presets(self) -> Dict[str, YURAGIPresetConfig]:
+    def _initialize_presets(self) -> dict[str, YURAGIPresetConfig]:
         """Initialize preset configurations"""
         return {
             "default": YURAGIPresetConfig(
