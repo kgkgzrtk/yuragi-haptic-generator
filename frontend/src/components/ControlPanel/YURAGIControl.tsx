@@ -16,7 +16,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
   const { yuragi, setYuragiStatus, updateYuragiProgress, setVectorForce } = useHapticStore()
   const { handleError } = useErrorHandler()
 
-  const [preset, setPreset] = useState<'gentle' | 'moderate' | 'intense' | 'therapeutic'>('gentle')
+  const [preset, setPreset] = useState<'gentle' | 'moderate' | 'intense' | 'therapeutic' | 'therapeutic_fluctuation'>('gentle')
   const [duration, setDuration] = useState<number>(60)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
@@ -26,6 +26,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
   const animationFrameRef = useRef<number | null>(null)
   const startTimeRef = useRef<number>(0)
   const isActiveRef = useRef<boolean>(false)
+  const phaseRef = useRef<number>(0) // Track accumulated phase for variable speed
 
   const currentStatus = yuragi[`device${deviceId}`] as IYURAGIStatus | null
   const isActive = !!(currentStatus?.enabled && currentStatus?.startTime)
@@ -53,9 +54,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
 
   // YURAGI circular motion animation
   const animateYuragi = useCallback(async () => {
-    // Debug: animateYuragi called
     if (!isActiveRef.current || !currentStatus?.preset) {
-      // Debug: animateYuragi early return
       return
     }
 
@@ -68,16 +67,42 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
 
     const now = Date.now()
     const elapsed = (now - startTimeRef.current) / 1000 // seconds
+    const deltaTime = 1 / 60 // Assume 60fps for smooth animation
 
-    // Calculate circular motion position
-    const angle =
-      2 * Math.PI * presetParams.rotationFreq * elapsed + (presetParams.phase * Math.PI) / 180
+    // For therapeutic_fluctuation preset, apply low-frequency speed modulation
+    let speedModulation = 1.0
+    if (currentStatus.preset === 'therapeutic_fluctuation') {
+      // Low-frequency modulation (0.1 Hz = 10 second period)
+      const lowFreqModulation = Math.sin(2 * Math.PI * 0.1 * elapsed)
+      // Add some complexity with a second frequency (0.07 Hz = ~14 second period)
+      const secondModulation = Math.sin(2 * Math.PI * 0.07 * elapsed + Math.PI / 3)
+      // Combine modulations with much stronger amplitude for more pronounced effect
+      speedModulation = 1.0 + 0.8 * lowFreqModulation + 0.5 * secondModulation
+      // Ensure speed doesn't go negative or too fast
+      speedModulation = Math.max(0.1, Math.min(3.0, speedModulation))
+    }
+
+    // Update phase with variable speed
+    const instantaneousFreq = presetParams.rotationFreq * speedModulation
+    phaseRef.current += 2 * Math.PI * instantaneousFreq * deltaTime
+
+    // Calculate circular motion position using accumulated phase
+    const angle = phaseRef.current + (presetParams.phase * Math.PI) / 180
     const magnitude = presetParams.baseAmplitude
 
     // Apply amplitude modulation
-    const envelopeModulation =
-      Math.sin(2 * Math.PI * presetParams.envelopeFreq * elapsed) * presetParams.envelopeDepth
-    const modulatedMagnitude = magnitude * (1.0 + envelopeModulation)
+    let modulatedMagnitude = magnitude
+    if (currentStatus.preset === 'therapeutic_fluctuation') {
+      // For therapeutic_fluctuation, use 0.8 as the center offset for amplitude
+      const envelopeModulation =
+        Math.sin(2 * Math.PI * presetParams.envelopeFreq * elapsed) * presetParams.envelopeDepth
+      modulatedMagnitude = magnitude * (0.8 + envelopeModulation * 0.8)
+    } else {
+      // Normal amplitude modulation for other presets
+      const envelopeModulation =
+        Math.sin(2 * Math.PI * presetParams.envelopeFreq * elapsed) * presetParams.envelopeDepth
+      modulatedMagnitude = magnitude * (1.0 + envelopeModulation)
+    }
 
     // Convert to degrees and clamp
     const angleDegrees = ((angle * 180) / Math.PI) % 360
@@ -115,6 +140,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
       const startTime = new Date(currentStatus.startTime).getTime()
       const duration = currentStatus.duration * 1000 // convert to ms
       startTimeRef.current = startTime
+      phaseRef.current = 0 // Reset phase when starting
       // Debug: Starting progress tracking
 
       progressIntervalRef.current = setInterval(() => {
@@ -132,7 +158,6 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
       }, 100) // Update every 100ms
 
       // Start YURAGI animation
-      // Debug: Starting YURAGI animation
       // Use setTimeout to avoid immediate invocation issues
       setTimeout(() => animateYuragi(), 100)
 
@@ -295,6 +320,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
             <option value='moderate'>Moderate</option>
             <option value='intense'>Intense</option>
             <option value='therapeutic'>Therapeutic</option>
+            <option value='therapeutic_fluctuation'>Therapeutic with Fluctuation</option>
           </select>
         </div>
 

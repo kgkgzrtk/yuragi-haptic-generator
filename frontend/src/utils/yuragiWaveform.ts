@@ -49,6 +49,7 @@ export interface PresetParameters {
   moderate: YuragiParameters
   intense: YuragiParameters
   therapeutic: YuragiParameters
+  therapeutic_fluctuation: YuragiParameters
 }
 
 /**
@@ -437,6 +438,21 @@ export function getPresetParameters(): PresetParameters {
       fluctuationAmplitude: 8.0,
       fluctuationBandwidth: 0.3,
       fmDepth: 0.04,
+    },
+
+    therapeutic_fluctuation: {
+      ...defaultParams,
+      rotationFreq: 0.15, // ~6.7 seconds per rotation - slower rotation
+      radius: 0.8,
+      phase: 180.0,
+      baseAmplitude: 0.8,
+      envelopeFreq: 0.2,
+      envelopeDepth: 0.3,
+      noiseLevel: 0.08,
+      noiseBandwidth: 0.4,
+      fluctuationAmplitude: 20.0, // 2.5x stronger fluctuation
+      fluctuationBandwidth: 0.1,  // Lower frequency bandwidth
+      fmDepth: 0.1,               // Stronger FM modulation
     },
   }
 }

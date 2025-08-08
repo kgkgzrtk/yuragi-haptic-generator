@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from src.config.settings import get_settings, setup_logging
 from src.haptic_system.controller import HapticController
+from src.haptic_system.yuragi_animator import YURAGIAnimator
 from src.haptic_system.validators import validate_device_id
 
 # 設定を取得
@@ -25,6 +26,9 @@ logger = logging.getLogger(__name__)
 
 # グローバルコントローラーインスタンス
 # テストやスタンドアロン実行のため、ここで初期化
+controller = None
+yuragi_animator = None
+
 try:
     controller = HapticController(
         sample_rate=settings.sample_rate, block_size=settings.block_size
@@ -32,16 +36,22 @@ try:
     logger.info(
         f"HapticController initialized with sample_rate={settings.sample_rate}, block_size={settings.block_size}"
     )
+    
+    # Initialize YURAGI animator
+    yuragi_animator = YURAGIAnimator(controller.set_vector_force)
+    logger.info("YURAGIAnimator initialized")
+    
 except Exception as e:
     # sounddeviceがない環境では None のまま
     logger.warning(f"Failed to initialize HapticController: {e}")
     controller = None
+    yuragi_animator = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理"""
-    global controller
+    global controller, yuragi_animator
 
     logger.info("Starting application...")
 
@@ -52,6 +62,12 @@ async def lifespan(app: FastAPI):
                 sample_rate=settings.sample_rate, block_size=settings.block_size
             )
             logger.info("HapticController initialized successfully")
+            
+            # Initialize YURAGI animator if controller is available
+            if yuragi_animator is None:
+                yuragi_animator = YURAGIAnimator(controller.set_vector_force)
+                logger.info("YURAGIAnimator initialized in lifespan")
+                
         except Exception as e:
             logger.error(f"Failed to initialize HapticController: {e}")
 
@@ -67,6 +83,14 @@ async def lifespan(app: FastAPI):
 
     # 終了時
     logger.info("Shutting down application...")
+    
+    # Stop all YURAGI animations
+    if yuragi_animator:
+        try:
+            await yuragi_animator.stop_all()
+            logger.info("All YURAGI animations stopped")
+        except Exception as e:
+            logger.warning(f"Failed to stop YURAGI animations: {e}")
 
     # ストリーミングを停止
     if controller and controller.is_streaming:
@@ -173,7 +197,14 @@ class YURAGIPresetRequest(BaseModel):
 
     device_id: int = Field(..., description="Device ID (1 or 2)")
     preset: Literal[
-        "default", "gentle", "moderate", "strong", "intense", "slow", "therapeutic"
+        "default",
+        "gentle",
+        "moderate",
+        "strong",
+        "intense",
+        "slow",
+        "therapeutic",
+        "therapeutic_fluctuation",
     ] = Field("default", description="Preset name")
     duration: float = Field(60.0, ge=30.0, le=300.0, description="Duration in seconds")
     enabled: bool = Field(True, description="Enable/disable the preset")
@@ -460,20 +491,20 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
     """YURAGIプリセットを適用"""
     if controller is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
+    
+    if yuragi_animator is None:
+        raise HTTPException(status_code=503, detail="YURAGI animator not initialized")
 
     # プリセットに基づいてパラメータをマッピング
     preset_params = _get_yuragi_preset_params(request.preset)
 
     try:
         if request.enabled:
-            # プリセットパラメータを適用
-            controller.set_vector_force(
-                {
-                    "device_id": request.device_id,
-                    "angle": preset_params["initial_angle"],
-                    "magnitude": preset_params["magnitude"],
-                    "frequency": preset_params["frequency"],
-                }
+            # Start YURAGI animation
+            await yuragi_animator.start_animation(
+                device_id=request.device_id,
+                preset=request.preset,
+                duration=request.duration
             )
 
             return {
@@ -490,15 +521,8 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
                 },
             }
         else:
-            # 無効化の場合は振幅を0に設定
-            controller.set_vector_force(
-                {
-                    "device_id": request.device_id,
-                    "angle": 0.0,
-                    "magnitude": 0.0,
-                    "frequency": 60.0,  # デフォルト周波数
-                }
-            )
+            # Stop YURAGI animation
+            await yuragi_animator.stop_animation(request.device_id)
 
             return {
                 "status": "disabled",
@@ -565,6 +589,12 @@ def _get_yuragi_preset_params(preset: str) -> dict:
             "magnitude": 0.5,
             "frequency": 50.0,
             "rotation_freq": 0.25,  # 4秒/周
+        },
+        "therapeutic_fluctuation": {
+            "initial_angle": 180.0,  # 左方向
+            "magnitude": 0.5,
+            "frequency": 50.0,
+            "rotation_freq": 0.15,  # 約6.7秒/周 - より遅い回転
         },
     }
     return presets.get(preset, presets["default"]).copy()
