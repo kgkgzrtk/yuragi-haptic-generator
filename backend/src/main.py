@@ -66,7 +66,7 @@ async def lifespan(app: FastAPI):
 
     # 終了時
     logger.info("Shutting down application...")
-    
+
     # ストリーミングを停止
     if controller and controller.is_streaming:
         try:
@@ -74,7 +74,7 @@ async def lifespan(app: FastAPI):
             logger.info("Audio streaming stopped")
         except Exception as e:
             logger.warning(f"Failed to stop streaming: {e}")
-    
+
     logger.info("Application shutdown complete")
 
 
@@ -219,7 +219,9 @@ async def get_device_info():
         "device_mode": (
             "dual"
             if controller.available_channels == 4
-            else "single" if controller.available_channels == 2 else "none"
+            else "single"
+            if controller.available_channels == 2
+            else "none"
         )
     }
 
