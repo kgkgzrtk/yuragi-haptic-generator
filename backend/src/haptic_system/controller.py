@@ -56,6 +56,18 @@ class HapticController:
         self.device_info = self._detect_audio_device()
         self.available_channels = self.device_info.get("channels", 0)
 
+        # Log the selected device information
+        if self.device_info.get("available", False):
+            self.logger.info(
+                f"Selected audio device: {self.device_info.get('name')} "
+                f"with {self.available_channels} channels "
+                f"(device_id: {self.device_info.get('device_id')})"
+            )
+        else:
+            self.logger.warning(
+                f"No suitable audio device found: {self.device_info.get('name')}"
+            )
+
     def _detect_audio_device(self) -> dict[str, Any]:
         """利用可能なオーディオデバイスを検出"""
         if sd is None:
@@ -66,6 +78,16 @@ class HapticController:
             self.logger.info(
                 "Audio devices detected", extra={"device_count": len(devices)}
             )
+
+            # In debug mode, log all available devices
+            self.logger.debug("Available audio devices:")
+            for idx, dev in enumerate(devices):
+                self.logger.debug(
+                    f"  Device {idx}: {dev['name']} - "
+                    f"Out: {dev['max_output_channels']} ch, "
+                    f"In: {dev['max_input_channels']} ch, "
+                    f"SR: {dev['default_samplerate']} Hz"
+                )
 
             # デフォルトデバイスを優先的に確認
             default_device_id = sd.default.device[1]  # デフォルト出力デバイス
@@ -81,6 +103,9 @@ class HapticController:
 
                 # デフォルトデバイスが4ch以上をサポートしていれば使用
                 if default_dev["max_output_channels"] >= 4:
+                    self.logger.info(
+                        f"Selected default 4-channel device: {default_dev['name']}"
+                    )
                     return {
                         "available": True,
                         "channels": 4,
@@ -90,6 +115,10 @@ class HapticController:
                     }
                 # デフォルトデバイスが2chをサポートしていれば使用
                 elif default_dev["max_output_channels"] >= 2:
+                    self.logger.info(
+                        f"Selected default 2-channel device: {default_dev['name']} "
+                        f"(Note: Device2 will not be available)"
+                    )
                     return {
                         "available": True,
                         "channels": 2,
@@ -99,9 +128,13 @@ class HapticController:
                     }
 
             # デフォルトデバイスが使えない場合、他のデバイスを探す
+            self.logger.debug(
+                "Default device not suitable, searching for alternatives..."
+            )
+
             # 4chデバイスを探す（出力デバイスのみ）
             for idx, dev in enumerate(devices):
-                if dev["max_output_channels"] >= 4 and dev["max_input_channels"] == 0:
+                if dev["max_output_channels"] >= 4:
                     self.logger.info(
                         "Found 4-channel audio device",
                         extra={"device_name": dev["name"], "device_id": idx},
@@ -116,7 +149,7 @@ class HapticController:
 
             # 2chデバイスを探す（出力デバイスのみ）
             for idx, dev in enumerate(devices):
-                if dev["max_output_channels"] >= 2 and dev["max_input_channels"] == 0:
+                if dev["max_output_channels"] >= 2:
                     self.logger.info(
                         "Found 2-channel audio device",
                         extra={"device_name": dev["name"], "device_id": idx},
@@ -210,12 +243,37 @@ class HapticController:
 
         Args:
             vector_params: ベクトル力パラメータ
+
+        Raises:
+            ValueError: Device2 is not available with 2-channel device
+            RuntimeError: Streaming is not started
         """
         with self._lock:
             device_id = vector_params.get("device_id", 1)
             angle = vector_params.get("angle", 0.0)
             magnitude = vector_params.get("magnitude", 0.0)
             frequency = vector_params.get("frequency", 60.0)  # デフォルト60Hz
+
+            # Check if streaming is started
+            if not self.is_streaming:
+                self.logger.warning(
+                    "Attempted to set vector force without streaming. "
+                    "Call /api/streaming/start first."
+                )
+                raise RuntimeError(
+                    "Streaming is not started. Call /api/streaming/start first."
+                )
+
+            # Validate device availability
+            if device_id == 2 and self.available_channels < 4:
+                self.logger.error(
+                    f"Attempted to use device2 with only {self.available_channels} channels available"
+                )
+                raise ValueError(
+                    f"Device2 (channels 3-4) is not available. "
+                    f"Only {self.available_channels} channels detected. "
+                    f"Current device: {self.device_info.get('name', 'Unknown')}"
+                )
 
             self.device.set_vector_force(device_id, angle, magnitude, frequency)
 
