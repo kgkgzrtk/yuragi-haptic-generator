@@ -16,7 +16,7 @@ export interface LogEntry {
   timestamp: string
   level: string
   message: string
-  context?: Record<string, any>
+  context?: Record<string, unknown>
   stack?: string
   url?: string
   userAgent?: string
@@ -63,7 +63,7 @@ class Logger {
   private createLogEntry(
     level: LogLevel,
     message: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     error?: Error
   ): LogEntry {
     const entry: LogEntry = {
@@ -143,7 +143,7 @@ class Logger {
   private log(
     level: LogLevel,
     message: string,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     error?: Error
   ): void {
     if (!this.shouldLog(level)) {
@@ -184,19 +184,19 @@ class Logger {
     }
   }
 
-  public debug(message: string, context?: Record<string, any>): void {
+  public debug(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.DEBUG, message, context)
   }
 
-  public info(message: string, context?: Record<string, any>): void {
+  public info(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.INFO, message, context)
   }
 
-  public warn(message: string, context?: Record<string, any>): void {
+  public warn(message: string, context?: Record<string, unknown>): void {
     this.log(LogLevel.WARN, message, context)
   }
 
-  public error(message: string, context?: Record<string, any>, error?: Error): void {
+  public error(message: string, context?: Record<string, unknown>, error?: Error): void {
     this.log(LogLevel.ERROR, message, context, error)
   }
 
@@ -227,7 +227,7 @@ class Logger {
   }
 
   // Performance logging
-  public logPerformance(name: string, duration: number, context?: Record<string, any>): void {
+  public logPerformance(name: string, duration: number, context?: Record<string, unknown>): void {
     this.info(`Performance: ${name}`, {
       duration_ms: duration,
       ...context,
@@ -240,7 +240,7 @@ class Logger {
     url: string,
     status: number,
     duration: number,
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): void {
     const level = status >= 400 ? LogLevel.ERROR : LogLevel.INFO
     this.log(level, `API Call: ${method} ${url}`, {
@@ -253,7 +253,7 @@ class Logger {
   }
 
   // User action logging
-  public logUserAction(action: string, context?: Record<string, any>): void {
+  public logUserAction(action: string, context?: Record<string, unknown>): void {
     this.info(`User Action: ${action}`, {
       action,
       ...context,
@@ -261,7 +261,7 @@ class Logger {
   }
 
   // WebSocket logging
-  public logWebSocket(event: string, context?: Record<string, any>): void {
+  public logWebSocket(event: string, context?: Record<string, unknown>): void {
     this.debug(`WebSocket: ${event}`, {
       event,
       ...context,
@@ -273,11 +273,11 @@ class Logger {
 export const logger = new Logger()
 
 // Performance monitoring utilities
-export const withPerformanceLogging = <T extends (...args: any[]) => any>(
+export const withPerformanceLogging = <T extends (...args: unknown[]) => unknown>(
   fn: T,
   name?: string
 ): T => {
-  return ((...args: any[]) => {
+  return ((...args: unknown[]) => {
     const start = performance.now()
     const result = fn(...args)
     const duration = performance.now() - start

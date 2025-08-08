@@ -291,21 +291,21 @@ export const canvasPerformanceUtils = {
     const operations: string[] = []
 
     const mockContext = {
-      clearRect: vi.fn((...args) => operations.push('clearRect')),
-      beginPath: vi.fn((...args) => operations.push('beginPath')),
-      moveTo: vi.fn((...args) => operations.push('moveTo')),
-      lineTo: vi.fn((...args) => operations.push('lineTo')),
-      arc: vi.fn((...args) => operations.push('arc')),
-      stroke: vi.fn((...args) => operations.push('stroke')),
-      fill: vi.fn((...args) => operations.push('fill')),
-      fillRect: vi.fn((...args) => operations.push('fillRect')),
-      strokeRect: vi.fn((...args) => operations.push('strokeRect')),
-      fillText: vi.fn((...args) => operations.push('fillText')),
-      save: vi.fn((...args) => operations.push('save')),
-      restore: vi.fn((...args) => operations.push('restore')),
-      translate: vi.fn((...args) => operations.push('translate')),
-      rotate: vi.fn((...args) => operations.push('rotate')),
-      scale: vi.fn((...args) => operations.push('scale')),
+      clearRect: vi.fn((..._args) => operations.push('clearRect')),
+      beginPath: vi.fn((..._args) => operations.push('beginPath')),
+      moveTo: vi.fn((..._args) => operations.push('moveTo')),
+      lineTo: vi.fn((..._args) => operations.push('lineTo')),
+      arc: vi.fn((..._args) => operations.push('arc')),
+      stroke: vi.fn((..._args) => operations.push('stroke')),
+      fill: vi.fn((..._args) => operations.push('fill')),
+      fillRect: vi.fn((..._args) => operations.push('fillRect')),
+      strokeRect: vi.fn((..._args) => operations.push('strokeRect')),
+      fillText: vi.fn((..._args) => operations.push('fillText')),
+      save: vi.fn((..._args) => operations.push('save')),
+      restore: vi.fn((..._args) => operations.push('restore')),
+      translate: vi.fn((..._args) => operations.push('translate')),
+      rotate: vi.fn((..._args) => operations.push('rotate')),
+      scale: vi.fn((..._args) => operations.push('scale')),
       getOperations: () => [...operations],
       clearOperations: () => (operations.length = 0),
     }
@@ -336,7 +336,7 @@ export const webSocketPerformanceUtils = {
    * Measure WebSocket message throughput
    */
   measureMessageThroughput(
-    mockWebSocket: any,
+    mockWebSocket: { send: (data: string) => void },
     messageCount: number,
     messageSize: number = 1024
   ): PerformanceMetrics {
@@ -359,7 +359,7 @@ export const webSocketPerformanceUtils = {
   /**
    * Simulate network latency in WebSocket mock
    */
-  addLatencyToWebSocketMock(mockWebSocket: any, latencyMs: number) {
+  addLatencyToWebSocketMock(mockWebSocket: { send: (data: string) => void; onmessage?: ((event: MessageEvent) => void) | null; simulateMessage?: (data: unknown) => void }, latencyMs: number) {
     const originalSend = mockWebSocket.send
 
     mockWebSocket.send = vi.fn(async (data: string) => {
@@ -369,7 +369,7 @@ export const webSocketPerformanceUtils = {
 
     const originalOnMessage = mockWebSocket.onmessage
 
-    mockWebSocket.simulateMessage = (data: any) => {
+    mockWebSocket.simulateMessage = (data: unknown) => {
       setTimeout(() => {
         const event = new MessageEvent('message', { data: JSON.stringify(data) })
         originalOnMessage?.(event)

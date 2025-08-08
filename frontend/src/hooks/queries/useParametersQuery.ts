@@ -63,7 +63,7 @@ export const useUpdateParametersMutation = () => {
       return { previousParameters }
     },
 
-    onError: (error: any, _variables, context) => {
+    onError: (error: unknown, _variables, context) => {
       // Rollback optimistic update
       if (context?.previousParameters) {
         queryClient.setQueryData(queryKeys.parameters(), context.previousParameters)
@@ -132,7 +132,7 @@ export const useUpdateChannelMutation = () => {
       return { previousParameters, channelId, params }
     },
 
-    onError: (error: any, variables, context) => {
+    onError: (error: unknown, variables, context) => {
       // Rollback optimistic update
       if (context?.previousParameters) {
         queryClient.setQueryData(queryKeys.parameters(), context.previousParameters)
@@ -215,7 +215,11 @@ export const useParameterManagement = () => {
     updateChannel: updateChannelMutation.mutate,
 
     // Advanced actions
-    updateChannelField: (channelId: number, field: keyof IChannelParameters, value: any) => {
+    updateChannelField: <K extends keyof Omit<IChannelParameters, 'channelId'>>(
+      channelId: number,
+      field: K,
+      value: IChannelParameters[K]
+    ) => {
       updateChannelMutation.mutate({
         channelId,
         params: { [field]: value },

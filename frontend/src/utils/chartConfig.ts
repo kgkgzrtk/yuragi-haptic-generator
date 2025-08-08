@@ -175,7 +175,7 @@ export const calculateBufferSize = (sampleRate: number, displayDuration: number)
 }
 
 // Throttle function for performance optimization
-export const throttle = <T extends (...args: any[]) => any>(
+export const throttle = <T extends (...args: unknown[]) => unknown>(
   func: T,
   delay: number
 ): ((...args: Parameters<T>) => void) => {

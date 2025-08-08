@@ -96,7 +96,7 @@ globalThis.IntersectionObserver = vi.fn().mockImplementation(() => ({
 
 // Suppress console.warn for tests (can be overridden in specific tests)
 const originalWarn = console.warn
-console.warn = (...args: any[]) => {
+console.warn = (...args: unknown[]) => {
   if (typeof args[0] === 'string' && args[0].includes('React does not recognize')) {
     return
   }

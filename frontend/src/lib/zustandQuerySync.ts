@@ -94,7 +94,7 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(
  */
 export const useQueryStoreSync = (
   queryClient: QueryClient,
-  store: any // The Zustand store - any is needed here for Zustand store access
+  store: { getState: () => Record<string, unknown> }
 ) => {
   // Set up query cache subscribers to sync with Zustand
   const setupQuerySubscriptions = () => {
@@ -180,7 +180,10 @@ export const createOptimisticUpdateHelpers = (queryClient: QueryClient) => {
 /**
  * Enhanced error handling that syncs with both systems
  */
-export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) => {
+export const createSyncedErrorHandler = (
+  queryClient: QueryClient,
+  store: { getState: () => Record<string, unknown> }
+) => {
   return {
     handleParameterError: (error: HapticError | Error, _channelId?: number) => {
       // Set error state in both systems

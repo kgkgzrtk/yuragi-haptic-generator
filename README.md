@@ -64,6 +64,11 @@ uv pip install -e ".[dev,test]"
 
 ```bash
 cd backend
+
+# 依存関係のインストール
+uv pip install -e ".[dev,api]"
+
+# サーバーの起動
 uv run uvicorn src.main:app --reload
 ```
 
@@ -80,7 +85,13 @@ pnpm install
 pnpm dev
 ```
 
-**UI**: http://localhost:3000
+**UI**: http://localhost:3000 （ポートが使用中の場合は3001, 3002...が使用されます）
+
+> **注意**: フロントエンドが3000以外のポートで起動した場合、バックエンドのCORS設定を更新する必要があります：
+> ```bash
+> # バックエンドを停止してから再起動
+> CORS_ORIGINS='["http://localhost:3000","http://localhost:3001","http://localhost:3002","http://localhost:3003","http://localhost:3004","http://localhost:3005"]' uv run uvicorn src.main:app --reload
+> ```
 
 ## テスト
 

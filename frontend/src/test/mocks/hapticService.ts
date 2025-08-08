@@ -93,7 +93,7 @@ export const mockHapticService = {
 
 // Mock API responses with different scenarios
 export const mockApiResponses = {
-  success: (data: any) => ({
+  success: (data: unknown) => ({
     ok: true,
     status: 200,
     json: vi.fn().mockResolvedValue(data),

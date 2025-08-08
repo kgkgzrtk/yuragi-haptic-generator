@@ -152,13 +152,13 @@ export const mockImplementations = {
     }
 
     // Mock the constructor
-    globalThis.WebSocket = vi.fn(() => mockWS) as any
+    globalThis.WebSocket = vi.fn(() => mockWS) as typeof WebSocket
 
     return mockWS
   },
 
   // Mock fetch for API calls
-  mockFetch: (response: any, options?: { ok?: boolean; status?: number }) => {
+  mockFetch: (response: unknown, options?: { ok?: boolean; status?: number }) => {
     const mockResponse = {
       ok: options?.ok ?? true,
       status: options?.status ?? 200,
