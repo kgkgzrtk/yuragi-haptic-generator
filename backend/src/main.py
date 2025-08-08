@@ -195,7 +195,6 @@ class VectorForceRequest(BaseModel):
 class YURAGIPresetRequest(BaseModel):
     """YURAGIプリセットリクエスト"""
 
-    device_id: int = Field(..., description="Device ID (1 or 2)")
     preset: Literal[
         "default",
         "gentle",
@@ -208,12 +207,6 @@ class YURAGIPresetRequest(BaseModel):
     ] = Field("default", description="Preset name")
     duration: float = Field(60.0, ge=30.0, le=300.0, description="Duration in seconds")
     enabled: bool = Field(True, description="Enable/disable the preset")
-
-    @field_validator("device_id")
-    @classmethod
-    def validate_device_id(cls, v):
-        validate_device_id(v)
-        return v
 
 
 # ルートエンドポイント
@@ -500,9 +493,8 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
 
     try:
         if request.enabled:
-            # Start YURAGI animation
+            # Start YURAGI animation for both devices
             await yuragi_animator.start_animation(
-                device_id=request.device_id,
                 preset=request.preset,
                 duration=request.duration,
             )
@@ -510,7 +502,6 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
             return {
                 "status": "applied",
                 "preset": request.preset,
-                "device_id": request.device_id,  # Keep snake_case for consistency with tests
                 "enabled": True,
                 "duration": request.duration,
                 "parameters": {
@@ -521,13 +512,12 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
                 },
             }
         else:
-            # Stop YURAGI animation
-            await yuragi_animator.stop_animation(request.device_id)
+            # Stop YURAGI animation for all devices
+            await yuragi_animator.stop_all()
 
             return {
                 "status": "disabled",
                 "preset": request.preset,
-                "device_id": request.device_id,  # Keep snake_case for consistency with tests
                 "enabled": False,
                 "duration": request.duration,
                 "parameters": {
