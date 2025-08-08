@@ -1,0 +1,52 @@
+.streaming-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  font-size: 0.875rem;
+}
+
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.status-dot.loading {
+  background-color: #666;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-dot.streaming {
+  background-color: #4ade80;
+  box-shadow: 0 0 0.5rem rgba(74, 222, 128, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-dot.stopped {
+  background-color: #ef4444;
+  box-shadow: 0 0 0.5rem rgba(239, 68, 68, 0.3);
+}
+
+.status-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

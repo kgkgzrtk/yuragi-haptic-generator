@@ -54,10 +54,27 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Failed to initialize HapticController: {e}")
 
+    # ストリーミングを自動開始
+    if controller and not controller.is_streaming:
+        try:
+            controller.start_streaming()
+            logger.info("Audio streaming started automatically")
+        except Exception as e:
+            logger.warning(f"Failed to auto-start streaming: {e}")
+
     yield
 
     # 終了時
     logger.info("Shutting down application...")
+
+    # ストリーミングを停止
+    if controller and controller.is_streaming:
+        try:
+            controller.stop_streaming()
+            logger.info("Audio streaming stopped")
+        except Exception as e:
+            logger.warning(f"Failed to stop streaming: {e}")
+
     logger.info("Application shutdown complete")
 
 

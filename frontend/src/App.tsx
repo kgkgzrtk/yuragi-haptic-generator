@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { DeviceWarningDialog } from '@/components/Common/DeviceWarningDialog'
 import { NotificationContainer } from '@/components/Common/NotificationContainer'
+import { StreamingStatusIndicator } from '@/components/Common/StreamingStatusIndicator'
 import { HapticControlPanel } from '@/components/ControlPanel/HapticControlPanel'
 import { YURAGIControl } from '@/components/ControlPanel/YURAGIControl'
 import { AccelerationTrajectoryContainer } from '@/components/Visualization/AccelerationTrajectoryContainer'
@@ -52,6 +53,7 @@ function HapticApp() {
       <header className='app-header'>
         <h1>Yuragi Haptic Generator</h1>
         <div className='header-status'>
+          <StreamingStatusIndicator />
           <span
             className={`connection-status ${systemStatusQuery.isConnected ? 'connected' : 'disconnected'}`}
           >
