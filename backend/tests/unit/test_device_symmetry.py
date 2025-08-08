@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from src.haptic_system.device import HapticDevice
+from haptic_system.device import HapticDevice
 
 
 class TestDeviceSymmetry:
