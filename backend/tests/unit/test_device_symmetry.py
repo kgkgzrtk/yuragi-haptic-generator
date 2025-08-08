@@ -1,12 +1,6 @@
 """Test Device1 and Device2 symmetry and automatic operation"""
 
-import sys
-from pathlib import Path
-
 import numpy as np
-
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.haptic_system.device import HapticDevice
 
