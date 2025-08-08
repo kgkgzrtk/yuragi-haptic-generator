@@ -333,7 +333,7 @@ class HapticController:
                 raise Exception(f"Failed to open audio device: {e}")
 
         self.is_streaming = True
-        
+
         # 全チャンネルを初期化して有効化（Device2も確実に動作するように）
         with self._lock:
             for i in range(self.available_channels):
