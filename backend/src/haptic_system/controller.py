@@ -334,14 +334,10 @@ class HapticController:
 
         self.is_streaming = True
 
-        # 全チャンネルを初期化して有効化（Device2も確実に動作するように）
+        # 全チャンネルを有効化（Device2も確実に動作するように）
         with self._lock:
             for i in range(self.available_channels):
                 self.device.channels[i].activate()
-                # 初期パラメータを設定（magnitude=0でも動作確認できるように）
-                self.device.set_channel_parameters(
-                    i, frequency=60.0, amplitude=0.0, phase=0.0, polarity=True
-                )
 
     def stop_streaming(self) -> None:
         """ストリーミングを停止"""

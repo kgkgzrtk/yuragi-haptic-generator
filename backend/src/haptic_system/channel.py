@@ -36,8 +36,8 @@ class HapticChannel:
         self.sample_rate = sample_rate
         self.is_active = False
 
-        # 現在のパラメータ
-        self.current_frequency = 0.0
+        # 現在のパラメータ（frequency=60で初期化）
+        self.current_frequency = 60.0
         self.current_amplitude = 0.0
         self.current_phase = 0.0
         self.current_polarity = True
