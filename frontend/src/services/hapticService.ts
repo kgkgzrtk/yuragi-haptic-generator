@@ -94,6 +94,33 @@ export class HapticService {
     })
     return response.data
   }
+
+  // Streaming control
+  static async getStreamingStatus(): Promise<{
+    is_streaming: boolean
+    sample_rate: number
+    block_size: number
+    latency_ms: number
+    device_info: {
+      available: boolean
+      channels: number
+      name: string
+      device_mode: 'dual' | 'single' | 'none'
+    }
+  }> {
+    const response = await api.get('/streaming/status')
+    return response.data
+  }
+
+  static async startStreaming(): Promise<{ status: string; is_streaming: boolean }> {
+    const response = await api.post('/streaming/start')
+    return response.data
+  }
+
+  static async stopStreaming(): Promise<{ status: string; is_streaming: boolean }> {
+    const response = await api.post('/streaming/stop')
+    return response.data
+  }
 }
 
 // Export default instance
