@@ -2,6 +2,7 @@
 Production server startup script
 """
 
+import platform
 import uvicorn
 
 from src.config.settings import get_settings
@@ -16,13 +17,19 @@ def main():
 
     # Additional production optimizations
     if settings.is_production:
-        config.update(
-            {
-                "loop": "uvloop",  # Use uvloop for better performance
-                "http": "httptools",  # Use httptools for better HTTP parsing
-                "interface": "asgi3",  # Use ASGI3 interface
-            }
-        )
+        updates = {
+            "http": "httptools",  # Use httptools for better HTTP parsing
+            "interface": "asgi3",  # Use ASGI3 interface
+        }
+        
+        # Use uvloop on non-Windows platforms for better performance
+        if platform.system() != "Windows":
+            updates["loop"] = "uvloop"
+        else:
+            # Use asyncio on Windows
+            updates["loop"] = "asyncio"
+        
+        config.update(updates)
 
     # Start server
     uvicorn.run("main:app", **config)
