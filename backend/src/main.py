@@ -368,13 +368,22 @@ async def set_vector_force(request: VectorForceRequest):
     if controller is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
 
-    controller.device.set_vector_force(
-        device_id=request.device_id,
-        angle=request.angle,
-        magnitude=request.magnitude,
-        frequency=request.frequency,
-    )
-    return {"status": "applied"}
+    try:
+        controller.set_vector_force(
+            {
+                "device_id": request.device_id,
+                "angle": request.angle,
+                "magnitude": request.magnitude,
+                "frequency": request.frequency,
+            }
+        )
+        return {"status": "applied"}
+    except ValueError as e:
+        # Device2 not available
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        # Streaming not started
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ストリーミング制御
@@ -439,50 +448,61 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
     # プリセットに基づいてパラメータをマッピング
     preset_params = _get_yuragi_preset_params(request.preset)
 
-    if request.enabled:
-        # プリセットパラメータを適用
-        controller.device.set_vector_force(
-            device_id=request.device_id,
-            angle=preset_params["initial_angle"],
-            magnitude=preset_params["magnitude"],
-            frequency=preset_params["frequency"],
-        )
+    try:
+        if request.enabled:
+            # プリセットパラメータを適用
+            controller.set_vector_force(
+                {
+                    "device_id": request.device_id,
+                    "angle": preset_params["initial_angle"],
+                    "magnitude": preset_params["magnitude"],
+                    "frequency": preset_params["frequency"],
+                }
+            )
 
-        return {
-            "status": "applied",
-            "preset": request.preset,
-            "device_id": request.device_id,  # Keep snake_case for consistency with tests
-            "enabled": True,
-            "duration": request.duration,
-            "parameters": {
-                "angle": preset_params["initial_angle"],
-                "magnitude": preset_params["magnitude"],
-                "frequency": preset_params["frequency"],
-                "rotation_freq": preset_params["rotation_freq"],
-            },
-        }
-    else:
-        # 無効化の場合は振幅を0に設定
-        controller.device.set_vector_force(
-            device_id=request.device_id,
-            angle=0.0,
-            magnitude=0.0,
-            frequency=60.0,  # デフォルト周波数
-        )
+            return {
+                "status": "applied",
+                "preset": request.preset,
+                "device_id": request.device_id,  # Keep snake_case for consistency with tests
+                "enabled": True,
+                "duration": request.duration,
+                "parameters": {
+                    "angle": preset_params["initial_angle"],
+                    "magnitude": preset_params["magnitude"],
+                    "frequency": preset_params["frequency"],
+                    "rotation_freq": preset_params["rotation_freq"],
+                },
+            }
+        else:
+            # 無効化の場合は振幅を0に設定
+            controller.set_vector_force(
+                {
+                    "device_id": request.device_id,
+                    "angle": 0.0,
+                    "magnitude": 0.0,
+                    "frequency": 60.0,  # デフォルト周波数
+                }
+            )
 
-        return {
-            "status": "disabled",
-            "preset": request.preset,
-            "device_id": request.device_id,  # Keep snake_case for consistency with tests
-            "enabled": False,
-            "duration": request.duration,
-            "parameters": {
-                "angle": 0.0,
-                "magnitude": 0.0,
-                "frequency": 60.0,
-                "rotation_freq": 0.0,
-            },
-        }
+            return {
+                "status": "disabled",
+                "preset": request.preset,
+                "device_id": request.device_id,  # Keep snake_case for consistency with tests
+                "enabled": False,
+                "duration": request.duration,
+                "parameters": {
+                    "angle": 0.0,
+                    "magnitude": 0.0,
+                    "frequency": 60.0,
+                    "rotation_freq": 0.0,
+                },
+            }
+    except ValueError as e:
+        # Device2 not available
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        # Streaming not started
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 def _get_yuragi_preset_params(preset: str) -> dict:

@@ -113,6 +113,8 @@ class TestHapticControllerThreadSafety:
         """ベクトル力制御が適切に動作する"""
         # Arrange
         controller = HapticController()
+        # Simulate streaming is started for test
+        controller.is_streaming = True
 
         # Act
         vector_force = {"device_id": 1, "angle": 45.0, "magnitude": 0.8}
@@ -123,3 +125,31 @@ class TestHapticControllerThreadSafety:
         # デバイス1のチャンネル（0,1）が更新されていることを確認
         assert params["channels"][0]["is_active"]
         assert params["channels"][1]["is_active"]
+
+    def test_vector_force_requires_streaming(self):
+        """ストリーミングが開始されていない場合はエラーになる"""
+        # Arrange
+        controller = HapticController()
+
+        # Act & Assert
+        import pytest
+
+        with pytest.raises(RuntimeError, match="Streaming is not started"):
+            controller.set_vector_force(
+                {"device_id": 1, "angle": 45.0, "magnitude": 0.8}
+            )
+
+    def test_device2_validation_with_2ch_device(self):
+        """2チャンネルデバイスでDevice2を使用しようとするとエラーになる"""
+        # Arrange
+        controller = HapticController()
+        controller.is_streaming = True
+        controller.available_channels = 2  # Simulate 2-channel device
+
+        # Act & Assert
+        import pytest
+
+        with pytest.raises(ValueError, match="Device2.*not available"):
+            controller.set_vector_force(
+                {"device_id": 2, "angle": 45.0, "magnitude": 0.8}
+            )

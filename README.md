@@ -230,6 +230,44 @@ uv run mypy backend/src
 - **レイテンシ目標**: <10ms
 - **チャンネル数**: 4（2デバイス × 2軸）
 
+## トラブルシューティング
+
+### device1/device2から出力がない場合
+
+#### デバッグモードで起動
+```bash
+# 環境変数を設定してデバッグモードで起動
+cd backend
+DEBUG=true LOG_LEVEL=DEBUG uv run uvicorn src.main:app --reload
+```
+
+#### デバイス情報の確認
+```bash
+# 利用可能なデバイスを確認
+curl http://localhost:8000/api/debug/devices
+
+# 現在のデバイス情報を確認
+curl http://localhost:8000/api/device-info
+```
+
+#### ストリーミングの開始（必須）
+```bash
+# ストリーミングを開始
+curl -X POST http://localhost:8000/api/streaming/start
+
+# device1をテスト
+curl -X POST http://localhost:8000/api/vector-force \
+  -H "Content-Type: application/json" \
+  -d '{"device_id": 1, "angle": 0, "magnitude": 0.8, "frequency": 60}'
+
+# device2をテスト（4チャンネルデバイスのみ）
+curl -X POST http://localhost:8000/api/vector-force \
+  -H "Content-Type: application/json" \
+  -d '{"device_id": 2, "angle": 90, "magnitude": 0.8, "frequency": 80}'
+```
+
+詳細なデバッグ手順は[backend/README.md](backend/README.md#device1device2から出力がない場合のデバッグ方法)を参照してください。
+
 ## ドキュメント
 
 詳細なドキュメントは[docs/](docs/)ディレクトリを参照してください：
