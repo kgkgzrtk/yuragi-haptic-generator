@@ -157,7 +157,9 @@ class TestChannelAPI:
         channel_params = {"frequency": 60.0, "amplitude": 0.5}
 
         # Act
-        response = client.put("/api/channels/5", json=channel_params)  # チャンネル5は存在しない
+        response = client.put(
+            "/api/channels/5", json=channel_params
+        )  # チャンネル5は存在しない
 
         # Assert
         assert response.status_code == 400
