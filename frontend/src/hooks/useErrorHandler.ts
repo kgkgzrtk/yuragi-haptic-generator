@@ -124,18 +124,21 @@ export const useErrorHandler = () => {
         return { category: 'unknown', severity: 'low', retryable: false }
       }
 
+      // Type guard for error with code property
+      const errorWithCode = error as { code?: string; message?: string; response?: { status?: number } }
+
       // Network errors
       if (
-        error.code === 'NETWORK_ERROR' ||
-        error.code === 'ECONNREFUSED' ||
-        error.message?.includes('fetch')
+        errorWithCode.code === 'NETWORK_ERROR' ||
+        errorWithCode.code === 'ECONNREFUSED' ||
+        errorWithCode.message?.includes('fetch')
       ) {
         return { category: 'network', severity: 'high', retryable: true }
       }
 
       // HTTP status codes
-      if (error.response?.status) {
-        const status = error.response.status
+      if (errorWithCode.response?.status) {
+        const status = errorWithCode.response.status
 
         if (status >= 400 && status < 500) {
           return {
@@ -161,7 +164,7 @@ export const useErrorHandler = () => {
       const { category, severity, retryable } = categorizeError(error)
 
       let title = 'Error'
-      let message = error.message || 'An unexpected error occurred'
+      let message = (error as { message?: string })?.message || 'An unexpected error occurred'
       let action: ErrorNotification['action'] | undefined
 
       switch (category) {
@@ -180,7 +183,7 @@ export const useErrorHandler = () => {
 
         case 'validation':
           title = 'Validation Error'
-          message = `Invalid data: ${error.response?.data?.message || message}`
+          message = `Invalid data: ${(error as { response?: { data?: { message?: string } } })?.response?.data?.message || message}`
           break
 
         case 'server':
