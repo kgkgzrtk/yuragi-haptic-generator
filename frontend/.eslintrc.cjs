@@ -109,6 +109,7 @@ module.exports = {
     'import/no-unresolved': 'error',
     'import/no-unused-modules': 'warn',
     'import/no-duplicates': 'error',
+    'import/no-named-as-default': 'off', // False positives with default exports
     
     // Enforce @/ absolute imports over relative imports
     'no-restricted-imports': [
@@ -167,6 +168,12 @@ module.exports = {
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
         'no-console': 'off',
+      },
+    },
+    {
+      files: ['src/test/**/*', 'src/**/*.test.tsx', 'src/**/*.test.ts'],
+      rules: {
+        'react-refresh/only-export-components': 'off', // Test utilities don't need hot refresh
       },
     },
   ],

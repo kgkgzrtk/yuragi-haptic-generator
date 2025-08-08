@@ -6,7 +6,7 @@ import { vi } from 'vitest'
 
 export interface MockWebSocketMessage {
   type: string
-  data?: any
+  data?: unknown
   timestamp?: number
 }
 
@@ -47,7 +47,7 @@ export class MockWebSocket implements WebSocket {
 
   private eventListeners: Map<string, Set<EventListener>> = new Map()
   private messageQueue: MockWebSocketMessage[] = []
-  private sentMessages: any[] = []
+  private sentMessages: unknown[] = []
   private connectionTimeout?: NodeJS.Timeout
   private options: MockWebSocketOptions
   private isDestroyed = false
@@ -232,7 +232,7 @@ export class MockWebSocket implements WebSocket {
 
   simulateError(errorMessage: string = 'Simulated error'): void {
     const event = new ErrorEvent('error', { message: errorMessage })
-    this.onerror?.(event as any)
+    this.onerror?.(event)
     this.dispatchEvent(event)
   }
 
@@ -250,11 +250,11 @@ export class MockWebSocket implements WebSocket {
     this.simulateConnectionSuccess()
   }
 
-  getSentMessages(): any[] {
+  getSentMessages(): unknown[] {
     return [...this.sentMessages]
   }
 
-  getLastSentMessage(): any {
+  getLastSentMessage(): unknown {
     return this.sentMessages[this.sentMessages.length - 1]
   }
 
@@ -284,7 +284,7 @@ export class MockWebSocket implements WebSocket {
  */
 export class WebSocketServiceMock {
   private mockInstances: Map<string, MockWebSocket> = new Map()
-  private messageHandlers: Map<string, Set<(message: any) => void>> = new Map()
+  private messageHandlers: Map<string, Set<(message: unknown) => void>> = new Map()
 
   createMockWebSocket(
     url: string,
@@ -328,14 +328,14 @@ export class WebSocketServiceMock {
     }, durationMs)
   }
 
-  onMessage(type: string, handler: (message: any) => void): void {
+  onMessage(type: string, handler: (message: unknown) => void): void {
     if (!this.messageHandlers.has(type)) {
       this.messageHandlers.set(type, new Set())
     }
     this.messageHandlers.get(type)!.add(handler)
   }
 
-  offMessage(type: string, handler: (message: any) => void): void {
+  offMessage(type: string, handler: (message: unknown) => void): void {
     this.messageHandlers.get(type)?.delete(handler)
   }
 }
@@ -347,13 +347,13 @@ export function setupGlobalWebSocketMock(
   defaultOptions?: MockWebSocketOptions
 ): WebSocketServiceMock {
   const serviceMock = new WebSocketServiceMock()
-  const originalWebSocket = globalThis.WebSocket
+  const _originalWebSocket = globalThis.WebSocket
 
   globalThis.WebSocket = vi
     .fn()
     .mockImplementation((url: string, protocols?: string | string[]) => {
       return serviceMock.createMockWebSocket(url, protocols, defaultOptions)
-    }) as any
+    }) as typeof WebSocket
 
   // Add static properties
   Object.defineProperty(globalThis.WebSocket, 'CONNECTING', { value: 0 })
@@ -375,7 +375,7 @@ export function restoreWebSocket(): void {
  * Predefined message types for haptic system testing
  */
 export const hapticMessageTypes = {
-  parametersUpdate: (channels: any[]) => ({
+  parametersUpdate: (channels: unknown[]) => ({
     type: 'parameters_update',
     data: { channels },
   }),
@@ -405,7 +405,7 @@ export const hapticMessageTypes = {
     data: { timestamp: Date.now() },
   }),
 
-  massagePatternUpdate: (pattern: any) => ({
+  massagePatternUpdate: (pattern: unknown) => ({
     type: 'massage_pattern_update',
     data: pattern,
   }),

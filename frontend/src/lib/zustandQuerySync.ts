@@ -92,9 +92,18 @@ export const createQuerySyncMiddleware = <T extends QuerySyncActions>(
 /**
  * Hook to establish bidirectional sync between React Query and Zustand
  */
-export const useQueryStoreSync = (
+// Type for store methods we expect
+type StoreState = {
+  setChannels?: (channels: IChannelParameters[]) => void
+  setConnection?: (connected: boolean, error: string | null) => void
+  setStreamingStatus?: (streaming: boolean) => void
+  syncParametersFromQuery?: (queryClient: QueryClient) => void
+  syncStatusFromQuery?: (queryClient: QueryClient) => void
+}
+
+export const useQueryStoreSync = <T extends { getState: () => StoreState }>(
   queryClient: QueryClient,
-  store: any // The Zustand store - any is needed here for Zustand store access
+  store: T
 ) => {
   // Set up query cache subscribers to sync with Zustand
   const setupQuerySubscriptions = () => {
@@ -102,8 +111,9 @@ export const useQueryStoreSync = (
     const parametersUnsubscribe = queryClient.getQueryCache().subscribe(event => {
       if (event.type === 'updated' && event.query.queryKey[1] === 'parameters') {
         const data = event.query.state.data as IParametersResponse
-        if (data?.channels && store.getState()?.setChannels) {
-          store.getState().setChannels(data.channels)
+        const state = store.getState()
+        if (data?.channels && typeof state.setChannels === 'function') {
+          state.setChannels(data.channels)
         }
       }
     })
@@ -114,8 +124,9 @@ export const useQueryStoreSync = (
         const isSuccess = event.query.state.status === 'success'
         const error = event.query.state.error as Error | null
 
-        if (store.getState()?.setConnection) {
-          store.getState().setConnection(isSuccess, error?.message || null)
+        const state = store.getState()
+        if (typeof state.setConnection === 'function') {
+          state.setConnection(isSuccess, error?.message || null)
         }
       }
     })
@@ -131,11 +142,12 @@ export const useQueryStoreSync = (
 
     // Manual sync functions
     syncAll: () => {
-      if (store.getState()?.syncParametersFromQuery) {
-        store.getState().syncParametersFromQuery(queryClient)
+      const state = store.getState()
+      if (typeof state.syncParametersFromQuery === 'function') {
+        state.syncParametersFromQuery(queryClient)
       }
-      if (store.getState()?.syncStatusFromQuery) {
-        store.getState().syncStatusFromQuery(queryClient)
+      if (typeof state.syncStatusFromQuery === 'function') {
+        state.syncStatusFromQuery(queryClient)
       }
     },
   }
@@ -180,7 +192,10 @@ export const createOptimisticUpdateHelpers = (queryClient: QueryClient) => {
 /**
  * Enhanced error handling that syncs with both systems
  */
-export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) => {
+export const createSyncedErrorHandler = (
+  queryClient: QueryClient,
+  store: { getState: () => Record<string, unknown> }
+) => {
   return {
     handleParameterError: (error: HapticError | Error, _channelId?: number) => {
       // Set error state in both systems
@@ -194,8 +209,9 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
       queryClient.invalidateQueries({ queryKey: queryKeys.parameters() })
 
       // Update store error state if available
-      if (store.getState()?.setConnection && 'code' in error && error.code === 'NETWORK_ERROR') {
-        store.getState().setConnection(false, 'Network error during parameter update')
+      const state = store.getState()
+      if (typeof state.setConnection === 'function' && error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'NETWORK_ERROR') {
+        state.setConnection(false, 'Network error during parameter update')
       }
     },
 
@@ -207,8 +223,9 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
       logger.error('Connection error', { error: error instanceof Error ? error.message : error })
 
       // Update connection state in store
-      if (store.getState()?.setConnection) {
-        store.getState().setConnection(false, error.message || 'Connection lost')
+      const state = store.getState()
+      if (typeof state.setConnection === 'function') {
+        state.setConnection(false, error.message || 'Connection lost')
       }
 
       // Pause background queries
@@ -224,8 +241,9 @@ export const createSyncedErrorHandler = (queryClient: QueryClient, store: any) =
       logger.info('Connection restored')
 
       // Update connection state in store
-      if (store.getState()?.setConnection) {
-        store.getState().setConnection(true, null)
+      const state = store.getState()
+      if (typeof state.setConnection === 'function') {
+        state.setConnection(true, null)
       }
 
       // Resume background queries

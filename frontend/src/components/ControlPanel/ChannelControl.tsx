@@ -183,7 +183,7 @@ export const ChannelControl: React.FC<ChannelControlProps> = ({ channelId, label
         </div>
       )}
 
-      {updateError && (
+      {!!updateError && (
         <div className='channel-control-error'>Failed to update channel parameters</div>
       )}
     </div>

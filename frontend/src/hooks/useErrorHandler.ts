@@ -114,7 +114,7 @@ export const useErrorHandler = () => {
   // Categorize errors by type
   const categorizeError = useCallback(
     (
-      error: any
+      error: unknown
     ): {
       category: 'network' | 'validation' | 'server' | 'unknown'
       severity: 'low' | 'medium' | 'high' | 'critical'
@@ -124,18 +124,21 @@ export const useErrorHandler = () => {
         return { category: 'unknown', severity: 'low', retryable: false }
       }
 
+      // Type guard for error with code property
+      const errorWithCode = error as { code?: string; message?: string; response?: { status?: number } }
+
       // Network errors
       if (
-        error.code === 'NETWORK_ERROR' ||
-        error.code === 'ECONNREFUSED' ||
-        error.message?.includes('fetch')
+        errorWithCode.code === 'NETWORK_ERROR' ||
+        errorWithCode.code === 'ECONNREFUSED' ||
+        errorWithCode.message?.includes('fetch')
       ) {
         return { category: 'network', severity: 'high', retryable: true }
       }
 
       // HTTP status codes
-      if (error.response?.status) {
-        const status = error.response.status
+      if (errorWithCode.response?.status) {
+        const status = errorWithCode.response.status
 
         if (status >= 400 && status < 500) {
           return {
@@ -157,11 +160,11 @@ export const useErrorHandler = () => {
 
   // Handle different error types with appropriate responses
   const handleError = useCallback(
-    (error: any, context?: string) => {
+    (error: unknown, context?: string) => {
       const { category, severity, retryable } = categorizeError(error)
 
       let title = 'Error'
-      let message = error.message || 'An unexpected error occurred'
+      let message = (error as { message?: string })?.message || 'An unexpected error occurred'
       let action: ErrorNotification['action'] | undefined
 
       switch (category) {
@@ -180,7 +183,7 @@ export const useErrorHandler = () => {
 
         case 'validation':
           title = 'Validation Error'
-          message = `Invalid data: ${error.response?.data?.message || message}`
+          message = `Invalid data: ${(error as { response?: { data?: { message?: string } } })?.response?.data?.message || message}`
           break
 
         case 'server':
@@ -229,8 +232,8 @@ export const useErrorHandler = () => {
 
   // Retry logic with exponential backoff
   const createRetryFunction = useCallback(
-    (_queryKey: any[], maxRetries: number = 3, baseDelay: number = 1000) => {
-      return async (failureCount: number, error: any) => {
+    (_queryKey: unknown[], maxRetries: number = 3, baseDelay: number = 1000) => {
+      return async (failureCount: number, error: unknown) => {
         const { retryable } = categorizeError(error)
 
         if (!retryable || failureCount >= maxRetries) {
@@ -281,7 +284,7 @@ export const useHapticErrorHandler = () => {
   const { handleError, createRetryFunction } = useErrorHandler()
 
   const handleParameterError = useCallback(
-    (error: any, channelId?: number) => {
+    (error: unknown, channelId?: number) => {
       const context = channelId !== undefined ? `Channel ${channelId} Parameter` : 'Parameter'
       const result = handleError(error, context)
 
@@ -296,7 +299,7 @@ export const useHapticErrorHandler = () => {
   )
 
   const handleWaveformError = useCallback(
-    (error: any) => {
+    (error: unknown) => {
       const result = handleError(error, 'Waveform Data')
 
       // Don't show notifications for waveform errors in real-time mode
@@ -311,7 +314,7 @@ export const useHapticErrorHandler = () => {
   )
 
   const handleVectorForceError = useCallback(
-    (error: any, deviceId?: number) => {
+    (error: unknown, deviceId?: number) => {
       const context = deviceId !== undefined ? `Device ${deviceId} Vector Force` : 'Vector Force'
       return handleError(error, context)
     },
