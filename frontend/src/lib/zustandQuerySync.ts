@@ -210,7 +210,13 @@ export const createSyncedErrorHandler = (
 
       // Update store error state if available
       const state = store.getState()
-      if (typeof state.setConnection === 'function' && error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'NETWORK_ERROR') {
+      if (
+        typeof state.setConnection === 'function' &&
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        (error as { code: string }).code === 'NETWORK_ERROR'
+      ) {
         state.setConnection(false, 'Network error during parameter update')
       }
     },

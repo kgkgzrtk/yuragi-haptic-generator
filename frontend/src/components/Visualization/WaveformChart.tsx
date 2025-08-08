@@ -49,11 +49,14 @@ export const WaveformChart: React.FC<WaveformChartProps> = ({
   }, [waveformColors, channelId])
 
   // Create custom colors for this channel
-  const customColors = useMemo(() => ({
-    voltage: channelColor,
-    current: `${channelColor}80`, // Add 50% opacity for current
-    acceleration: channelColor,
-  }), [channelColor])
+  const customColors = useMemo(
+    () => ({
+      voltage: channelColor,
+      current: `${channelColor}80`, // Add 50% opacity for current
+      acceleration: channelColor,
+    }),
+    [channelColor]
+  )
 
   // Create chart data
   const chartData = useMemo(() => {

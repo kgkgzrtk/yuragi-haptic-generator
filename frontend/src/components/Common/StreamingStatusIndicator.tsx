@@ -6,9 +6,9 @@ export function StreamingStatusIndicator() {
 
   if (isLoading) {
     return (
-      <div className="streaming-status-indicator">
-        <div className="status-dot loading"></div>
-        <span className="status-text">Checking...</span>
+      <div className='streaming-status-indicator'>
+        <div className='status-dot loading'></div>
+        <span className='status-text'>Checking...</span>
       </div>
     )
   }
@@ -18,9 +18,9 @@ export function StreamingStatusIndicator() {
   const deviceName = streamingStatus?.device_info?.name ?? 'Unknown'
 
   return (
-    <div className="streaming-status-indicator">
+    <div className='streaming-status-indicator'>
       <div className={`status-dot ${isStreaming ? 'streaming' : 'stopped'}`}></div>
-      <span className="status-text">
+      <span className='status-text'>
         {isStreaming ? (
           <>
             Streaming • {latency.toFixed(1)}ms • {deviceName}

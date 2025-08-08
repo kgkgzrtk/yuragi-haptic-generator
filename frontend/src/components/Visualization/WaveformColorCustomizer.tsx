@@ -8,9 +8,7 @@ interface WaveformColorizerProps {
   className?: string
 }
 
-export const WaveformColorCustomizer: React.FC<WaveformColorizerProps> = ({
-  className = '',
-}) => {
+export const WaveformColorCustomizer: React.FC<WaveformColorizerProps> = ({ className = '' }) => {
   const { waveformColors, setWaveformColors } = useHapticStore()
   const [isOpen, setIsOpen] = useState(true)
 
@@ -37,14 +35,12 @@ export const WaveformColorCustomizer: React.FC<WaveformColorizerProps> = ({
 
   return (
     <div className={`waveform-color-customizer ${className}`}>
-      <div className="waveform-color-customizer-header">
-        <h3 className="waveform-color-customizer-title">
-          Waveform Colors
-        </h3>
+      <div className='waveform-color-customizer-header'>
+        <h3 className='waveform-color-customizer-title'>Waveform Colors</h3>
         {onToggle && (
           <button
-            type="button"
-            className="waveform-color-customizer-toggle"
+            type='button'
+            className='waveform-color-customizer-toggle'
             onClick={onToggle}
             aria-expanded={isOpen}
             aria-label={isOpen ? 'Hide color customizer' : 'Show color customizer'}
@@ -55,8 +51,8 @@ export const WaveformColorCustomizer: React.FC<WaveformColorizerProps> = ({
       </div>
 
       {isOpen && (
-        <div className="waveform-color-customizer-content">
-          <div className="waveform-color-grid">
+        <div className='waveform-color-customizer-content'>
+          <div className='waveform-color-grid'>
             {Object.entries(channelLabels).map(([channelIdStr, label]) => {
               const channelId = parseInt(channelIdStr, 10)
               return (
@@ -65,34 +61,34 @@ export const WaveformColorCustomizer: React.FC<WaveformColorizerProps> = ({
                   label={label}
                   value={colors[channelId]}
                   onChange={color => handleColorChange(channelId, color)}
-                  className="waveform-color-picker"
+                  className='waveform-color-picker'
                 />
               )
             })}
           </div>
 
-          <div className="waveform-color-customizer-actions">
+          <div className='waveform-color-customizer-actions'>
             <button
-              type="button"
-              className="button button-secondary button-small"
+              type='button'
+              className='button button-secondary button-small'
               onClick={resetToDefaults}
             >
               Reset to Defaults
             </button>
           </div>
 
-          <div className="waveform-color-preview">
-            <p className="waveform-color-preview-title">Preview</p>
-            <div className="waveform-color-preview-bars">
+          <div className='waveform-color-preview'>
+            <p className='waveform-color-preview-title'>Preview</p>
+            <div className='waveform-color-preview-bars'>
               {Object.entries(channelLabels).map(([channelIdStr, label]) => {
                 const channelId = parseInt(channelIdStr, 10)
                 return (
-                  <div key={channelId} className="waveform-color-preview-bar">
+                  <div key={channelId} className='waveform-color-preview-bar'>
                     <div
-                      className="waveform-color-preview-swatch"
+                      className='waveform-color-preview-swatch'
                       style={{ backgroundColor: colors[channelId] }}
                     />
-                    <span className="waveform-color-preview-label">
+                    <span className='waveform-color-preview-label'>
                       {label.split(' - ')[1] || label}
                     </span>
                   </div>

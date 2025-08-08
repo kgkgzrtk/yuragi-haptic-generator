@@ -28,13 +28,17 @@
   transition: all var(--transition-medium);
   position: relative;
   overflow: hidden;
-  background: 
-    linear-gradient(45deg, #ccc 25%, transparent 25%), 
-    linear-gradient(-45deg, #ccc 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #ccc 75%), 
+  background:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
     linear-gradient(-45deg, transparent 75%, #ccc 75%);
   background-size: 8px 8px;
-  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+  background-position:
+    0 0,
+    0 4px,
+    4px -4px,
+    -4px 0px;
 }
 
 .color-picker-swatch:hover:not(:disabled) {
@@ -196,7 +200,7 @@
     right: -50%;
     max-width: 300px;
   }
-  
+
   .color-picker-presets-grid {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -208,7 +212,7 @@
   .color-picker-preset {
     border-width: 3px;
   }
-  
+
   .color-picker-preset.active {
     border-width: 4px;
   }
