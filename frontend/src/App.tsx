@@ -74,7 +74,7 @@ function HapticApp() {
             <>
               <HapticControlPanel isSingleDeviceMode={isSingleDeviceMode} />
               <div style={{ marginTop: '20px' }}>
-                <YURAGIControl deviceId={1} />
+                <YURAGIControl />
               </div>
             </>
           )}

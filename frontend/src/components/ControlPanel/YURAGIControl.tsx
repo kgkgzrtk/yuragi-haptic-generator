@@ -8,11 +8,7 @@ import { CONSTRAINTS } from '@/types/hapticTypes'
 import type { IYURAGIRequest, IYURAGIStatus } from '@/types/hapticTypes'
 import { getPresetParameters } from '@/utils/yuragiWaveform'
 
-interface YURAGIControlProps {
-  deviceId?: 1 | 2
-}
-
-export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) => {
+export const YURAGIControl: React.FC = () => {
   const { yuragi, setYuragiStatus, updateYuragiProgress, setVectorForce } = useHapticStore()
   const { handleError } = useErrorHandler()
 
@@ -28,7 +24,8 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
   const isActiveRef = useRef<boolean>(false)
   const phaseRef = useRef<number>(0) // Track accumulated phase for variable speed
 
-  const currentStatus = yuragi[`device${deviceId}`] as IYURAGIStatus | null
+  // YURAGI now controls both devices simultaneously
+  const currentStatus = yuragi.device1 || yuragi.device2
   const isActive = !!(currentStatus?.enabled && currentStatus?.startTime)
   const progress = currentStatus?.progress || 0
 
@@ -111,18 +108,26 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
     // Debug: Updating vector force
 
     try {
-      // Update vector force
-      const vectorForce = {
-        deviceId,
+      // Update vector force for both devices
+      // Device 1
+      const vectorForce1 = {
+        deviceId: 1 as const,
         angle: angleDegrees,
         magnitude: clampedMagnitude,
         frequency: 60, // Use fixed frequency for now
       }
+      await HapticService.setVectorForce(vectorForce1)
+      setVectorForce(1, vectorForce1)
 
-      await HapticService.setVectorForce(vectorForce)
-
-      // Update store to trigger UI updates
-      setVectorForce(deviceId, vectorForce)
+      // Device 2 (symmetric operation)
+      const vectorForce2 = {
+        deviceId: 2 as const,
+        angle: angleDegrees,
+        magnitude: clampedMagnitude,
+        frequency: 60, // Use fixed frequency for now
+      }
+      await HapticService.setVectorForce(vectorForce2)
+      setVectorForce(2, vectorForce2)
     } catch (err) {
       console.error('Failed to update vector force:', err)
     }
@@ -131,7 +136,7 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
     if (isActiveRef.current) {
       animationFrameRef.current = requestAnimationFrame(animateYuragi)
     }
-  }, [currentStatus?.preset, deviceId, setVectorForce])
+  }, [currentStatus?.preset, setVectorForce])
 
   // Progress tracking
   useEffect(() => {
@@ -149,7 +154,9 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
         const newProgress = Math.min((elapsed / duration) * 100, 100)
         // Debug: Progress update
 
-        updateYuragiProgress(deviceId, newProgress)
+        // Update progress for both devices
+        updateYuragiProgress(1, newProgress)
+        updateYuragiProgress(2, newProgress)
 
         // Auto-stop when duration is reached
         if (newProgress >= 100) {
@@ -176,7 +183,6 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
     isActive,
     currentStatus?.startTime,
     currentStatus?.duration,
-    deviceId,
     updateYuragiProgress,
     animateYuragi,
   ])
@@ -213,7 +219,6 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
       }
 
       const request: IYURAGIRequest = {
-        deviceId,
         preset,
         duration,
         enabled: true,
@@ -228,14 +233,16 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
         progress: 0,
       }
 
-      setYuragiStatus(deviceId, statusWithStartTime)
+      // Set status for both devices
+      setYuragiStatus(1, statusWithStartTime)
+      setYuragiStatus(2, statusWithStartTime)
     } catch (err) {
       handleError(err, 'YURAGI Start')
       setError('Failed to start YURAGI massage')
     } finally {
       setIsLoading(false)
     }
-  }, [deviceId, preset, duration, validateDuration, setYuragiStatus, handleError])
+  }, [preset, duration, validateDuration, setYuragiStatus, handleError])
 
   const handleStop = useCallback(async () => {
     try {
@@ -243,7 +250,6 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
       setError('')
 
       const request: IYURAGIRequest = {
-        deviceId,
         preset,
         duration,
         enabled: false,
@@ -251,8 +257,9 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
 
       await HapticService.yuragiPreset(request)
 
-      // Clear status from store
-      setYuragiStatus(deviceId, null)
+      // Clear status from store for both devices
+      setYuragiStatus(1, null)
+      setYuragiStatus(2, null)
 
       // Clear timers
       if (timerRef.current) {
@@ -268,24 +275,31 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
         animationFrameRef.current = null
       }
 
-      // Clear vector force
-      const clearVectorForce = {
-        deviceId,
+      // Clear vector force for both devices
+      const clearVectorForce1 = {
+        deviceId: 1 as const,
         angle: 0,
         magnitude: 0,
         frequency: 60,
       }
-      await HapticService.setVectorForce(clearVectorForce)
+      await HapticService.setVectorForce(clearVectorForce1)
+      setVectorForce(1, null)
 
-      // Update store to clear UI
-      setVectorForce(deviceId, null)
+      const clearVectorForce2 = {
+        deviceId: 2 as const,
+        angle: 0,
+        magnitude: 0,
+        frequency: 60,
+      }
+      await HapticService.setVectorForce(clearVectorForce2)
+      setVectorForce(2, null)
     } catch (err) {
       handleError(err, 'YURAGI Stop')
       setError('Failed to stop YURAGI massage')
     } finally {
       setIsLoading(false)
     }
-  }, [deviceId, preset, duration, setYuragiStatus, handleError, setVectorForce])
+  }, [preset, duration, setYuragiStatus, handleError, setVectorForce])
 
   // Update the ref when handleStop changes
   useEffect(() => {
@@ -301,16 +315,16 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
   }, [isActive, handleStart, handleStop])
 
   return (
-    <div className='yuragi-control' data-testid={`yuragi-control-${deviceId}`}>
+    <div className='yuragi-control' data-testid='yuragi-control'>
       <h3 className='yuragi-control-title'>YURAGI Massage Control</h3>
 
       <div className='yuragi-control-fields'>
         <div className='input-group'>
-          <label htmlFor={`yuragi-preset-${deviceId}`} className='input-label'>
+          <label htmlFor='yuragi-preset' className='input-label'>
             Preset
           </label>
           <select
-            id={`yuragi-preset-${deviceId}`}
+            id='yuragi-preset'
             value={preset}
             onChange={e => setPreset(e.target.value as typeof preset)}
             className='input'
@@ -324,22 +338,6 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
           </select>
         </div>
 
-        <div className='input-group'>
-          <label htmlFor={`yuragi-device-${deviceId}`} className='input-label'>
-            Device
-          </label>
-          <select
-            id={`yuragi-device-${deviceId}`}
-            value={deviceId.toString()}
-            onChange={() => {}} // Device selector is controlled via props
-            className='input'
-            disabled={true} // Device selection handled by parent component
-          >
-            <option value='1'>Device 1</option>
-            <option value='2'>Device 2</option>
-          </select>
-        </div>
-
         <Input
           label='Duration (seconds)'
           type='number'
@@ -349,12 +347,12 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
           max={CONSTRAINTS.YURAGI_DURATION.MAX}
           error={error}
           disabled={isActive || isLoading}
-          id={`yuragi-duration-${deviceId}`}
+          id='yuragi-duration'
         />
       </div>
 
       {isActive && (
-        <div className='yuragi-progress' data-testid={`yuragi-progress-${deviceId}`}>
+        <div className='yuragi-progress' data-testid='yuragi-progress'>
           <div className='progress-label'>Progress: {Math.round(progress)}%</div>
           <div className='progress-bar'>
             <div
@@ -375,14 +373,14 @@ export const YURAGIControl: React.FC<YURAGIControlProps> = ({ deviceId = 1 }) =>
           loading={isLoading}
           disabled={isLoading}
           variant={isActive ? 'danger' : 'primary'}
-          data-testid={`yuragi-${isActive ? 'stop' : 'start'}-button-${deviceId}`}
+          data-testid={`yuragi-${isActive ? 'stop' : 'start'}-button`}
         >
           {isActive ? 'Stop' : 'Start'} YURAGI
         </Button>
       </div>
 
       {error && (
-        <div className='error-message' role='alert' data-testid={`yuragi-error-${deviceId}`}>
+        <div className='error-message' role='alert' data-testid='yuragi-error'>
           {error}
         </div>
       )}
