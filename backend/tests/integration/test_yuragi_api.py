@@ -18,7 +18,7 @@ def client():
         yield client
 
 
-@pytest.mark.skipif(True, reason="Requires audio device and streaming")
+@pytest.mark.skip(reason="Requires audio device and streaming")
 class TestYuragiPresetAPI:
     """YURAGIプリセットAPIのテスト - 既存実装の動作検証"""
 
