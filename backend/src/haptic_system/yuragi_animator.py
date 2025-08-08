@@ -117,30 +117,30 @@ class YURAGIAnimator:
             ),
         }
 
-    async def start_animation(
-        self, device_id: int, preset: str, duration: float
-    ) -> None:
+    async def start_animation(self, preset: str, duration: float) -> None:
         """
-        Start YURAGI animation for a device.
+        Start YURAGI animation for both devices.
 
         Args:
-            device_id: Device ID (1 or 2)
             preset: Preset name
             duration: Animation duration in seconds
         """
-        # Stop existing animation if any
-        await self.stop_animation(device_id)
+        # Stop existing animations if any
+        await self.stop_all()
 
         # Get preset configuration
         config = self._presets.get(preset, self._presets["default"])
-        self._animation_configs[device_id] = config
 
-        # Start animation task
-        task = asyncio.create_task(self._animate_device(device_id, config, duration))
-        self._active_animations[device_id] = task
+        # Start animation tasks for both devices
+        for device_id in [1, 2]:
+            self._animation_configs[device_id] = config
+            task = asyncio.create_task(
+                self._animate_device(device_id, config, duration)
+            )
+            self._active_animations[device_id] = task
 
         self.logger.info(
-            f"Started YURAGI animation for device {device_id} "
+            f"Started YURAGI animation for both devices "
             f"with preset '{preset}' for {duration}s"
         )
 

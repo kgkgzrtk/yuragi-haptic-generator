@@ -22,10 +22,10 @@ def client():
 class TestYuragiPresetAPI:
     """YURAGIプリセットAPIのテスト - 既存実装の動作検証"""
 
-    def test_apply_default_preset_device_1(self, client):
-        """デフォルトプリセットをデバイス1に適用できる"""
+    def test_apply_default_preset_both_devices(self, client):
+        """デフォルトプリセットを両デバイスに同時に適用できる"""
         # Arrange
-        preset_request = {"device_id": 1, "preset": "default", "enabled": True}
+        preset_request = {"preset": "default", "enabled": True}
 
         # Act
         response = client.post("/api/yuragi/preset", json=preset_request)
@@ -34,7 +34,6 @@ class TestYuragiPresetAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "applied"
-        assert data["device_id"] == 1
         assert data["preset"] == "default"
         assert data["enabled"] is True
 
@@ -60,10 +59,20 @@ class TestYuragiPresetAPI:
         assert abs(channels[1]["amplitude"] - 0.0) < 0.01
         assert channels[1]["frequency"] == 60.0
 
-    def test_apply_gentle_preset_device_2(self, client):
-        """ジェントルプリセットをデバイス2に適用できる"""
+        # Device 2 はチャンネル2,3 (base_channel = 2) - 対称的に動作
+        # X軸チャンネル (channel 2) - magnitude * cos(-0) = 0.7 * 1 = 0.7 (角度反転)
+        assert abs(channels[2]["amplitude"] - 0.7) < 0.01
+        assert channels[2]["frequency"] == 60.0
+        assert channels[2]["polarity"] is True
+
+        # Y軸チャンネル (channel 3) - magnitude * sin(-0) = 0.7 * 0 = 0.0
+        assert abs(channels[3]["amplitude"] - 0.0) < 0.01
+        assert channels[3]["frequency"] == 60.0
+
+    def test_apply_gentle_preset_both_devices(self, client):
+        """ジェントルプリセットを両デバイスに同時に適用できる"""
         # Arrange
-        preset_request = {"device_id": 2, "preset": "gentle", "enabled": True}
+        preset_request = {"preset": "gentle", "enabled": True}
 
         # Act
         response = client.post("/api/yuragi/preset", json=preset_request)
@@ -72,7 +81,6 @@ class TestYuragiPresetAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "applied"
-        assert data["device_id"] == 2
         assert data["preset"] == "gentle"
 
         # 実装済みジェントルプリセットのパラメータを検証
@@ -86,20 +94,30 @@ class TestYuragiPresetAPI:
         params_response = client.get("/api/parameters")
         channels = params_response.json()["channels"]
 
-        # Device 2 はチャンネル2,3 (base_channel = 2)
+        # Device 1 はチャンネル0,1 (base_channel = 0)
         # 45度の場合：X = magnitude * cos(45°), Y = -magnitude * sin(45°)
         expected_x = 0.4 * math.cos(math.radians(45))  # ≈ 0.283
         expected_y = -0.4 * math.sin(math.radians(45))  # ≈ -0.283
 
-        assert abs(channels[2]["amplitude"] - abs(expected_x)) < 0.01
+        assert abs(channels[0]["amplitude"] - abs(expected_x)) < 0.01
+        assert channels[0]["frequency"] == 40.0
+        assert abs(channels[1]["amplitude"] - abs(expected_y)) < 0.01
+        assert channels[1]["frequency"] == 40.0
+
+        # Device 2 はチャンネル2,3 (base_channel = 2) - 角度反転で対称的に動作
+        # -45度の場合：X = magnitude * cos(-45°), Y = -magnitude * sin(-45°)
+        expected_x2 = 0.4 * math.cos(math.radians(-45))  # ≈ 0.283
+        expected_y2 = -0.4 * math.sin(math.radians(-45))  # ≈ 0.283
+
+        assert abs(channels[2]["amplitude"] - abs(expected_x2)) < 0.01
         assert channels[2]["frequency"] == 40.0
-        assert abs(channels[3]["amplitude"] - abs(expected_y)) < 0.01
+        assert abs(channels[3]["amplitude"] - abs(expected_y2)) < 0.01
         assert channels[3]["frequency"] == 40.0
 
     def test_apply_strong_preset(self, client):
-        """ストロングプリセットを適用できる"""
+        """ストロングプリセットを両デバイスに適用できる"""
         # Arrange
-        preset_request = {"device_id": 1, "preset": "strong", "enabled": True}
+        preset_request = {"preset": "strong", "enabled": True}
 
         # Act
         response = client.post("/api/yuragi/preset", json=preset_request)
@@ -117,9 +135,9 @@ class TestYuragiPresetAPI:
         assert params["rotation_freq"] == 0.5  # 実際のレスポンス値
 
     def test_apply_slow_preset(self, client):
-        """スロープリセットを適用できる"""
+        """スロープリセットを両デバイスに適用できる"""
         # Arrange
-        preset_request = {"device_id": 1, "preset": "slow", "enabled": True}
+        preset_request = {"preset": "slow", "enabled": True}
 
         # Act
         response = client.post("/api/yuragi/preset", json=preset_request)
@@ -137,13 +155,13 @@ class TestYuragiPresetAPI:
         assert params["rotation_freq"] == 0.15  # 実際のレスポンス値
 
     def test_disable_preset(self, client):
-        """プリセットを無効化できる"""
+        """プリセットを無効化できる（両デバイス同時）"""
         # Arrange - まず有効化
-        enable_request = {"device_id": 1, "preset": "default", "enabled": True}
+        enable_request = {"preset": "default", "enabled": True}
         client.post("/api/yuragi/preset", json=enable_request)
 
         # 無効化リクエスト
-        disable_request = {"device_id": 1, "preset": "default", "enabled": False}
+        disable_request = {"preset": "default", "enabled": False}
 
         # Act
         response = client.post("/api/yuragi/preset", json=disable_request)
@@ -161,26 +179,26 @@ class TestYuragiPresetAPI:
         assert params["angle"] == 0.0
         assert params["rotation_freq"] == 0.0
 
-        # チャンネルが無効化されたことを確認（振幅が0）
+        # 全チャンネルが無効化されたことを確認（振幅が0）
         params_response = client.get("/api/parameters")
         channels = params_response.json()["channels"]
-        assert channels[0]["amplitude"] == 0.0
-        assert channels[1]["amplitude"] == 0.0
+        for i in range(4):
+            assert channels[i]["amplitude"] == 0.0
 
-    def test_invalid_device_id(self, client):
-        """無効なデバイスIDを拒否する"""
-        # Arrange
-        invalid_request = {
-            "device_id": 3,  # 無効（1または2のみ有効）
+    def test_invalid_preset_with_device_id(self, client):
+        """device_idフィールドが含まれている場合でも正常に動作する（後方互換性）"""
+        # Arrange - device_idは無視される
+        request = {
+            "device_id": 1,  # このフィールドは無視される
             "preset": "default",
             "enabled": True,
         }
 
         # Act
-        response = client.post("/api/yuragi/preset", json=invalid_request)
+        response = client.post("/api/yuragi/preset", json=request)
 
         # Assert
-        assert response.status_code == 422  # Pydantic validation error
+        assert response.status_code == 200  # 正常に処理される
 
     def test_invalid_preset_name(self, client):
         """無効なプリセット名を拒否する"""
@@ -198,36 +216,38 @@ class TestYuragiPresetAPI:
         assert response.status_code == 422  # Pydantic validation error
 
     def test_missing_required_fields(self, client):
-        """必須フィールドが欠けている場合を拒否する"""
-        # Arrange - device_id なし
-        invalid_request = {"preset": "default", "enabled": True}
-
-        # Act
-        response = client.post("/api/yuragi/preset", json=invalid_request)
-
-        # Assert
-        assert response.status_code == 422  # Pydantic validation error
-
-    def test_preset_parameter_defaults(self, client):
-        """プリセットのデフォルト値が正しく設定されている"""
+        """必須フィールドが欠けている場合でもデフォルト値で動作する"""
         # Arrange - presetとenabledを省略
-        minimal_request = {"device_id": 1}
+        minimal_request = {}
 
         # Act
         response = client.post("/api/yuragi/preset", json=minimal_request)
 
         # Assert
-        assert response.status_code == 200
+        assert response.status_code == 200  # デフォルト値で動作
         data = response.json()
         assert data["preset"] == "default"  # デフォルトプリセット
         assert data["enabled"] is True  # デフォルトで有効
+
+    def test_preset_with_custom_duration(self, client):
+        """カスタムdurationでプリセットを適用できる"""
+        # Arrange
+        request = {"preset": "gentle", "duration": 120.0, "enabled": True}
+
+        # Act
+        response = client.post("/api/yuragi/preset", json=request)
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["duration"] == 120.0
 
     def test_all_preset_types_have_required_fields(self, client):
         """全プリセットタイプが必要なフィールドを持っている"""
         presets = ["default", "gentle", "strong", "slow"]
 
         for preset_name in presets:
-            request = {"device_id": 1, "preset": preset_name, "enabled": True}
+            request = {"preset": preset_name, "enabled": True}
 
             response = client.post("/api/yuragi/preset", json=request)
             assert response.status_code == 200
@@ -243,37 +263,38 @@ class TestYuragiPresetAPI:
                     params[field], int | float
                 ), f"Field {field} should be numeric in preset {preset_name}"
 
-    def test_both_devices_independent_presets(self, client):
-        """両方のデバイスで独立してプリセットを設定できる"""
-        # Arrange & Act
-        device1_request = {"device_id": 1, "preset": "gentle", "enabled": True}
-        device2_request = {"device_id": 2, "preset": "strong", "enabled": True}
+    def test_both_devices_symmetric_operation(self, client):
+        """両デバイスが対称的に動作することを確認"""
+        # Arrange & Act - 90度（上方向）のプリセット
+        request = {"preset": "strong", "enabled": True}  # 90度のプリセット
 
-        response1 = client.post("/api/yuragi/preset", json=device1_request)
-        response2 = client.post("/api/yuragi/preset", json=device2_request)
+        response = client.post("/api/yuragi/preset", json=request)
 
         # Assert
-        assert response1.status_code == 200
-        assert response2.status_code == 200
-        assert response1.json()["preset"] == "gentle"
-        assert response2.json()["preset"] == "strong"
+        assert response.status_code == 200
+        data = response.json()
+        assert data["preset"] == "strong"
 
-        # 両方のデバイスのチャンネルが正しく設定されたことを確認
+        # 両方のデバイスのチャンネルが対称的に設定されたことを確認
         params_response = client.get("/api/parameters")
         channels = params_response.json()["channels"]
 
-        # Device 1 (channels 0,1) - gentle preset (40Hz)
-        assert channels[0]["frequency"] == 40.0
-        assert channels[1]["frequency"] == 40.0
+        # Device 1 (channels 0,1) - 90度方向
+        # X=0, Y=-1 (上方向)
+        assert abs(channels[0]["amplitude"] - 0.0) < 0.01  # X軸
+        assert abs(channels[1]["amplitude"] - 1.0) < 0.01  # Y軸
+        assert channels[1]["polarity"] is False  # 負の方向
 
-        # Device 2 (channels 2,3) - strong preset (80Hz)
-        assert channels[2]["frequency"] == 80.0
-        assert channels[3]["frequency"] == 80.0
+        # Device 2 (channels 2,3) - -90度方向（対称）
+        # X=0, Y=1 (下方向)
+        assert abs(channels[2]["amplitude"] - 0.0) < 0.01  # X軸
+        assert abs(channels[3]["amplitude"] - 1.0) < 0.01  # Y軸
+        assert channels[3]["polarity"] is True  # 正の方向
 
     def test_response_format_validation(self, client):
         """レスポンス形式が実装仕様通りであることを検証"""
         # Arrange
-        request = {"device_id": 1, "preset": "default", "enabled": True}
+        request = {"preset": "default", "enabled": True}
 
         # Act
         response = client.post("/api/yuragi/preset", json=request)
@@ -282,8 +303,8 @@ class TestYuragiPresetAPI:
         assert response.status_code == 200
         data = response.json()
 
-        # 必須フィールドの存在を確認（実装に基づく）
-        required_fields = ["status", "device_id", "preset", "enabled", "parameters"]
+        # 必須フィールドの存在を確認（device_idは削除）
+        required_fields = ["status", "preset", "enabled", "parameters"]
         for field in required_fields:
             assert field in data, f"Required field '{field}' missing from response"
 
@@ -294,7 +315,6 @@ class TestYuragiPresetAPI:
             assert field in params, f"Required parameter field '{field}' missing"
 
         # データ型の確認
-        assert isinstance(data["device_id"], int)
         assert isinstance(data["preset"], str)
         assert isinstance(data["enabled"], bool)
         assert isinstance(params["angle"], int | float)
@@ -332,7 +352,7 @@ class TestYuragiPresetAPI:
         }
 
         for preset_name, expected_params in expected_presets.items():
-            request = {"device_id": 1, "preset": preset_name, "enabled": True}
+            request = {"preset": preset_name, "enabled": True}
 
             response = client.post("/api/yuragi/preset", json=request)
             assert response.status_code == 200

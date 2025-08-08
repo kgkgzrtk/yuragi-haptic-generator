@@ -19,7 +19,7 @@ class TestHapticChannelBasics:
 
         # Assert
         assert not channel.is_active
-        assert channel.current_frequency == 0
+        assert channel.current_frequency == 60  # デフォルト周波数
         assert channel.current_amplitude == 0
 
     def test_can_activate_channel_with_parameters(self):

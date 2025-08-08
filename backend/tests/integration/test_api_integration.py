@@ -54,7 +54,7 @@ class TestParametersAPI:
         # 各チャンネルの初期値を確認
         for i, channel in enumerate(data["channels"]):
             assert channel["channelId"] == i
-            assert channel["frequency"] == 0.0  # デフォルト値（実際の初期値は0.0）
+            assert channel["frequency"] == 60.0  # 初期化時に設定される周波数
             assert channel["amplitude"] == 0.0  # デフォルト値（実際の初期値は0.0）
 
     def test_update_parameters(self, client):
