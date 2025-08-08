@@ -251,7 +251,7 @@ api = [
     { name = "fastapi" },
     { name = "httptools" },
     { name = "uvicorn", extra = ["standard"] },
-    { name = "uvloop" },
+    { name = "uvloop", marker = "sys_platform != 'win32'" },
 ]
 dev = [
     { name = "black" },
@@ -280,7 +280,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "sounddevice", specifier = ">=0.4.6" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.22.0" },
-    { name = "uvloop", marker = "extra == 'api'", specifier = ">=0.17.0" },
+    { name = "uvloop", marker = "sys_platform != 'win32' and extra == 'api'", specifier = ">=0.17.0" },
 ]
 provides-extras = ["dev", "api", "production"]
 
