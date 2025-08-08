@@ -326,7 +326,9 @@ class TestVectorForceAPI:
 
     def test_vector_force_requires_streaming(self, client):
         """ストリーミングが開始されていない場合はエラーが返る"""
-        # Arrange
+        # Arrange - Stop streaming first since it auto-starts in lifespan
+        client.post("/api/streaming/stop")
+        
         vector_params = {
             "device_id": 1,
             "angle": 45.0,
