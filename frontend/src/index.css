@@ -6,55 +6,55 @@
 }
 
 :root {
-  /* Modern Green Theme Variables */
-  --color-primary: #13ae4b;
-  --color-primary-dark: #0f893b;
-  --color-primary-light: #16c55b;
-  --color-accent: #0bdc84;
-  --color-accent-dark: #089860;
-  
-  --color-success: #039555;
-  --color-success-light: #c4dc34;
+  /* Muted Green & Beige Theme Variables */
+  --color-primary: #a3b18a; /* Medium Muted Green */
+  --color-primary-dark: #718355; /* Dark Muted Green */
+  --color-primary-light: #c5d8a4; /* Light Muted Green */
+  --color-accent: #7f96af; /* Muted Slate Blue accent */
+  --color-accent-dark: #6b7f95; /* Darker accent */
+
+  --color-success: #a3b18a; /* Using medium muted green */
+  --color-success-light: #c5d8a4; /* Light muted green */
   --color-danger: #dc3545;
   --color-warning: #ffc107;
-  --color-info: #17a2b8;
-  
-  --color-background-light: #fafafa;
+  --color-info: #7f96af; /* Using muted slate blue */
+
+  --color-background-light: #f2e8d5; /* Light Muted Beige */
   --color-background-dark: #212121;
-  --color-surface-primary: #e5efde;
+  --color-surface-primary: #e0d3b4; /* Medium Muted Beige */
   --color-surface-secondary: #ffffff;
-  --color-surface-elevated: #f0f8ec;
+  --color-surface-elevated: #f2e8d5; /* Light Muted Beige */
   --color-surface-card: #ffffff;
-  
+
   --color-text-primary: #1a1a1a;
   --color-text-secondary: #666666;
   --color-text-tertiary: #999999;
   --color-text-inverse: #ffffff;
   --color-text-on-surface: #2d2d2d;
-  
-  --color-border-primary: #d1e7d1;
-  --color-border-secondary: #e0e0e0;
-  --color-border-accent: #13ae4b;
-  
-  --color-waveform-channel-1: #13ae4b;
-  --color-waveform-channel-2: #0bdc84;
-  --color-waveform-channel-3: #039555;
-  --color-waveform-channel-4: #c4dc34;
-  
-  --color-signal-voltage: #13ae4b;
-  --color-signal-current: #0bdc8480;
-  --color-signal-acceleration: #039555;
-  
-  --color-hover-primary: #16c55b;
-  --color-hover-surface: #f0f8ec;
-  --color-hover-border: #13ae4b;
-  
-  --color-focus-ring: #13ae4b40;
-  --color-focus-border: #13ae4b;
-  
-  --shadow-small: 0 2px 4px rgba(19, 174, 75, 0.1);
-  --shadow-medium: 0 4px 8px rgba(19, 174, 75, 0.12);
-  --shadow-large: 0 8px 16px rgba(19, 174, 75, 0.15);
+
+  --color-border-primary: #cbbda3; /* Dark Muted Beige */
+  --color-border-secondary: #e0d3b4; /* Medium Muted Beige */
+  --color-border-accent: #a3b18a; /* Medium Muted Green */
+
+  --color-waveform-channel-1: #a3b18a; /* Medium Muted Green */
+  --color-waveform-channel-2: #7f96af; /* Muted Slate Blue */
+  --color-waveform-channel-3: #718355; /* Dark Muted Green */
+  --color-waveform-channel-4: #a69cac; /* Dusty Lavender alternative */
+
+  --color-signal-voltage: #a3b18a; /* Medium Muted Green */
+  --color-signal-current: #7f96af80; /* Muted Slate Blue with transparency */
+  --color-signal-acceleration: #718355; /* Dark Muted Green */
+
+  --color-hover-primary: #c5d8a4; /* Light Muted Green */
+  --color-hover-surface: #f2e8d5; /* Light Muted Beige */
+  --color-hover-border: #a3b18a; /* Medium Muted Green */
+
+  --color-focus-ring: #a3b18a40; /* Medium Muted Green with transparency */
+  --color-focus-border: #a3b18a; /* Medium Muted Green */
+
+  --shadow-small: 0 2px 4px rgba(163, 177, 138, 0.1); /* Using medium muted green */
+  --shadow-medium: 0 4px 8px rgba(163, 177, 138, 0.12);
+  --shadow-large: 0 8px 16px rgba(163, 177, 138, 0.15);
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
 
   --spacing-xs: 0.25rem;
@@ -63,17 +63,17 @@
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
   --spacing-xxl: 3rem;
-  
+
   --border-radius-sm: 4px;
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
   --border-radius-xl: 16px;
   --border-radius-full: 50%;
-  
+
   --transition-fast: 150ms ease-out;
   --transition-medium: 250ms ease-out;
   --transition-slow: 350ms ease-out;
-  
+
   /* Legacy compatibility */
   --color-dark: #1a1a1a;
   --color-light: #fafafa;

@@ -125,7 +125,11 @@ export const useErrorHandler = () => {
       }
 
       // Type guard for error with code property
-      const errorWithCode = error as { code?: string; message?: string; response?: { status?: number } }
+      const errorWithCode = error as {
+        code?: string
+        message?: string
+        response?: { status?: number }
+      }
 
       // Network errors
       if (

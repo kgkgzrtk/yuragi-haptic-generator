@@ -359,7 +359,14 @@ export const webSocketPerformanceUtils = {
   /**
    * Simulate network latency in WebSocket mock
    */
-  addLatencyToWebSocketMock(mockWebSocket: { send: (data: string) => void; onmessage?: ((event: MessageEvent) => void) | null; simulateMessage?: (data: unknown) => void }, latencyMs: number) {
+  addLatencyToWebSocketMock(
+    mockWebSocket: {
+      send: (data: string) => void
+      onmessage?: ((event: MessageEvent) => void) | null
+      simulateMessage?: (data: unknown) => void
+    },
+    latencyMs: number
+  ) {
     const originalSend = mockWebSocket.send
 
     mockWebSocket.send = vi.fn(async (data: string) => {
