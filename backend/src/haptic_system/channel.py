@@ -4,8 +4,8 @@ Haptic channel management module
 
 import numpy as np
 
-from .waveform import SawtoothWaveform, resonator
 from .validators import validate_channel_id
+from .waveform import SawtoothWaveform, resonator
 
 # チャンネルID制限
 MIN_CHANNEL_ID = 0

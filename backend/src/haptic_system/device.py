@@ -5,7 +5,7 @@ Haptic device management module
 import numpy as np
 
 from .channel import HapticChannel
-from .validators import validate_device_id, validate_channel_id
+from .validators import validate_channel_id, validate_device_id
 
 
 class HapticDevice:
