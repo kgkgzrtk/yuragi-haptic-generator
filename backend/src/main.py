@@ -202,9 +202,7 @@ async def get_device_info():
         "device_mode": (
             "dual"
             if controller.available_channels == 4
-            else "single"
-            if controller.available_channels == 2
-            else "none"
+            else "single" if controller.available_channels == 2 else "none"
         )
     }
 
