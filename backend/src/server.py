@@ -3,6 +3,7 @@ Production server startup script
 """
 
 import platform
+
 import uvicorn
 
 from src.config.settings import get_settings
