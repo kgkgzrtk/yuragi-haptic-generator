@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from src.config.settings import get_settings, setup_logging
 from src.haptic_system.controller import HapticController
+from src.haptic_system.validators import validate_device_id
 
 # 設定を取得
 settings = get_settings()
@@ -163,8 +164,7 @@ class VectorForceRequest(BaseModel):
     @field_validator("device_id")
     @classmethod
     def validate_device_id(cls, v):
-        if v not in [1, 2]:
-            raise ValueError("Device ID must be 1 or 2")
+        validate_device_id(v)
         return v
 
 
@@ -181,8 +181,7 @@ class YURAGIPresetRequest(BaseModel):
     @field_validator("device_id")
     @classmethod
     def validate_device_id(cls, v):
-        if v not in [1, 2]:
-            raise ValueError("Device ID must be 1 or 2")
+        validate_device_id(v)
         return v
 
 
@@ -219,7 +218,9 @@ async def get_device_info():
         "device_mode": (
             "dual"
             if controller.available_channels == 4
-            else "single" if controller.available_channels == 2 else "none"
+            else "single"
+            if controller.available_channels == 2
+            else "none"
         )
     }
 

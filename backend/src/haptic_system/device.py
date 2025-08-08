@@ -5,6 +5,7 @@ Haptic device management module
 import numpy as np
 
 from .channel import HapticChannel
+from .validators import validate_device_id, validate_channel_id
 
 
 class HapticDevice:
@@ -90,8 +91,7 @@ class HapticDevice:
         Raises:
             ValueError: デバイスIDが無効な場合
         """
-        if device_id not in [1, 2]:
-            raise ValueError("Device ID must be 1 or 2")
+        validate_device_id(device_id)
 
         # 角度をラジアンに変換
         angle_rad = np.deg2rad(angle)
@@ -206,8 +206,7 @@ class HapticDevice:
         Returns:
             Dictionary with channel parameters
         """
-        if channel_id < 0 or channel_id > 3:
-            raise ValueError("Channel ID must be 0-3")
+        validate_channel_id(channel_id)
 
         channel = self.channels[channel_id]
         return {
