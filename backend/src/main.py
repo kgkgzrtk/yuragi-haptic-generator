@@ -36,11 +36,11 @@ try:
     logger.info(
         f"HapticController initialized with sample_rate={settings.sample_rate}, block_size={settings.block_size}"
     )
-    
+
     # Initialize YURAGI animator
     yuragi_animator = YURAGIAnimator(controller.set_vector_force)
     logger.info("YURAGIAnimator initialized")
-    
+
 except Exception as e:
     # sounddeviceがない環境では None のまま
     logger.warning(f"Failed to initialize HapticController: {e}")
@@ -62,12 +62,12 @@ async def lifespan(app: FastAPI):
                 sample_rate=settings.sample_rate, block_size=settings.block_size
             )
             logger.info("HapticController initialized successfully")
-            
+
             # Initialize YURAGI animator if controller is available
             if yuragi_animator is None:
                 yuragi_animator = YURAGIAnimator(controller.set_vector_force)
                 logger.info("YURAGIAnimator initialized in lifespan")
-                
+
         except Exception as e:
             logger.error(f"Failed to initialize HapticController: {e}")
 
@@ -83,7 +83,7 @@ async def lifespan(app: FastAPI):
 
     # 終了時
     logger.info("Shutting down application...")
-    
+
     # Stop all YURAGI animations
     if yuragi_animator:
         try:
@@ -491,7 +491,7 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
     """YURAGIプリセットを適用"""
     if controller is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
-    
+
     if yuragi_animator is None:
         raise HTTPException(status_code=503, detail="YURAGI animator not initialized")
 
@@ -504,7 +504,7 @@ async def set_yuragi_preset(request: YURAGIPresetRequest):
             await yuragi_animator.start_animation(
                 device_id=request.device_id,
                 preset=request.preset,
-                duration=request.duration
+                duration=request.duration,
             )
 
             return {
