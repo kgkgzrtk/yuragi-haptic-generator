@@ -101,10 +101,10 @@ class TestHapticChannelParameterUpdate:
             assert channel.channel_id == valid_id
 
         # 無効なチャンネルID
-        with pytest.raises(ValueError, match="Channel ID must be between 0-3"):
+        with pytest.raises(ValueError, match="Channel ID must be 0-3"):
             HapticChannel(channel_id=4, sample_rate=44100)
 
-        with pytest.raises(ValueError, match="Channel ID must be between 0-3"):
+        with pytest.raises(ValueError, match="Channel ID must be 0-3"):
             HapticChannel(channel_id=-1, sample_rate=44100)
 
 

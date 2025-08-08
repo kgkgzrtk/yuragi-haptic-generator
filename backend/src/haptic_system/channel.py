@@ -4,6 +4,7 @@ Haptic channel management module
 
 import numpy as np
 
+from .validators import validate_channel_id
 from .waveform import SawtoothWaveform, resonator
 
 # チャンネルID制限
@@ -29,10 +30,7 @@ class HapticChannel:
         Raises:
             ValueError: チャンネルIDが無効な場合
         """
-        if channel_id < MIN_CHANNEL_ID or channel_id > MAX_CHANNEL_ID:
-            raise ValueError(
-                f"Channel ID must be between {MIN_CHANNEL_ID}-{MAX_CHANNEL_ID}"
-            )
+        validate_channel_id(channel_id)
 
         self.channel_id = channel_id
         self.sample_rate = sample_rate
