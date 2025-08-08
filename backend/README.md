@@ -208,6 +208,103 @@ import sounddevice as sd
 print(sd.query_devices())  # 利用可能なデバイスを確認
 ```
 
+### device1/device2から出力がない場合のデバッグ方法
+
+#### 1. デバッグモードで起動
+```bash
+# 環境変数を設定してデバッグモードで起動
+DEBUG=true LOG_LEVEL=DEBUG uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
+# または
+export DEBUG=true
+export LOG_LEVEL=DEBUG
+uvicorn src.main:app --reload
+```
+
+#### 2. デバイス情報の確認
+```bash
+# 接続されているオーディオデバイスの詳細を確認
+curl http://localhost:8000/api/debug/devices
+
+# 現在選択されているデバイス情報を確認
+curl http://localhost:8000/api/device-info
+```
+
+#### 3. デバッグログの確認ポイント
+
+**起動時のログを確認:**
+```
+INFO: Initializing with haptic device: Miraisense Haptics (channels: 4)
+INFO: Available audio devices:
+INFO:   [0] Built-in Microphone (input, 2ch)
+INFO:   [1] Built-in Output (output, 2ch)
+INFO:   [2] Miraisense Haptics (output, 4ch) <- 選択されたデバイス
+```
+
+**device2 (チャンネル3-4) が動作しない場合:**
+- 2チャンネルデバイスが選択されている可能性があります
+- `Available channels: 2` と表示される場合、device2は使用できません
+- 4チャンネルデバイスを接続し、再起動してください
+
+#### 4. ストリーミング状態の確認
+```bash
+# ストリーミング状態を確認
+curl http://localhost:8000/api/streaming/status
+
+# ストリーミングを開始（必須）
+curl -X POST http://localhost:8000/api/streaming/start
+
+# device1をテスト
+curl -X POST http://localhost:8000/api/vector-force \
+  -H "Content-Type: application/json" \
+  -d '{"device_id": 1, "angle": 0, "magnitude": 0.8, "frequency": 60}'
+
+# device2をテスト（4チャンネルデバイスのみ）
+curl -X POST http://localhost:8000/api/vector-force \
+  -H "Content-Type: application/json" \
+  -d '{"device_id": 2, "angle": 90, "magnitude": 0.8, "frequency": 80}'
+```
+
+#### 5. よくある問題と解決方法
+
+**問題: "Streaming is not started" エラー**
+```bash
+# 解決: ストリーミングを開始する
+curl -X POST http://localhost:8000/api/streaming/start
+```
+
+**問題: "Device2 (channels 3-4) is not available" エラー**
+- 原因: 2チャンネルデバイスが選択されている
+- 解決: 
+  1. 4チャンネル対応デバイス（Miraisense Haptics等）を接続
+  2. システムのデフォルトオーディオ出力を変更
+  3. アプリケーションを再起動
+
+**問題: device1/device2両方から出力がない**
+1. パラメータを確認:
+   ```bash
+   curl http://localhost:8000/api/parameters
+   ```
+2. 振幅が0になっていないか確認
+3. 周波数が適切な範囲（40-120Hz）か確認
+4. デバイスの電源・接続を確認
+
+#### 6. 詳細なデバッグ情報の取得
+```python
+# Pythonスクリプトでデバイス情報を詳細に確認
+import sounddevice as sd
+
+# すべてのデバイスを表示
+devices = sd.query_devices()
+for i, device in enumerate(devices):
+    print(f"[{i}] {device['name']}")
+    print(f"    Channels: in={device['max_input_channels']}, out={device['max_output_channels']}")
+    print(f"    Default: {device['default_samplerate']}Hz")
+    
+# デフォルトデバイスを確認
+print(f"\nDefault output device: {sd.default.device[1]}")
+```
+
 ## ライセンス
 
 [ライセンス情報を追加]
