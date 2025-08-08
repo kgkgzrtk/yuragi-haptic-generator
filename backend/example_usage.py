@@ -88,7 +88,7 @@ def research_based_example():
     controller = HapticController()
     
     with controller:
-        # 研究で推奨される10Hz、時間比1:8のサwtooth波
+        # 研究で推奨される10Hz、時間比1:8ののこぎり波
         # （実際の実装では波形のデューティ比制御が必要）
         controller.device.set_vector_force(
             device_id=1,

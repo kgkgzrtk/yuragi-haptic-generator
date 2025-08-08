@@ -9,10 +9,10 @@ from haptic_system.waveform import SawtoothWaveform
 
 
 class TestSawtoothWaveformGeneration:
-    """サwtooth波生成の基本機能テスト"""
+    """のこぎり波生成の基本機能テスト"""
 
     def test_creates_ascending_sawtooth_at_30hz(self):
-        """30Hzの上昇サwtooth波を生成できる（参考実装の基音周波数）"""
+        """30Hzの上昇のこぎり波を生成できる（参考実装の基音周波数）"""
         # Arrange
         frequency = 30.0  # Reference implementation fundamental frequency
         sample_rate = 44100
@@ -30,7 +30,7 @@ class TestSawtoothWaveformGeneration:
         assert samples[-1] == pytest.approx(1.0, abs=0.01)
 
     def test_creates_ascending_sawtooth_at_100hz(self):
-        """100Hzの上昇サwtooth波を生成できる"""
+        """100Hzの上昇のこぎり波を生成できる"""
         # Arrange
         frequency = 100.0
         sample_rate = 44100
@@ -47,7 +47,7 @@ class TestSawtoothWaveformGeneration:
         assert samples[440] == pytest.approx(1.0, abs=0.01)
 
     def test_creates_descending_sawtooth_with_negative_polarity(self):
-        """極性を反転させると下降サwtooth波を生成できる"""
+        """極性を反転させると下降のこぎり波を生成できる"""
         # Arrange
         waveform = SawtoothWaveform(sample_rate=44100)
 
@@ -68,7 +68,7 @@ class TestSawtoothWaveformGeneration:
         half_amp = waveform.generate(100, 0.01, amplitude=0.5)
 
         # Assert
-        # サwtooth波の特性上、正確に1.0には到達しない
+        # のこぎり波の特性上、正確に1.0には到達しない
         assert max(full_amp) == pytest.approx(1.0, abs=0.01)
         assert max(half_amp) == pytest.approx(0.5, abs=0.01)
 

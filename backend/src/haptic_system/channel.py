@@ -110,7 +110,7 @@ class HapticChannel:
         # 時間配列を生成（累積時間から開始）
         t = np.arange(block_size) / self.sample_rate + self.cumulative_time
 
-        # サwtooth波を生成
+        # のこぎり波を生成
         # 位相連続性のため、累積時間を使用
         wave = self.current_amplitude * (
             2 * ((self.current_frequency * t + self.current_phase / 360.0) % 1.0) - 1

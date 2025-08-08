@@ -14,10 +14,10 @@ MAX_AMPLITUDE = 1.0
 
 
 class SawtoothWaveform:
-    """サwtooth波形生成クラス
+    """のこぎり波形生成クラス
 
     研究結果に基づいた30-120Hzの範囲で動作する
-    サwtooth波形を生成します。偏加速度による
+    のこぎり波形を生成します。偏加速度による
     力覚提示に最適化されています。
     """
 
@@ -39,7 +39,7 @@ class SawtoothWaveform:
         polarity: bool = True,
     ) -> np.ndarray:
         """
-        サwtooth波を生成
+        のこぎり波を生成
 
         Args:
             frequency: 周波数 (Hz)
@@ -66,7 +66,7 @@ class SawtoothWaveform:
         # 位相をラジアンに変換
         phase_rad = np.deg2rad(phase)
 
-        # サwtooth波生成 (研究資料の式を使用)
+        # のこぎり波生成 (研究資料の式を使用)
         # wave = amp * (2 * ((freq * t + phase) % 1.0) - 1)
         wave = amplitude * (2 * ((frequency * t + phase_rad / (2 * np.pi)) % 1.0) - 1)
 

@@ -1,9 +1,16 @@
 """
 Motion Generators - Compatibility Layer
-Re-exports all motion generation components from the modulation module.
 
-This module provides an alternative import path for motion generation components.
-The actual implementations are in the modulation module.
+This module serves as a compatibility layer/alias for the modulation module.
+All actual implementations are located in modulation.py.
+
+Purpose:
+- Provides backward compatibility for code that imports from motion_generators
+- Allows for a more intuitive module name for motion-related components
+- Re-exports all motion generation components from the modulation module
+
+Note: This is purely a re-export module. For actual implementations,
+see haptic_system/modulation.py
 """
 
 from .modulation import (

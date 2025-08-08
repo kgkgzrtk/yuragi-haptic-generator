@@ -52,7 +52,7 @@ class TestHapticChannelBasics:
         assert len(chunk1) == 512
         assert len(chunk2) == 512
         # 連続性の確認（最後と最初のサンプルが繋がる）
-        # サwtooth波の特性を考慮して許容誤差を設定
+        # のこぎり波の特性を考慮して許容誤差を設定
         assert abs(chunk1[-1] - chunk2[0]) < 0.2  # 許容誤差を調整
 
 
@@ -123,7 +123,7 @@ class TestHapticChannelWaveformGeneration:
         chunk = channel.get_next_chunk(441)  # 1周期分
 
         # Assert
-        # サwtooth波の特性を確認
+        # のこぎり波の特性を確認
         assert chunk[0] == pytest.approx(-1.0, abs=0.01)  # 開始値
         assert max(chunk) == pytest.approx(1.0, abs=0.01)  # 最大値
         assert min(chunk) == pytest.approx(-1.0, abs=0.01)  # 最小値
