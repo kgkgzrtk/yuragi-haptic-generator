@@ -93,6 +93,10 @@ class HapticDevice:
         """
         validate_device_id(device_id)
 
+        # Device2の場合、対称的な動作のために角度を反転
+        if device_id == 2:
+            angle = -angle  # Device2は逆回転
+
         # 角度をラジアンに変換
         angle_rad = np.deg2rad(angle)
 
@@ -122,6 +126,7 @@ class HapticDevice:
         )
 
         # 対象デバイスのチャンネルを有効化
+        # magnitude が 0 でもチャンネルを有効化して初期化を確実に行う
         self.channels[base_channel].activate()
         self.channels[base_channel + 1].activate()
 
