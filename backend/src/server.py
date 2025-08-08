@@ -21,14 +21,14 @@ def main():
             "http": "httptools",  # Use httptools for better HTTP parsing
             "interface": "asgi3",  # Use ASGI3 interface
         }
-        
+
         # Use uvloop on non-Windows platforms for better performance
         if platform.system() != "Windows":
             updates["loop"] = "uvloop"
         else:
             # Use asyncio on Windows
             updates["loop"] = "asyncio"
-        
+
         config.update(updates)
 
     # Start server
