@@ -25,10 +25,10 @@ TDDアプローチによる高品質な実装を目指し、5週間での完成�
 ## 2. プロジェクト概要
 
 ### 2.1 目的
-既存のDualVibrationActuatorシステムを拡張し、サwtooth波による力覚提示機能を実装するMVPを開発する。
+既存のDualVibrationActuatorシステムを拡張し、のこぎり波による力覚提示機能を実装するMVPを開発する。
 
 ### 2.2 スコープ
-- **コア機能**: サwtooth波生成（40-120Hz）
+- **コア機能**: のこぎり波生成（40-120Hz）
 - **制御インターフェース**: REST API
 - **可視化**: React + react-chartjs-2によるWeb UI
 - **性能目標**: レイテンシ10ms以下
@@ -45,7 +45,7 @@ dual-haptic-generator/
 │   │   │   └── routes.py            # REST APIルート
 │   │   ├── core/
 │   │   │   ├── __init__.py
-│   │   │   ├── sawtooth_generator.py # サwtooth波生成
+│   │   │   ├── sawtooth_generator.py # のこぎり波生成
 │   │   │   └── waveform_manager.py   # 波形管理統合
 │   │   ├── models/
 │   │   │   └── parameters.py        # Pydanticモデル
@@ -92,14 +92,14 @@ Audio Engine (拡張DualVibrationActuator)
    - 必要なモジュールの選別と移植
    - インターフェース設計
 
-### Phase 2: サwtooth波生成実装（1週間）
+### Phase 2: のこぎり波生成実装（1週間）
 
 #### タスクリスト
 1. **SawtoothWaveGeneratorクラス実装**
    ```python
    class SawtoothWaveGenerator(WaveformGenerator):
        def generate_sawtooth(self, t, freq, amp, phase, polarity):
-           """上昇/下降サwtooth波生成"""
+           """上昇/下降のこぎり波生成"""
            wave = amp * (2 * ((freq * t + phase) % 1.0) - 1)
            return wave if polarity else -wave
    ```
@@ -111,7 +111,7 @@ Audio Engine (拡張DualVibrationActuator)
 
 3. **MVPActuatorクラス実装**
    - DualVibrationActuatorを継承
-   - サwtooth波サポート追加
+   - のこぎり波サポート追加
    - 波形タイプパラメータ対応
 
 ### Phase 3: FastAPI Backend実装（1週間）
@@ -212,7 +212,7 @@ Audio Engine (拡張DualVibrationActuator)
 ## 7. 成功基準
 
 ### 7.1 機能要件
-- [ ] 40-120Hzのサwtooth波生成
+- [ ] 40-120Hzののこぎり波生成
 - [ ] 4チャンネル独立制御
 - [ ] REST APIによる制御
 - [ ] Web UIでの波形可視化
@@ -227,7 +227,7 @@ Audio Engine (拡張DualVibrationActuator)
 ### ガントチャート
 ```
 Week 1: ■■■■■■■■■■ Phase 1: 基盤整備
-Week 2: ■■■■■■■■■■ Phase 2: サwtooth波生成
+Week 2: ■■■■■■■■■■ Phase 2: のこぎり波生成
 Week 3: ■■■■■■■■■■ Phase 3: FastAPI Backend
 Week 4: ■■■■■■■■■■ Phase 4: React Frontend
 Week 5: ■■■■■■■■■■ Phase 5: 統合テスト
@@ -235,7 +235,7 @@ Week 5: ■■■■■■■■■■ Phase 5: 統合テスト
 
 ### マイルストーン
 1. **Week 1終了**: 開発環境構築完了
-2. **Week 2終了**: サwtooth波生成機能完成
+2. **Week 2終了**: のこぎり波生成機能完成
 3. **Week 3終了**: APIエンドポイント稼働
 4. **Week 4終了**: UI完成
 5. **Week 5終了**: MVP完成

@@ -67,7 +67,6 @@ export const CHANNEL_IDS = {
 
 // YURAGI massage control types
 export interface IYURAGIRequest {
-  deviceId: 1 | 2
   preset: 'gentle' | 'moderate' | 'intense' | 'therapeutic' | 'therapeutic_fluctuation'
   duration: number // in seconds, 30-300
   enabled: boolean

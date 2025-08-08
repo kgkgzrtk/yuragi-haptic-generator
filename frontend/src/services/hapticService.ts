@@ -87,7 +87,6 @@ export class HapticService {
   // YURAGI massage control
   static async yuragiPreset(params: IYURAGIRequest): Promise<IYURAGIStatus> {
     const response = await api.post('/yuragi/preset', {
-      device_id: params.deviceId,
       preset: params.preset,
       duration: params.duration,
       enabled: params.enabled,

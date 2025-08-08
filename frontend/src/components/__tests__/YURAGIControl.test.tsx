@@ -40,12 +40,12 @@ describe('YURAGIControl', () => {
 
   describe('Rendering', () => {
     it('should render the component with title "YURAGI Massage Control"', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
       expect(screen.getByText('YURAGI Massage Control')).toBeInTheDocument()
     })
 
     it('should render preset selector with all options', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
       const presetSelect = screen.getByLabelText('Preset')
       expect(presetSelect).toBeInTheDocument()
@@ -56,17 +56,15 @@ describe('YURAGIControl', () => {
       expect(screen.getByRole('option', { name: 'Therapeutic' })).toBeInTheDocument()
     })
 
-    it('should render device selector showing current device', () => {
-      render(<YURAGIControl deviceId={1} />)
+    it('should not render device selector (removed from design)', () => {
+      render(<YURAGIControl />)
 
-      const deviceSelect = screen.getByLabelText('Device')
-      expect(deviceSelect).toBeInTheDocument()
-      expect(deviceSelect).toBeDisabled() // Device selection handled by parent
-      expect(deviceSelect).toHaveValue('1')
+      const deviceSelect = screen.queryByLabelText('Device')
+      expect(deviceSelect).not.toBeInTheDocument()
     })
 
     it('should render duration input with constraints', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
       const durationInput = screen.getByLabelText('Duration (seconds)')
       expect(durationInput).toBeInTheDocument()
@@ -77,15 +75,15 @@ describe('YURAGIControl', () => {
     })
 
     it('should not render enable/disable toggle (removed from design)', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
       const enableCheckbox = screen.queryByLabelText('Enable YURAGI Control')
       expect(enableCheckbox).not.toBeInTheDocument()
     })
     it('should render start button initially', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
-      const startButton = screen.getByTestId('yuragi-start-button-1')
+      const startButton = screen.getByTestId('yuragi-start-button')
       expect(startButton).toBeInTheDocument()
       expect(startButton).toHaveTextContent('Start YURAGI')
       expect(startButton).toBeEnabled() // Start button is always enabled
@@ -95,7 +93,7 @@ describe('YURAGIControl', () => {
   describe('Form Interactions', () => {
     it('should update preset selection', async () => {
       const user = userEvent.setup()
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
       const presetSelect = screen.getByLabelText('Preset')
       await user.selectOptions(presetSelect, 'intense')
@@ -104,7 +102,7 @@ describe('YURAGIControl', () => {
     })
 
     it('should validate duration input - below minimum', async () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
       const durationInput = screen.getByLabelText('Duration (seconds)')
 
@@ -119,7 +117,7 @@ describe('YURAGIControl', () => {
     })
 
     it('should validate duration input - above maximum', async () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
       const durationInput = screen.getByLabelText('Duration (seconds)')
 
@@ -135,9 +133,9 @@ describe('YURAGIControl', () => {
 
     it('should handle button click interactions', async () => {
       const user = userEvent.setup()
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
-      const startButton = screen.getByTestId('yuragi-start-button-1')
+      const startButton = screen.getByTestId('yuragi-start-button')
       expect(startButton).toBeEnabled()
       expect(startButton).toHaveTextContent('Start YURAGI')
 
@@ -147,52 +145,54 @@ describe('YURAGIControl', () => {
   })
 
   describe('Device Selection', () => {
-    it('should work with device 2', () => {
-      render(<YURAGIControl deviceId={2} />)
+    it('should control both devices simultaneously (no device selection needed)', () => {
+      render(<YURAGIControl />)
 
-      expect(screen.getByTestId('yuragi-control-2')).toBeInTheDocument()
-      const deviceSelect = screen.getByLabelText('Device')
-      expect(deviceSelect).toHaveValue('2')
-      expect(screen.getByTestId('yuragi-start-button-2')).toBeInTheDocument()
+      // Device selector should not exist
+      const deviceSelect = screen.queryByLabelText('Device')
+      expect(deviceSelect).not.toBeInTheDocument()
+      
+      // Only one control panel for both devices
+      expect(screen.getByTestId('yuragi-control')).toBeInTheDocument()
     })
   })
 
   describe('Progress Bar', () => {
     it('should not show progress bar when inactive', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
-      expect(screen.queryByTestId('yuragi-progress-1')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('yuragi-progress')).not.toBeInTheDocument()
     })
   })
 
   describe('Error Display', () => {
     it('should not show error initially', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
-      expect(screen.queryByTestId('yuragi-error-1')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('yuragi-error')).not.toBeInTheDocument()
     })
   })
 
   describe('Component Structure', () => {
     it('should have proper testid attributes', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
-      expect(screen.getByTestId('yuragi-control-1')).toBeInTheDocument()
-      expect(screen.getByTestId('yuragi-start-button-1')).toBeInTheDocument()
+      expect(screen.getByTestId('yuragi-control')).toBeInTheDocument()
+      expect(screen.getByTestId('yuragi-start-button')).toBeInTheDocument()
     })
 
     it('should have proper button variant classes', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
-      const startButton = screen.getByTestId('yuragi-start-button-1')
+      const startButton = screen.getByTestId('yuragi-start-button')
       expect(startButton).toHaveClass('button-primary')
     })
 
     it('should have proper form structure', () => {
-      render(<YURAGIControl deviceId={1} />)
+      render(<YURAGIControl />)
 
       expect(screen.getByText('YURAGI Massage Control')).toHaveClass('yuragi-control-title')
-      expect(screen.getByTestId('yuragi-control-1')).toHaveClass('yuragi-control')
+      expect(screen.getByTestId('yuragi-control')).toHaveClass('yuragi-control')
     })
   })
 })

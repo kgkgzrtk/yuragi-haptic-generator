@@ -217,7 +217,7 @@ uv run mypy backend/src
 
 ### コアコンポーネント
 
-1. **SawtoothWaveform**: サwtooth波形生成エンジン
+1. **SawtoothWaveform**: のこぎり波形生成エンジン
 2. **HapticChannel**: 単一チャンネル管理
 3. **HapticDevice**: 4チャンネル統合制御
 4. **HapticController**: ストリーミング管理

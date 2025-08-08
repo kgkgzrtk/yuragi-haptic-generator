@@ -69,10 +69,10 @@ TDDサイクル1: 基本的な波形生成
 """
 
 class TestSawtoothWaveformGeneration:
-    """サwtooth波生成の基本機能テスト"""
+    """のこぎり波生成の基本機能テスト"""
     
     def test_creates_ascending_sawtooth_at_100hz(self):
-        """100Hzの上昇サwtooth波を生成できる"""
+        """100Hzの上昇のこぎり波を生成できる"""
         # Arrange
         frequency = 100.0
         sample_rate = 44100
@@ -89,7 +89,7 @@ class TestSawtoothWaveformGeneration:
         assert samples[440] == pytest.approx(1.0, abs=0.01)
     
     def test_creates_descending_sawtooth_with_negative_polarity(self):
-        """極性を反転させると下降サwtooth波を生成できる"""
+        """極性を反転させると下降のこぎり波を生成できる"""
         # Arrange
         waveform = SawtoothWaveform(sample_rate=44100)
         

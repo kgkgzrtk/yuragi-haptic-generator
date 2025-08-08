@@ -51,7 +51,7 @@ class TestHapticDeviceOperation:
 
         # Assert
         assert output.shape == (512, 4)
-        # 各チャンネルの振幅を確認（サwtooth波の特性を考慮）
+        # 各チャンネルの振幅を確認（のこぎり波の特性を考慮）
         assert np.max(np.abs(output[:, 0])) == pytest.approx(1.0, abs=0.01)
         assert np.max(np.abs(output[:, 1])) == pytest.approx(0.8, abs=0.01)
 
