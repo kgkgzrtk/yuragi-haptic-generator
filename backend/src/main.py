@@ -37,9 +37,13 @@ try:
         f"HapticController initialized with sample_rate={settings.sample_rate}, block_size={settings.block_size}"
     )
 
-    # Initialize YURAGI animator
-    yuragi_animator = YURAGIAnimator(controller.set_vector_force)
-    logger.info("YURAGIAnimator initialized")
+    # Initialize YURAGI animator with available channels
+    yuragi_animator = YURAGIAnimator(
+        controller.set_vector_force, controller.available_channels
+    )
+    logger.info(
+        f"YURAGIAnimator initialized with {controller.available_channels} channels"
+    )
 
 except Exception as e:
     # sounddeviceがない環境では None のまま
@@ -65,8 +69,12 @@ async def lifespan(app: FastAPI):
 
             # Initialize YURAGI animator if controller is available
             if yuragi_animator is None:
-                yuragi_animator = YURAGIAnimator(controller.set_vector_force)
-                logger.info("YURAGIAnimator initialized in lifespan")
+                yuragi_animator = YURAGIAnimator(
+                    controller.set_vector_force, controller.available_channels
+                )
+                logger.info(
+                    f"YURAGIAnimator initialized in lifespan with {controller.available_channels} channels"
+                )
 
         except Exception as e:
             logger.error(f"Failed to initialize HapticController: {e}")

@@ -43,15 +43,21 @@ class YURAGIAnimator:
     speed and amplitude modulation for therapeutic effects.
     """
 
-    def __init__(self, update_callback: Callable[[dict[str, Any]], None]):
+    def __init__(
+        self,
+        update_callback: Callable[[dict[str, Any]], None],
+        available_channels: int = 4,
+    ):
         """
         Initialize YURAGI animator.
 
         Args:
             update_callback: Callback function to update vector force
+            available_channels: Number of available channels (2 or 4)
         """
         self.logger = get_logger(self.__class__.__name__)
         self.update_callback = update_callback
+        self.available_channels = available_channels
 
         # Animation state
         self._active_animations: dict[int, asyncio.Task] = {}
@@ -119,7 +125,7 @@ class YURAGIAnimator:
 
     async def start_animation(self, preset: str, duration: float) -> None:
         """
-        Start YURAGI animation for both devices.
+        Start YURAGI animation for available devices.
 
         Args:
             preset: Preset name
@@ -131,8 +137,12 @@ class YURAGIAnimator:
         # Get preset configuration
         config = self._presets.get(preset, self._presets["default"])
 
-        # Start animation tasks for both devices
-        for device_id in [1, 2]:
+        # Determine which devices to animate based on available channels
+        device_ids = [1] if self.available_channels < 4 else [1, 2]
+        device_desc = "device 1" if self.available_channels < 4 else "both devices"
+
+        # Start animation tasks for available devices
+        for device_id in device_ids:
             self._animation_configs[device_id] = config
             task = asyncio.create_task(
                 self._animate_device(device_id, config, duration)
@@ -140,7 +150,7 @@ class YURAGIAnimator:
             self._active_animations[device_id] = task
 
         self.logger.info(
-            f"Started YURAGI animation for both devices "
+            f"Started YURAGI animation for {device_desc} "
             f"with preset '{preset}' for {duration}s"
         )
 
