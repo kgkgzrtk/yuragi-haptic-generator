@@ -43,7 +43,11 @@ class YURAGIAnimator:
     speed and amplitude modulation for therapeutic effects.
     """
 
-    def __init__(self, update_callback: Callable[[dict[str, Any]], None], available_channels: int = 4):
+    def __init__(
+        self,
+        update_callback: Callable[[dict[str, Any]], None],
+        available_channels: int = 4,
+    ):
         """
         Initialize YURAGI animator.
 
