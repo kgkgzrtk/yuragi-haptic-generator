@@ -151,7 +151,7 @@ describe('YURAGIControl', () => {
       // Device selector should not exist
       const deviceSelect = screen.queryByLabelText('Device')
       expect(deviceSelect).not.toBeInTheDocument()
-      
+
       // Only one control panel for both devices
       expect(screen.getByTestId('yuragi-control')).toBeInTheDocument()
     })

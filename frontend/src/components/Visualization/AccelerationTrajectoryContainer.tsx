@@ -18,7 +18,7 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
   // Get channel parameters from store
   const xChannel = useHapticStore(state => state.channels.find(ch => ch.channelId === xChannelId))
   const yChannel = useHapticStore(state => state.channels.find(ch => ch.channelId === yChannelId))
-  
+
   // Get YURAGI vector force and status
   const vectorForce = useHapticStore(state => state.vectorForce[`device${deviceId}`])
   const yuragiStatus = useHapticStore(state => state.yuragi[`device${deviceId}`])
@@ -41,19 +41,19 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
       if (!vectorForce || vectorForce.magnitude === undefined || vectorForce.angle === undefined) {
         return null
       }
-      
+
       const angle = (vectorForce.angle * Math.PI) / 180 // Convert to radians
       const magnitude = vectorForce.magnitude
-      
+
       // Generate circular coordinates
       // Invert x-axis for device 2 to create symmetrical trajectories
       const x = magnitude * Math.cos(angle) * (deviceId === 2 ? -1 : 1)
       const y = magnitude * Math.sin(angle)
-      
+
       // Return single point for smooth trajectory
       return { xAccel: [x], yAccel: [y] }
     }
-    
+
     // Normal mode - use channel parameters
     if (!xChannel || !yChannel) {
       return null
@@ -95,7 +95,7 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
     const downsampleFactor = 20
     const xAccel = xWaveforms.acceleration
       .filter((_, i) => i % downsampleFactor === 0)
-      .map(val => deviceId === 2 ? -val : val) // Invert x-axis for device 2
+      .map(val => (deviceId === 2 ? -val : val)) // Invert x-axis for device 2
     const yAccel = yWaveforms.acceleration.filter((_, i) => i % downsampleFactor === 0)
 
     return { xAccel, yAccel }
@@ -118,6 +118,7 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
     }
 
     animationFrameRef.current = requestAnimationFrame(animate)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generateAccelerationData, yuragiStatus, vectorForce, deviceId])
 
   // Clear trajectory when YURAGI mode changes
@@ -145,7 +146,7 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current)
     }
-    
+
     animationFrameRef.current = requestAnimationFrame(animate)
 
     return () => {
