@@ -451,8 +451,8 @@ export function getPresetParameters(): PresetParameters {
       noiseLevel: 0.08,
       noiseBandwidth: 0.4,
       fluctuationAmplitude: 20.0, // 2.5x stronger fluctuation
-      fluctuationBandwidth: 0.1,  // Lower frequency bandwidth
-      fmDepth: 0.1,               // Stronger FM modulation
+      fluctuationBandwidth: 0.1, // Lower frequency bandwidth
+      fmDepth: 0.1, // Stronger FM modulation
     },
   }
 }

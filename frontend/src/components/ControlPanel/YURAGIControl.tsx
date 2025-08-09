@@ -12,7 +12,9 @@ export const YURAGIControl: React.FC = () => {
   const { yuragi, setYuragiStatus, updateYuragiProgress, setVectorForce } = useHapticStore()
   const { handleError } = useErrorHandler()
 
-  const [preset, setPreset] = useState<'gentle' | 'moderate' | 'intense' | 'therapeutic' | 'therapeutic_fluctuation'>('gentle')
+  const [preset, setPreset] = useState<
+    'gentle' | 'moderate' | 'intense' | 'therapeutic' | 'therapeutic_fluctuation'
+  >('gentle')
   const [duration, setDuration] = useState<number>(60)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
