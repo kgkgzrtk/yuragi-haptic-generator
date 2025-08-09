@@ -46,7 +46,8 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
       const magnitude = vectorForce.magnitude
       
       // Generate circular coordinates
-      const x = magnitude * Math.cos(angle)
+      // Invert x-axis for device 2 to create symmetrical trajectories
+      const x = magnitude * Math.cos(angle) * (deviceId === 2 ? -1 : 1)
       const y = magnitude * Math.sin(angle)
       
       // Return single point for smooth trajectory
@@ -92,7 +93,9 @@ export const AccelerationTrajectoryContainer: React.FC<AccelerationTrajectoryCon
 
     // Take every 20th sample for trajectory (reduce data points but keep smooth)
     const downsampleFactor = 20
-    const xAccel = xWaveforms.acceleration.filter((_, i) => i % downsampleFactor === 0)
+    const xAccel = xWaveforms.acceleration
+      .filter((_, i) => i % downsampleFactor === 0)
+      .map(val => deviceId === 2 ? -val : val) // Invert x-axis for device 2
     const yAccel = yWaveforms.acceleration.filter((_, i) => i % downsampleFactor === 0)
 
     return { xAccel, yAccel }
