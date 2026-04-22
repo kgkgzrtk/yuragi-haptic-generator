@@ -28,6 +28,9 @@ ENV PATH="/venv/bin:$PATH"
 # Copy dependency files
 COPY pyproject.toml ./
 
+# Copy source tree so Hatchling can build the haptic-system wheel
+COPY src/ ./src/
+
 # Install uv for faster dependency resolution
 RUN pip install uv
 
