@@ -123,4 +123,4 @@ jobs:
 
     - name: Build frontend image
       run: |
-        docker build --target production -t yuragi-haptic-frontend:ci ./frontend
+        docker build --target production -t yuragi-haptic-frontend:ci -f frontend/Dockerfile .

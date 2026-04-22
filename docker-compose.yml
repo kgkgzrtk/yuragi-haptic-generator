@@ -46,7 +46,9 @@ services:
   # Frontend web service
   frontend:
     build:
-      context: ./frontend
+      # Repo root context: Dockerfile needs pnpm-lock.yaml + pnpm-workspace.yaml
+      context: .
+      dockerfile: frontend/Dockerfile
       target: production
     image: yuragi-haptic-frontend:latest
     container_name: yuragi-frontend
