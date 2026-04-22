@@ -1,31 +1,37 @@
 # Multi-stage Dockerfile for Yuragi Haptic Generator Frontend
 # Optimized for production deployment with minimal image size
+#
+# IMPORTANT: This Dockerfile is designed to be built from the repo root
+# because the repo is a pnpm workspace: pnpm-lock.yaml, pnpm-workspace.yaml,
+# and .npmrc all live at the root, not inside ./frontend.
+# Build with:   docker build -f frontend/Dockerfile --target <stage> .
 
 # Build stage
 FROM node:20-alpine as builder
 
-# Set working directory
-WORKDIR /app
+WORKDIR /workspace
 
-# Set environment variables for build optimization
 ENV NODE_ENV=production \
     PNPM_HOME="/pnpm" \
     PATH="$PNPM_HOME:$PATH"
 
-# Install pnpm
-RUN corepack enable
+# Activate pnpm version pinned in frontend/package.json (packageManager field)
+RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy workspace manifests first for cache-friendly install
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY frontend/package.json ./frontend/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile --prod=false
+# Install frontend deps (including devDependencies — tsc/vite needed for build)
+RUN pnpm install --frozen-lockfile --prod=false --filter "./frontend"
 
-# Copy source code
-COPY . .
+# Copy frontend source
+COPY frontend/ ./frontend/
 
-# Copy production environment file
-COPY .env.production .env
+WORKDIR /workspace/frontend
+
+# Use production env file at build time
+COPY frontend/.env.production .env
 
 # Build the application with production optimizations
 RUN pnpm run build:production
@@ -39,16 +45,14 @@ RUN apk update && apk upgrade && \
     rm -rf /var/cache/apk/*
 
 # Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
 
 # Copy built application from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /workspace/frontend/dist /usr/share/nginx/html
 
-# Create non-root user for nginx
-RUN addgroup -g 1001 -S nginx && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+# nginx:alpine already provides the `nginx` user/group — reuse it.
 
-# Set ownership and permissions
+# Set ownership and permissions on dirs nginx needs to write/read
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
@@ -74,35 +78,29 @@ CMD ["nginx", "-g", "daemon off;"]
 # Development stage
 FROM node:20-alpine as development
 
-# Set working directory
-WORKDIR /app
+WORKDIR /workspace
 
-# Set environment variables
 ENV NODE_ENV=development \
     PNPM_HOME="/pnpm" \
     PATH="$PNPM_HOME:$PATH"
 
-# Install pnpm
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY frontend/package.json ./frontend/
 
-# Install all dependencies (including dev)
-RUN pnpm install --frozen-lockfile
+# Install all deps including dev
+RUN pnpm install --frozen-lockfile --filter "./frontend"
 
-# Copy source code
-COPY . .
+COPY frontend/ ./frontend/
 
-# Copy development environment file
-COPY .env.development .env
+WORKDIR /workspace/frontend
 
-# Expose port
+COPY frontend/.env.development .env
+
 EXPOSE 3000
 
-# Health check for development
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/ || exit 1
 
-# Start development server
 CMD ["pnpm", "run", "dev", "--host", "0.0.0.0"]

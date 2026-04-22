@@ -41,7 +41,9 @@ services:
   # Frontend web service (development)
   frontend:
     build:
-      context: ./frontend
+      # Repo root context: Dockerfile needs pnpm-lock.yaml + pnpm-workspace.yaml
+      context: .
+      dockerfile: frontend/Dockerfile
       target: development
     image: yuragi-haptic-frontend:dev
     container_name: yuragi-frontend-dev
@@ -53,14 +55,14 @@ services:
       - VITE_API_BASE_URL=http://localhost:8000
       - VITE_WS_BASE_URL=ws://localhost:8000
     volumes:
-      - ./frontend/src:/app/src:ro
-      - ./frontend/public:/app/public:ro
-      - ./frontend/.env.development:/app/.env:ro
-      - ./frontend/package.json:/app/package.json:ro
-      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
-      - ./frontend/tsconfig.json:/app/tsconfig.json:ro
-      - ./frontend/tsconfig.node.json:/app/tsconfig.node.json:ro
-      - frontend-node-modules:/app/node_modules
+      - ./frontend/src:/workspace/frontend/src:ro
+      - ./frontend/public:/workspace/frontend/public:ro
+      - ./frontend/.env.development:/workspace/frontend/.env:ro
+      - ./frontend/package.json:/workspace/frontend/package.json:ro
+      - ./frontend/vite.config.ts:/workspace/frontend/vite.config.ts:ro
+      - ./frontend/tsconfig.json:/workspace/frontend/tsconfig.json:ro
+      - ./frontend/tsconfig.node.json:/workspace/frontend/tsconfig.node.json:ro
+      - frontend-node-modules:/workspace/frontend/node_modules
     networks:
       - haptic-network
     healthcheck:

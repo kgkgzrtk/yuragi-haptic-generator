@@ -1,0 +1,61 @@
+# Root .dockerignore — applies to builds that use the repo root as context
+# (currently: frontend image build in CI and docker-compose).
+# Keep this conservative; per-service ignores still live at backend/.dockerignore
+# and frontend/.dockerignore.
+
+# VCS
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Worktrees, local env
+.worktrees/
+.venv/
+venv/
+.env
+.env.local
+.env.*.local
+
+# Editor / tool caches
+.vscode/
+.idea/
+.cursor/
+.omc/
+.claude/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage/
+coverage-*.xml
+
+# Node / pnpm
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+.pnpm-store/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+backend/.venv/
+backend/logs/
+
+# Docker / compose artifacts
+docker-compose.override.yml
+
+# Docs / logs
+README.md
+docs/
+logs/
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
