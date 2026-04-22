@@ -104,9 +104,12 @@ jobs:
       working-directory: ./frontend
       run: pnpm build
 
+    # `--` is required in pnpm v9 to forward `--run` to vitest unambiguously;
+    # without it pnpm v9 interprets `--run` as a pnpm CLI option and aborts.
+    # pnpm v10 accepts the form too, so this is version-agnostic.
     - name: Test
       working-directory: ./frontend
-      run: pnpm test --run
+      run: pnpm test -- --run
 
   docker-build:
     runs-on: ubuntu-latest
