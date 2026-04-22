@@ -73,10 +73,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # Single source of truth for pnpm version: frontend/package.json `packageManager` field.
+    # Omitting `version` makes action-setup read it from the referenced package.json,
+    # keeping CI, Dockerfile, and the workspace lockfile aligned.
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: 10
+        package_json_file: frontend/package.json
 
     - name: Use Node.js
       uses: actions/setup-node@v4
@@ -101,9 +104,12 @@ jobs:
       working-directory: ./frontend
       run: pnpm build
 
+    # `--` is required in pnpm v9 to forward `--run` to vitest unambiguously;
+    # without it pnpm v9 interprets `--run` as a pnpm CLI option and aborts.
+    # pnpm v10 accepts the form too, so this is version-agnostic.
     - name: Test
       working-directory: ./frontend
-      run: pnpm test --run
+      run: pnpm test -- --run
 
   docker-build:
     runs-on: ubuntu-latest
@@ -112,15 +118,34 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     - name: Validate docker-compose configs
       run: |
         docker compose -f docker-compose.yml config --quiet
         docker compose -f docker-compose.dev.yml config --quiet
 
+    # Separate cache scopes per image so backend churn doesn't invalidate
+    # frontend layers and vice versa. mode=max exports intermediate layers
+    # of multi-stage builds for maximum reuse on subsequent runs.
     - name: Build backend image
-      run: |
-        docker build --target production -t yuragi-haptic-backend:ci ./backend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        target: production
+        tags: yuragi-haptic-backend:ci
+        load: true
+        cache-from: type=gha,scope=backend
+        cache-to: type=gha,scope=backend,mode=max
 
     - name: Build frontend image
-      run: |
-        docker build --target production -t yuragi-haptic-frontend:ci -f frontend/Dockerfile .
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: frontend/Dockerfile
+        target: production
+        tags: yuragi-haptic-frontend:ci
+        load: true
+        cache-from: type=gha,scope=frontend
+        cache-to: type=gha,scope=frontend,mode=max

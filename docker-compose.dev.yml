@@ -1,7 +1,6 @@
 # Docker Compose for Development
 # Development environment with hot reloading
-
-version: '3.8'
+# (Compose Spec implicit; the legacy `version` key is deprecated under Compose v2.)
 
 services:
   # Backend API service (development)

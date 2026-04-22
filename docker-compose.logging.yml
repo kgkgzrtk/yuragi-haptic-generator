@@ -1,7 +1,6 @@
 # Docker Compose override for centralized logging
 # Use with: docker-compose -f docker-compose.yml -f docker-compose.logging.yml up
-
-version: '3.8'
+# (Compose Spec implicit; the legacy `version` key is deprecated under Compose v2.)
 
 services:
   # Log aggregation service (Fluentd)
