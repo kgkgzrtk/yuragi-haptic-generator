@@ -7,7 +7,7 @@
 # Build with:   docker build -f frontend/Dockerfile --target <stage> .
 
 # Build stage
-FROM node:20-alpine as builder
+FROM node:20-alpine AS builder
 
 WORKDIR /workspace
 
@@ -15,7 +15,9 @@ ENV NODE_ENV=production \
     PNPM_HOME="/pnpm" \
     PATH="$PNPM_HOME:$PATH"
 
-# Activate pnpm version pinned in frontend/package.json (packageManager field)
+# Pin pnpm via the packageManager field in frontend/package.json (single source of truth).
+# Keep this version in lockstep with `packageManager` there; CI reads it directly via
+# pnpm/action-setup `package_json_file`, so all three surfaces (CI, builder, dev image) align.
 RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
 
 # Copy workspace manifests first for cache-friendly install
@@ -37,7 +39,7 @@ COPY frontend/.env.production .env
 RUN pnpm run build:production
 
 # Production stage - Nginx
-FROM nginx:alpine as production
+FROM nginx:alpine AS production
 
 # Install security updates
 RUN apk update && apk upgrade && \
@@ -76,7 +78,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 CMD ["nginx", "-g", "daemon off;"]
 
 # Development stage
-FROM node:20-alpine as development
+FROM node:20-alpine AS development
 
 WORKDIR /workspace
 
@@ -84,6 +86,8 @@ ENV NODE_ENV=development \
     PNPM_HOME="/pnpm" \
     PATH="$PNPM_HOME:$PATH"
 
+# Mirror the builder stage's pnpm version (see comment above the corresponding
+# corepack prepare in the builder stage).
 RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./

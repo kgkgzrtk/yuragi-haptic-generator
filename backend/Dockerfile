@@ -2,7 +2,7 @@
 # Optimized for production deployment with minimal image size
 
 # Build stage
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 # Set environment variables for build
 ENV PYTHONUNBUFFERED=1 \
@@ -25,20 +25,22 @@ RUN apt-get update && apt-get install -y \
 RUN python -m venv /venv
 ENV PATH="/venv/bin:$PATH"
 
-# Copy dependency files
-COPY pyproject.toml ./
-
-# Copy source tree so Hatchling can build the haptic-system wheel
-COPY src/ ./src/
-
-# Install uv for faster dependency resolution
+# Install uv first so it lives in a layer that rarely changes
 RUN pip install uv
 
-# Install Python dependencies
-RUN uv pip install .[api,production]
+# Layer 1: dependency resolution + install (cached unless pyproject.toml changes).
+# We isolate the dependency install from the project install so that editing
+# files under src/ does not invalidate the (slow) deps layer.
+COPY pyproject.toml ./
+RUN uv pip compile pyproject.toml --extra api --extra production -o /tmp/requirements.txt && \
+    uv pip install --no-deps -r /tmp/requirements.txt
+
+# Layer 2: build & install the project itself (re-runs only when src changes).
+COPY src/ ./src/
+RUN uv pip install --no-deps .
 
 # Production stage
-FROM python:3.12-slim as production
+FROM python:3.12-slim AS production
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -88,7 +90,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 CMD ["python", "src/server.py"]
 
 # Development stage (for development builds)
-FROM production as development
+FROM production AS development
 
 # Switch back to root for development setup
 USER root

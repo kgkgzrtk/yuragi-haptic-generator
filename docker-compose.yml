@@ -1,7 +1,6 @@
 # Docker Compose for Yuragi Haptic Generator
 # Production-ready full stack deployment
-
-version: '3.8'
+# (Compose Spec implicit; the legacy `version` key is deprecated under Compose v2.)
 
 services:
   # Backend API service
@@ -58,8 +57,11 @@ services:
       - "443:8080"
     environment:
       - NODE_ENV=production
-    volumes:
-      - ./logs/nginx:/var/log/nginx:rw
+    # nginx:alpine symlinks /var/log/nginx/{access,error}.log to stdout/stderr;
+    # bind-mounting a host directory there overwrites those symlinks AND requires
+    # host perms aligned to nginx uid=101 (previously assumed uid=1001 — drift).
+    # Logs are surfaced via the Docker logging driver instead (docker logs / fluentd
+    # override in docker-compose.logging.yml).
     networks:
       - haptic-network
     healthcheck:
