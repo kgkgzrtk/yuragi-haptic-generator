@@ -69,6 +69,22 @@ The application uses multi-stage Docker builds:
 - **Production**: Optimized images with minimal dependencies
 - **Development**: Full development environment with hot reloading
 
+#### Frontend container requires Docker Compose networking
+
+The frontend nginx configuration (`frontend/nginx.conf`) uses `proxy_pass http://backend:8000`
+for both the `/api/` and `/ws` locations. The hostname `backend` is only resolvable on the
+Docker Compose service network. Running the frontend image with plain `docker run` fails at
+startup with `host not found in upstream "backend"`.
+
+Supported ways to run the frontend image:
+- `docker compose -f docker-compose.yml up` (recommended; resolves `backend` via the compose network).
+- Any orchestrator that provides a DNS record for a service named `backend` on port `8000`.
+
+Do **not** run `docker run ghcr.io/.../frontend` as a standalone smoke test — it is expected to
+fail upstream resolution. For CI smoke-testing, build and validate config with
+`docker run --rm --add-host backend:127.0.0.1 -v ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro
+nginx:alpine nginx -t` (syntax check only).
+
 ## Deployment Scripts
 
 ### Main Deployment Script (`scripts/deploy.sh`)
